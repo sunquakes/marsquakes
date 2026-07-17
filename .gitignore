@@ -1,0 +1,12 @@
+*.iml
+.gradle
+local.properties
+.idea/
+.DS_Store
+/apps/android/build
+/apps/android/captures
+.externalNativeBuild
+.cxx
+node_modules/
+dist/
+.turbo/

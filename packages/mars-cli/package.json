@@ -1,0 +1,28 @@
+{
+  "name": "@marsquakes/cli",
+  "version": "1.0.0",
+  "description": "CLI tool for Marsquakes multi-platform projects",
+  "main": "bin/mars.js",
+  "bin": {
+    "mars": "bin/mars.js"
+  },
+  "files": [
+    "bin/"
+  ],
+  "scripts": {
+    "test": "node bin/mars.js --help"
+  },
+  "keywords": [
+    "marsquakes",
+    "mars",
+    "cli",
+    "scaffold",
+    "monorepo",
+    "multi-platform"
+  ],
+  "author": "sunquakes",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

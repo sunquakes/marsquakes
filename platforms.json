@@ -1,0 +1,71 @@
+{
+  "project_name": "Marsquakes",
+  "platforms": {
+    "mobile": {
+      "android": {
+        "enabled": true,
+        "dir": "apps/android",
+        "tech_stack": "Kotlin / Jetpack Compose",
+        "description": "Android 客户端"
+      },
+      "ios": {
+        "enabled": true,
+        "dir": "apps/ios",
+        "tech_stack": "Swift / SwiftUI",
+        "description": "iOS 客户端"
+      }
+    },
+    "desktop": {
+      "windows": {
+        "enabled": true,
+        "dir": "apps/windows",
+        "tech_stack": "待定",
+        "description": "Windows 桌面端"
+      },
+      "linux": {
+        "enabled": true,
+        "dir": "apps/linux",
+        "tech_stack": "待定",
+        "description": "Linux 桌面端"
+      },
+      "macos": {
+        "enabled": true,
+        "dir": "apps/macos",
+        "tech_stack": "待定",
+        "description": "macOS 桌面端"
+      }
+    },
+    "web": {
+      "web": {
+        "enabled": true,
+        "dir": "apps/web",
+        "tech_stack": "待定",
+        "description": "Web 用户端"
+      },
+      "web-admin": {
+        "enabled": true,
+        "dir": "apps/web-admin",
+        "tech_stack": "Vue3 / Vite",
+        "description": "Web 后台管理端"
+      }
+    },
+    "api": {
+      "api": {
+        "enabled": true,
+        "dir": "apps/api",
+        "tech_stack": "待定",
+        "description": "后端接口服务"
+      }
+    }
+  },
+  "docs": {
+    "dir": "docs",
+    "api_doc_dir": "docs/api",
+    "task_dir": "docs/task",
+    "description": "文档、任务、PRD、接口文档"
+  },
+  "design": {
+    "dir": "design",
+    "description": "设计稿、图片、页面、切图"
+  }
+}
