@@ -1,25 +1,25 @@
 # iOS - AGENTS.md
 
-## 模块概览
+## Module Overview
 
-- **平台**: iOS
-- **语言**: Swift
-- **UI 框架**: SwiftUI
-- **待初始化**
+- **Platform**: iOS
+- **Language**: Swift
+- **UI Framework**: SwiftUI
+- **To be initialized**
 
-## 目录结构
+## Directory Structure
 
 ```
 ios/
-├── AGENTS.md                # 本文件
-└── ...                      # 待添加
+├── AGENTS.md                # This file
+└── ...                      # To be added
 ```
 
-## 编码规范
+## Coding Standards
 
-- 遵循 Swift 官方编码规范
-- UI 层使用 SwiftUI
+- Follow Swift official coding standards
+- Use SwiftUI for UI layer
 
-## 构建命令
+## Build Commands
 
-待补充。
+To be added.

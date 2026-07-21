@@ -1,23 +1,23 @@
 # Web - AGENTS.md
 
-## 模块概览
+## Module Overview
 
-- **平台**: Web
-- **范围**: Web 用户端
-- **技术栈**: 待定
+- **Platform**: Web
+- **Scope**: Web Client
+- **Tech Stack**: To be determined
 
-## 目录结构
+## Directory Structure
 
 ```
 apps/web/
-├── AGENTS.md                # 本文件
-└── ...                      # 待添加
+├── AGENTS.md                # This file
+└── ...                      # To be added
 ```
 
-## 编码规范
+## Coding Standards
 
-待补充。
+To be added.
 
-## 构建命令
+## Build Commands
 
-待补充。
+To be added.

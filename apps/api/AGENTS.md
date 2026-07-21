@@ -1,22 +1,22 @@
 # API - AGENTS.md
 
-## 模块概览
+## Module Overview
 
-- **平台**: 后端接口
-- **待定技术栈**: 待初始化
+- **Platform**: Backend API
+- **Tech Stack**: To be initialized
 
-## 目录结构
+## Directory Structure
 
 ```
 api/
-├── AGENTS.md                # 本文件
-└── ...                      # 待添加
+├── AGENTS.md                # This file
+└── ...                      # To be added
 ```
 
-## 编码规范
+## Coding Standards
 
-待补充。
+To be added.
 
-## 构建命令
+## Build Commands
 
-待补充。
+To be added.

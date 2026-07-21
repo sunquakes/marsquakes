@@ -24,6 +24,7 @@ Usage: mars <command> [options]
 
 Commands:
   create <project-name>    Create a new project from template
+  update                   Update project from template (preserves apps/docs)
   dev                      Start development server (default: all enabled platforms)
   build                    Build project (default: all enabled platforms)
   init                     Initialize project dependencies and check environment
@@ -44,6 +45,8 @@ Examples:
   mars create my-project              # Interactive mode (default)
   mars create my-project -n           # Non-interactive mode (default platforms)
   mars create my-project --from ./path/to/template
+  mars update                         # Update from default template
+  mars update --template ./path/to/template  # Update from local template
   mars dev --platform web
   mars build --platform android
   mars init
@@ -791,6 +794,163 @@ function cleanCommand() {
   console.log('\n✅ Clean complete!\n');
 }
 
+async function updateCommand(args) {
+  const rootDir = findProjectRoot();
+  if (!rootDir) {
+    console.error('\n❌ Error: Not in a Marsquakes project.');
+    process.exit(1);
+  }
+
+  const templateUrl = args.find((_, i) => args[i - 1] === '--template') || DEFAULT_TEMPLATE;
+  
+  console.log(`\n🔄 Updating Marsquakes project...\n`);
+  console.log(`   Current project: ${rootDir}`);
+  console.log(`   Template: ${templateUrl}`);
+
+  const tempDir = path.join(require('os').tmpdir(), `marsquakes-update-${Date.now()}`);
+  const backupDir = path.join(rootDir, '.mars-update-backup');
+
+  try {
+    console.log('\n📥 Fetching latest template...');
+    try {
+      execSync(`git clone --depth 1 ${templateUrl} "${tempDir}"`, { stdio: 'pipe' });
+    } catch (e) {
+      console.error('\n❌ Failed to fetch template.');
+      console.log('   Trying local template...');
+      if (fs.existsSync(templateUrl)) {
+        copyDir(templateUrl, tempDir);
+      } else {
+        console.error(`\n❌ Template not found: ${templateUrl}`);
+        process.exit(1);
+      }
+    }
+
+    console.log('\n📁 Backing up current project...');
+    if (fs.existsSync(backupDir)) {
+      fs.rmSync(backupDir, { recursive: true, force: true });
+    }
+    copyDir(rootDir, backupDir);
+
+    const filesToUpdate = [
+      'AGENTS.md',
+      'turbo.json',
+      'pnpm-workspace.yaml',
+      'platforms.json',
+      'package.json',
+      'scripts/',
+      'packages/',
+      'docker/',
+    ];
+
+    const skippedFiles = [
+      '.git',
+      'node_modules',
+      '.gradle',
+      'build',
+      'dist',
+      '.turbo',
+      '.idea',
+      'apps/',
+      'docs/',
+      'design/',
+      '.mars-update-backup',
+    ];
+
+    console.log('\n🔄 Applying updates...');
+    const changes = [];
+
+    for (const file of filesToUpdate) {
+      const srcPath = path.join(tempDir, file);
+      const destPath = path.join(rootDir, file);
+
+      if (!fs.existsSync(srcPath)) continue;
+
+      if (fs.statSync(srcPath).isDirectory()) {
+        if (!fs.existsSync(destPath)) {
+          fs.mkdirSync(destPath, { recursive: true });
+          changes.push({ type: 'added', path: file });
+        }
+        copyDirRecursive(srcPath, destPath, skippedFiles, changes);
+      } else {
+        const srcContent = fs.readFileSync(srcPath, 'utf-8');
+        
+        if (fs.existsSync(destPath)) {
+          const destContent = fs.readFileSync(destPath, 'utf-8');
+          if (srcContent !== destContent) {
+            fs.writeFileSync(destPath, srcContent);
+            changes.push({ type: 'updated', path: file });
+          }
+        } else {
+          fs.writeFileSync(destPath, srcContent);
+          changes.push({ type: 'added', path: file });
+        }
+      }
+    }
+
+    if (changes.length === 0) {
+      console.log('\n✅ No updates available.');
+    } else {
+      console.log('\n📋 Changes made:');
+      changes.forEach(c => {
+        const icon = c.type === 'added' ? '+' : '~';
+        console.log(`   ${icon} ${c.path}`);
+      });
+
+      console.log('\n📦 Updating dependencies...');
+      run('pnpm install', rootDir);
+    }
+
+    console.log('\n✅ Update complete!');
+    console.log('\n📝 Note: Your apps/ and docs/ directories were preserved.');
+    console.log(`   A backup was saved to: ${backupDir}`);
+
+  } catch (e) {
+    console.error(`\n❌ Update failed: ${e.message}`);
+    console.log('\n🔄 Restoring from backup...');
+    if (fs.existsSync(backupDir)) {
+      fs.rmSync(rootDir, { recursive: true, force: true });
+      fs.renameSync(backupDir, rootDir);
+    }
+    process.exit(1);
+  } finally {
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+  }
+}
+
+function copyDirRecursive(src, dest, skip, changes) {
+  const entries = fs.readdirSync(src, { withFileTypes: true });
+  for (const entry of entries) {
+    if (skip.includes(entry.name)) continue;
+
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    const relPath = destPath.replace(dest.split('apps')[0], '');
+
+    if (entry.isDirectory()) {
+      if (!fs.existsSync(destPath)) {
+        fs.mkdirSync(destPath, { recursive: true });
+        changes.push({ type: 'added', path: relPath });
+      }
+      copyDirRecursive(srcPath, destPath, skip, changes);
+    } else {
+      const srcContent = fs.readFileSync(srcPath, 'utf-8');
+      
+      if (fs.existsSync(destPath)) {
+        const destContent = fs.readFileSync(destPath, 'utf-8');
+        if (srcContent !== destContent) {
+          fs.writeFileSync(destPath, srcContent);
+          changes.push({ type: 'updated', path: relPath });
+        }
+      } else {
+        fs.writeFileSync(destPath, srcContent);
+        changes.push({ type: 'added', path: relPath });
+      }
+    }
+  }
+}
+
 function main() {
   const args = process.argv.slice(2);
 
@@ -805,6 +965,9 @@ function main() {
   switch (command) {
     case 'create':
       createProject(commandArgs);
+      break;
+    case 'update':
+      updateCommand(commandArgs);
       break;
     case 'dev':
       devCommand(commandArgs);

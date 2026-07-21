@@ -1,66 +1,66 @@
 # Android - AGENTS.md
 
-## 模块概览
+## Module Overview
 
-- **包名**: `com.sunquakes.marsquakes`
-- **技术栈**: Android / Kotlin / Jetpack Compose
+- **Package Name**: `com.sunquakes.marsquakes`
+- **Tech Stack**: Android / Kotlin / Jetpack Compose
 - **minSdk**: 33 / **targetSdk**: 36 / **compileSdk**: 36
-- **构建工具**: Gradle 8.13 (Kotlin DSL)
-- **JVM 目标**: Java 11
-- **版本**: 1.0 (versionCode: 1)
+- **Build Tool**: Gradle 8.13 (Kotlin DSL)
+- **JVM Target**: Java 11
+- **Version**: 1.0 (versionCode: 1)
 
-## 目录结构
+## Directory Structure
 
 ```
 apps/android/
 ├── app/
 │   ├── src/
 │   │   ├── main/
-│   │   │   ├── java/com/sunquakes/marsquakes/   # 主要源码
-│   │   │   └── res/                             # Android 资源
-│   │   ├── test/                                # 单元测试
-│   │   └── androidTest/                         # 仪器化测试
-│   ├── build.gradle.kts                         # app 模块构建配置
-│   └── proguard-rules.pro                       # 混淆规则
+│   │   │   ├── java/com/sunquakes/marsquakes/   # Main source code
+│   │   │   └── res/                             # Android resources
+│   │   ├── test/                                # Unit tests
+│   │   └── androidTest/                         # Instrumented tests
+│   ├── build.gradle.kts                         # App module build configuration
+│   └── proguard-rules.pro                       # ProGuard rules
 ├── gradle/
-│   └── libs.versions.toml                       # 依赖版本目录
-├── build.gradle.kts                             # 根级构建配置
-├── settings.gradle.kts                          # 项目设置
-├── gradle.properties                            # Gradle 属性
+│   └── libs.versions.toml                       # Dependency version catalog
+├── build.gradle.kts                             # Root build configuration
+├── settings.gradle.kts                          # Project settings
+├── gradle.properties                            # Gradle properties
 ├── gradlew                                      # Gradle Wrapper (Unix)
 └── gradlew.bat                                  # Gradle Wrapper (Windows)
 ```
 
-## 编码规范
+## Coding Standards
 
-- **语言**: Kotlin
-- **UI 框架**: Jetpack Compose + Material 3
-- **代码风格**: 遵循 Kotlin 官方编码规范
-- **提交信息**: 使用简洁明确的中文或英文描述
+- **Language**: Kotlin
+- **UI Framework**: Jetpack Compose + Material 3
+- **Code Style**: Follow Kotlin official coding standards
+- **Commit Messages**: Use concise Chinese or English descriptions
 
-## 构建命令
+## Build Commands
 
 ```bash
-# 在 apps/android/ 目录下执行
+# Execute in apps/android/ directory
 
-# 构建 Debug 版本
+# Build Debug version
 ./gradlew assembleDebug
 
-# 构建 Release 版本
+# Build Release version
 ./gradlew assembleRelease
 
-# 运行单元测试
+# Run unit tests
 ./gradlew test
 
-# 运行仪器化测试
+# Run instrumented tests
 ./gradlew connectedAndroidTest
 
-# 清理构建产物
+# Clean build artifacts
 ./gradlew clean
 ```
 
-## 注意事项
+## Notes
 
-- Compose BOM 通过 `libs.versions.toml` 统一管理版本
-- 依赖仓库仅允许 `google()` 和 `mavenCentral()`，禁止使用项目级仓库
-- 构建产物目录 `build/` 已加入 `.gitignore`，请勿提交
+- Compose BOM is managed uniformly through `libs.versions.toml`
+- Only `google()` and `mavenCentral()` are allowed as dependency repositories, project-level repositories are prohibited
+- Build artifact directory `build/` has been added to `.gitignore`, do not commit it

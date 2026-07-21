@@ -1,0 +1,37 @@
+#!/bin/bash
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+CONTAINS_NON_ENGLISH=$(echo "$COMMIT_MSG" | grep -E '[\x80-\xFF]')
+
+if [ -n "$CONTAINS_NON_ENGLISH" ]; then
+    echo ""
+    echo "ERROR: Commit message must be in English only!"
+    echo ""
+    echo "Commit message detected:"
+    echo "$COMMIT_MSG"
+    echo ""
+    echo "Please rewrite your commit message using only English characters."
+    echo "Example: feat: add user authentication module"
+    echo ""
+    exit 1
+fi
+
+VALID_TYPES="feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert"
+if ! echo "$COMMIT_MSG" | grep -qE "^($VALID_TYPES):"; then
+    echo ""
+    echo "WARNING: Commit message should follow conventional commits format"
+    echo ""
+    echo "Suggested format:"
+    echo "  feat: description"
+    echo "  fix: description"
+    echo "  docs: description"
+    echo "  style: description"
+    echo "  refactor: description"
+    echo "  test: description"
+    echo "  chore: description"
+    echo ""
+fi
+
+exit 0

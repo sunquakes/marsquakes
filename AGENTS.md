@@ -1,76 +1,76 @@
 # Marsquakes - AGENTS.md
 
-## 项目概览
+## Project Overview
 
-- **项目名称**: Marsquakes
-- **多平台项目**: Android / iOS / Web / API / Windows / Linux / macOS
-- **Monorepo 工具**: pnpm workspace + Turborepo
-- **平台配置**: `platforms.json`（定义启用平台及技术栈，AI 据此自动生成目录）
+- **Project Name**: Marsquakes
+- **Multi-platform Project**: Android / iOS / Web / API / Windows / Linux / macOS
+- **Monorepo Tools**: pnpm workspace + Turborepo
+- **Platform Configuration**: `platforms.json` (defines enabled platforms and tech stacks, AI automatically generates directories based on this)
 
-## 目录规则（全局生效）
+## Directory Rules (Globally Applied)
 
-### Work 模式
-- 所有文档、任务、PRD **必须**生成在 `./docs/` 或 `./docs/task/` 目录下
-- **API 接口文档** **必须**生成在 `./docs/api/` 目录下
-- 禁止将文档类文件散落在项目根目录或其他位置
+### Work Mode
+- All documents, tasks, and PRDs **MUST** be generated in `./docs/` or `./docs/task/` directories
+- **API interface documents** **MUST** be generated in `./docs/api/` directory
+- Prohibit placing document files directly in the project root directory or other locations
 
-### Design 模式
-- 所有设计稿、图片、页面、切图 **必须**生成在 `./design/` 及其子目录下
-- 禁止将设计类文件散落在项目根目录或其他位置
+### Design Mode
+- All design drafts, images, pages, and cutouts **MUST** be generated in `./design/` and its subdirectories
+- Prohibit placing design files directly in the project root directory or other locations
 
-### 平台代码目录
-- **移动端**: `./apps/android/`、`./apps/ios/`
-- **桌面端**: `./apps/windows/`、`./apps/linux/`、`./apps/macos/`
-- **Web 用户端**: `./apps/web/`
-- **Web 后台管理**: `./apps/web-admin/`
-- **后端接口**: `./apps/api/`
+### Platform Code Directories
+- **Mobile**: `./apps/android/`, `./apps/ios/`
+- **Desktop**: `./apps/windows/`, `./apps/linux/`, `./apps/macos/`
+- **Web Client**: `./apps/web/`
+- **Web Admin**: `./apps/web-admin/`
+- **Backend API**: `./apps/api/`
 
-### 通用禁止项
-- **禁止**在项目根目录直接生成设计文件或文档文件
-- 临时文件、脚本等中间产物应放置在系统临时目录，不应污染项目目录
+### General Prohibitions
+- **Prohibit** generating design files or document files directly in the project root directory
+- Temporary files, scripts, and other intermediate products should be placed in the system temporary directory, not polluting the project directory
 
-## 项目结构约定
+## Project Structure Convention
 
 ```
 Marsquakes/
-├── apps/                    # 所有平台应用
-│   ├── android/             # Android 端（Gradle，详见 apps/android/AGENTS.md）
-│   ├── ios/                 # iOS 端（Xcode，详见 apps/ios/AGENTS.md）
-│   ├── windows/             # Windows 桌面端（详见 apps/windows/AGENTS.md）
-│   ├── linux/               # Linux 桌面端（详见 apps/linux/AGENTS.md）
-│   ├── macos/               # macOS 桌面端（详见 apps/macos/AGENTS.md）
-│   ├── web/                 # Web 用户端（pnpm workspace 成员，详见 apps/web/AGENTS.md）
-│   ├── web-admin/           # Web 后台管理（pnpm workspace 成员，详见 apps/web-admin/AGENTS.md）
-│   └── api/                 # 后端接口（详见 apps/api/AGENTS.md）
-├── packages/                # 共享包（pnpm workspace 成员）
-│   ├── tsconfig/            # 共享 tsconfig
-│   ├── eslint-config/       # 共享 ESLint 配置
-│   └── mars-cli/            # CLI 脚手架工具（命令：mars）
-├── docs/                    # 文档、任务、PRD
-│   ├── task/                # 任务文档
-│   └── api/                 # API 接口文档
-├── design/                  # 设计稿、图片、切图
-├── scripts/                 # 初始化及工具脚本
-│   └── init.js              # 一键初始化脚本
-├── package.json             # 顶层命令入口
-├── pnpm-workspace.yaml      # pnpm workspace 配置
-├── turbo.json               # Turborepo 管道配置
-├── platforms.json           # 平台配置（启用/禁用平台及技术栈）
-├── AGENTS.md                # 本文件（全局规则）
+├── apps/                    # All platform applications
+│   ├── android/             # Android (Gradle, see apps/android/AGENTS.md)
+│   ├── ios/                 # iOS (Xcode, see apps/ios/AGENTS.md)
+│   ├── windows/             # Windows Desktop (see apps/windows/AGENTS.md)
+│   ├── linux/               # Linux Desktop (see apps/linux/AGENTS.md)
+│   ├── macos/               # macOS Desktop (see apps/macos/AGENTS.md)
+│   ├── web/                 # Web Client (pnpm workspace member, see apps/web/AGENTS.md)
+│   ├── web-admin/           # Web Admin (pnpm workspace member, see apps/web-admin/AGENTS.md)
+│   └── api/                 # Backend API (see apps/api/AGENTS.md)
+├── packages/                # Shared packages (pnpm workspace members)
+│   ├── tsconfig/            # Shared tsconfig
+│   ├── eslint-config/       # Shared ESLint configuration
+│   └── mars-cli/            # CLI scaffolding tool (command: mars)
+├── docs/                    # Documents, tasks, PRDs
+│   ├── task/                # Task documents
+│   └── api/                 # API interface documents
+├── design/                  # Design drafts, images, cutouts
+├── scripts/                 # Initialization and tool scripts
+│   └── init.js              # One-click initialization script
+├── package.json             # Top-level command entry
+├── pnpm-workspace.yaml      # pnpm workspace configuration
+├── turbo.json               # Turborepo pipeline configuration
+├── platforms.json           # Platform configuration (enabled/disabled platforms and tech stacks)
+├── AGENTS.md                # This file (global rules)
 └── .gitignore
 ```
 
-## CLI 脚手架
+## CLI Scaffolding
 
-本项目提供 `mars` CLI 工具，可全局安装后快速创建新项目。
+This project provides the `mars` CLI tool, which can be installed globally to quickly create new projects.
 
-### 安装
+### Installation
 
 ```bash
 npm install -g @marsquakes/cli
 ```
 
-### 创建项目
+### Create Project
 
 ```bash
 mars create my-project
@@ -78,93 +78,93 @@ mars create my-project --template <git-url>
 mars create my-project --from <local-path>
 ```
 
-### 开发 & 构建
+### Development & Build
 
-在项目目录下运行（自动读取 `platforms.json` 判断启用平台）：
+Run in the project directory (automatically reads `platforms.json` to determine enabled platforms):
 
 ```bash
-mars dev                           # 启动所有已启用平台
-mars dev --platform web            # 仅启动 Web
-mars dev --platform android        # 仅启动 Android
-mars dev --platform web --docker   # 在 Docker 中启动 Web（自动 build 镜像后运行）
-mars build --platform web          # 仅构建 Web
-mars build --platform android      # 仅构建 Android
-mars build --platform web --docker # 在 Docker 中构建 Web
-mars init                          # 初始化依赖 + 检查环境
-mars clean                         # 清理构建产物
+mars dev                           # Start all enabled platforms
+mars dev --platform web            # Start Web only
+mars dev --platform android        # Start Android only
+mars dev --platform web --docker   # Start Web in Docker (automatically builds image first)
+mars build --platform web          # Build Web only
+mars build --platform android      # Build Android only
+mars build --platform web --docker # Build Web in Docker
+mars init                          # Initialize dependencies + check environment
+mars clean                         # Clean build artifacts
 ```
 
-### Docker 支持
+### Docker Support
 
-`--docker` 标志会自动完成：
-1. 检查 Docker 是否安装
-2. 根据平台和命令选择 `docker/<platform>/Dockerfile`（dev）或 `Dockerfile.build`（build）
-3. 构建镜像：`docker build -t marsquakes/<platform>:<mode>`
-4. 运行容器：`docker run`
+The `--docker` flag automatically:
+1. Checks if Docker is installed
+2. Selects `docker/<platform>/Dockerfile` (dev) or `Dockerfile.build` (build) based on platform and command
+3. Builds image: `docker build -t marsquakes/<platform>:<mode>`
+4. Runs container: `docker run`
 
-目前支持的平台：
-| 平台 | dev Dockerfile | build Dockerfile |
-|------|---------------|------------------|
+Currently supported platforms:
+| Platform | dev Dockerfile | build Dockerfile |
+|----------|---------------|------------------|
 | web | `docker/web/Dockerfile` | `docker/web/Dockerfile.build` |
 
-CLI 会自动：
-1. 复制/克隆模板到目标目录
-2. 替换项目名称（`package.json`、`AGENTS.md`、`platforms.json` 等）
-3. 初始化 Git 仓库并提交
+CLI automatically:
+1. Copies/clones template to target directory
+2. Replaces project name (`package.json`, `AGENTS.md`, `platforms.json`, etc.)
+3. Initializes Git repository and commits
 
-### 本地开发测试
+### Local Development Testing
 
-在 monorepo 内可直接运行：
+Run directly within the monorepo:
 
 ```bash
 node packages/mars-cli/bin/mars.js create my-project --from .
 ```
 
-## Monorepo 说明
+## Monorepo Description
 
-本项目采用 **pnpm workspace + Turborepo** 管理 npm 生态内的依赖和构建。
+This project uses **pnpm workspace + Turborepo** to manage dependencies and builds within the npm ecosystem.
 
 ### pnpm workspace
 
-- 所有 npm 包统一由 pnpm 管理，根目录 `pnpm install` 一次性安装全部依赖
-- `pnpm-workspace.yaml` 定义 workspace 成员：`apps/web`、`packages/*`
-- 新增 npm 子项目时，放入 `packages/` 目录或在 `pnpm-workspace.yaml` 中声明
+- All npm packages are managed uniformly by pnpm, root directory `pnpm install` installs all dependencies at once
+- `pnpm-workspace.yaml` defines workspace members: `apps/web`, `packages/*`
+- When adding new npm sub-projects, place them in `packages/` directory or declare in `pnpm-workspace.yaml`
 
 ### Turborepo
 
-- 通过 `turbo.json` 定义构建管道（build / dev / lint / clean）
-- 支持任务缓存和并行执行，提升构建效率
-- 仅作用于 npm workspace 内的包，Android/iOS 等原生平台仍使用各自工具链
+- Defines build pipelines (build / dev / lint / clean) through `turbo.json`
+- Supports task caching and parallel execution to improve build efficiency
+- Only applies to packages within the npm workspace, native platforms like Android/iOS still use their respective toolchains
 
-### 常用命令
+### Common Commands
 
 ```bash
-# 初始化（安装全部依赖 + 检查环境）
+# Initialize (install all dependencies + check environment)
 pnpm install
 npm run init
 
-# 开发（Turborepo 并行启动）
-pnpm dev              # 启动所有 dev 任务
-pnpm dev --filter=web # 仅启动 Web
+# Development (Turborepo parallel start)
+pnpm dev              # Start all dev tasks
+pnpm dev --filter=web # Start Web only
 
-# 构建（Turborepo 带缓存）
-pnpm build              # 构建全部
-pnpm build --filter=web # 仅构建 Web
+# Build (Turborepo with caching)
+pnpm build              # Build all
+pnpm build --filter=web # Build Web only
 
-# 清理
-turbo clean           # 清理全部 workspace 构建产物
+# Clean
+turbo clean           # Clean all workspace build artifacts
 
-# Android/iOS 原生命令（不受 Turborepo 管理）
+# Android/iOS native commands (not managed by Turborepo)
 npm run dev:android   # cd apps/android && gradlew installDebug
 npm run build:android # cd apps/android && gradlew assembleRelease
 ```
 
-## 平台配置说明
+## Platform Configuration Description
 
-项目通过 `platforms.json` 定义启用的平台。AI 在初始化或新增平台时，应读取该配置并自动生成对应目录及 AGENTS.md。
+The project defines enabled platforms through `platforms.json`. When AI initializes or adds platforms, it should read this configuration and automatically generate corresponding directories and AGENTS.md.
 
 ```jsonc
-// platforms.json 结构示例
+// platforms.json structure example
 {
   "platforms": {
     "mobile": { "android": { "enabled": true, "dir": "apps/android" }, ... },
@@ -175,14 +175,14 @@ npm run build:android # cd apps/android && gradlew assembleRelease
 }
 ```
 
-新增平台时：更新 `platforms.json` → 在 `apps/` 下创建对应目录 → 创建 AGENTS.md → 更新本文件的平台表格。
+When adding a new platform: Update `platforms.json` → Create corresponding directory under `apps/` → Create AGENTS.md → Update the platform table in this file.
 
-## 平台专属 AGENTS.md
+## Platform-specific AGENTS.md
 
-各平台目录下均有独立的 `AGENTS.md`，包含该平台的编码规范、构建命令、注意事项等。AI 在处理特定平台代码时，应参考对应目录下的 AGENTS.md：
+Each platform directory has its own `AGENTS.md`, containing coding standards, build commands, notes, etc. When AI processes specific platform code, it should refer to the AGENTS.md in the corresponding directory:
 
-| 平台 | AGENTS.md 路径 |
-|------|----------------|
+| Platform | AGENTS.md Path |
+|----------|----------------|
 | Android | [apps/android/AGENTS.md](apps/android/AGENTS.md) |
 | iOS | [apps/ios/AGENTS.md](apps/ios/AGENTS.md) |
 | Windows | [apps/windows/AGENTS.md](apps/windows/AGENTS.md) |
@@ -192,8 +192,15 @@ npm run build:android # cd apps/android && gradlew assembleRelease
 | Web Admin | [apps/web-admin/AGENTS.md](apps/web-admin/AGENTS.md) |
 | API | [apps/api/AGENTS.md](apps/api/AGENTS.md) |
 
-## 全局编码规范
+## Global Coding Standards
 
-- **提交信息**: 使用简洁明确的中文或英文描述
-- **Git 分支**: 主分支为 `main`，功能分支命名 `feature/xxx`，修复分支 `fix/xxx`
-- **忽略文件**: `.idea/`、`.gradle/`、`local.properties`、构建产物、`node_modules`、`.turbo/` 等已加入 `.gitignore`
+- **Commit Messages**: **MUST** be in English. Use concise descriptions following conventional commits format:
+  - `feat:` for new features
+  - `fix:` for bug fixes
+  - `docs:` for documentation
+  - `style:` for code style changes
+  - `refactor:` for code refactoring
+  - `test:` for tests
+  - `chore:` for build/tooling changes
+- **Git Branches**: Main branch is `main`, feature branches named `feature/xxx`, fix branches `fix/xxx`
+- **Ignored Files**: `.idea/`, `.gradle/`, `local.properties`, build artifacts, `node_modules`, `.turbo/`, etc. are already added to `.gitignore`

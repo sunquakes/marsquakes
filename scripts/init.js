@@ -68,15 +68,40 @@ if (fs.existsSync(path.join(androidDir, 'gradlew'))) {
 }
 
 // ============================================
-step('4. 其他平台状态');
+step('4. 安装 Git Hooks');
+// ============================================
+
+const hooksDir = path.join(PROJECT_ROOT, '.git', 'hooks');
+const sourceHook = path.join(PROJECT_ROOT, 'scripts', 'hooks', 'commit-msg');
+const targetHook = path.join(hooksDir, 'commit-msg');
+
+if (fs.existsSync(hooksDir)) {
+  if (fs.existsSync(sourceHook)) {
+    try {
+      fs.copyFileSync(sourceHook, targetHook);
+      fs.chmodSync(targetHook, 0o755);
+      console.log('✅ Git commit-msg hook installed');
+      console.log('   Commit messages are now enforced to be in English');
+    } catch (e) {
+      console.warn('⚠️  Failed to install git hook:', e.message);
+    }
+  } else {
+    console.warn('⚠️  Git hook script not found');
+  }
+} else {
+  console.warn('⚠️  .git/hooks directory not found, run "git init" first');
+}
+
+// ============================================
+step('5. 其他平台状态');
 // ============================================
 
 const platforms = [
-  { name: 'iOS', dir: 'apps/ios', tip: '请使用 Xcode 打开 apps/ios/ 目录' },
-  { name: 'API', dir: 'apps/api', tip: 'apps/api/ 目录待初始化' },
-  { name: 'Windows', dir: 'apps/windows', tip: 'apps/windows/ 目录待初始化' },
-  { name: 'Linux', dir: 'apps/linux', tip: 'apps/linux/ 目录待初始化' },
-  { name: 'macOS', dir: 'apps/macos', tip: 'apps/macos/ 目录待初始化' },
+  { name: 'iOS', dir: 'apps/ios', tip: 'Open apps/ios/ directory with Xcode' },
+  { name: 'API', dir: 'apps/api', tip: 'apps/api/ directory pending initialization' },
+  { name: 'Windows', dir: 'apps/windows', tip: 'apps/windows/ directory pending initialization' },
+  { name: 'Linux', dir: 'apps/linux', tip: 'apps/linux/ directory pending initialization' },
+  { name: 'macOS', dir: 'apps/macos', tip: 'apps/macos/ directory pending initialization' },
 ];
 
 for (const p of platforms) {
