@@ -2,14 +2,15 @@
 
 ## Module Overview
 
-- **Platform**: Windows Desktop
-- **Tech Stack**: To be determined
+- **Platform**: Windows
+- **Language**: 待定
+- **UI Framework**: 待定
 - **To be initialized**
 
 ## Directory Structure
 
 ```
-windows/
+apps/windows/
 ├── AGENTS.md                # This file
 └── ...                      # To be added
 ```

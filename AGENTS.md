@@ -3,7 +3,7 @@
 ## Project Overview
 
 - **Project Name**: Marsquakes
-- **Multi-platform Project**: Android / iOS / Web / API / Windows / Linux / macOS
+- **Multi-platform Project**: Android / iOS / Web / API / Windows / Linux / macOS / Desktop
 - **Monorepo Tools**: pnpm workspace + Turborepo
 - **Platform Configuration**: `platforms.json` (defines enabled platforms and tech stacks, AI automatically generates directories based on this)
 
@@ -20,7 +20,7 @@
 
 ### Platform Code Directories
 - **Mobile**: `./apps/android/`, `./apps/ios/`
-- **Desktop**: `./apps/windows/`, `./apps/linux/`, `./apps/macos/`
+- **Desktop**: `./apps/windows/`, `./apps/linux/`, `./apps/macos/`, `./apps/desktop/`
 - **Web Client**: `./apps/web/`
 - **Web Admin**: `./apps/web-admin/`
 - **Backend API**: `./apps/api/`
@@ -39,6 +39,7 @@ Marsquakes/
 │   ├── windows/             # Windows Desktop (see apps/windows/AGENTS.md)
 │   ├── linux/               # Linux Desktop (see apps/linux/AGENTS.md)
 │   ├── macos/               # macOS Desktop (see apps/macos/AGENTS.md)
+│   ├── desktop/             # Desktop (Tauri, see apps/desktop/AGENTS.md)
 │   ├── web/                 # Web Client (pnpm workspace member, see apps/web/AGENTS.md)
 │   ├── web-admin/           # Web Admin (pnpm workspace member, see apps/web-admin/AGENTS.md)
 │   └── api/                 # Backend API (see apps/api/AGENTS.md)
@@ -188,6 +189,7 @@ Each platform directory has its own `AGENTS.md`, containing coding standards, bu
 | Windows | [apps/windows/AGENTS.md](apps/windows/AGENTS.md) |
 | Linux | [apps/linux/AGENTS.md](apps/linux/AGENTS.md) |
 | macOS | [apps/macos/AGENTS.md](apps/macos/AGENTS.md) |
+| Desktop | [apps/desktop/AGENTS.md](apps/desktop/AGENTS.md) |
 | Web | [apps/web/AGENTS.md](apps/web/AGENTS.md) |
 | Web Admin | [apps/web-admin/AGENTS.md](apps/web-admin/AGENTS.md) |
 | API | [apps/api/AGENTS.md](apps/api/AGENTS.md) |

@@ -14,12 +14,15 @@
     "init:web": "cd apps/web && pnpm install",
     "init:web-admin": "cd apps/web-admin && pnpm install",
     "init:android": "cd apps/android && gradlew --version",
+    "init:desktop": "cd apps/desktop && pnpm install",
     "dev:web": "turbo dev --filter=web",
     "dev:web-admin": "turbo dev --filter=web-admin",
     "dev:android": "cd apps/android && gradlew installDebug",
+    "dev:desktop": "cd apps/desktop && pnpm tauri dev",
     "build:web": "turbo build --filter=web",
     "build:web-admin": "turbo build --filter=web-admin",
-    "build:android": "cd apps/android && gradlew assembleRelease"
+    "build:android": "cd apps/android && gradlew assembleRelease",
+    "build:desktop": "cd apps/desktop && pnpm tauri build"
   },
   "devDependencies": {
     "turbo": "^2.4.0"

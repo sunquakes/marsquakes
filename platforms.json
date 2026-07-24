@@ -3,44 +3,56 @@
   "platforms": {
     "mobile": {
       "android": {
-        "enabled": true,
+        "enabled": false,
         "dir": "apps/android",
         "tech_stack": "Kotlin / Jetpack Compose",
-        "description": "Android 客户端"
+        "description": "Android 客户端",
+        "status": "开发中"
       },
       "ios": {
-        "enabled": true,
+        "enabled": false,
         "dir": "apps/ios",
         "tech_stack": "Swift / SwiftUI",
-        "description": "iOS 客户端"
+        "description": "iOS 客户端",
+        "status": "开发中"
       }
     },
     "desktop": {
       "windows": {
-        "enabled": true,
+        "enabled": false,
         "dir": "apps/windows",
         "tech_stack": "待定",
-        "description": "Windows 桌面端"
+        "description": "Windows 桌面端",
+        "status": "开发中"
       },
       "linux": {
-        "enabled": true,
+        "enabled": false,
         "dir": "apps/linux",
         "tech_stack": "待定",
-        "description": "Linux 桌面端"
+        "description": "Linux 桌面端",
+        "status": "开发中"
       },
       "macos": {
-        "enabled": true,
+        "enabled": false,
         "dir": "apps/macos",
         "tech_stack": "待定",
-        "description": "macOS 桌面端"
+        "description": "macOS 桌面端",
+        "status": "开发中"
+      },
+      "desktop": {
+        "enabled": true,
+        "dir": "apps/desktop",
+        "tech_stack": "Tauri / React / Rust",
+        "description": "跨平台桌面端"
       }
     },
     "web": {
       "web": {
-        "enabled": true,
+        "enabled": false,
         "dir": "apps/web",
         "tech_stack": "待定",
-        "description": "Web 用户端"
+        "description": "Web 用户端",
+        "status": "开发中"
       },
       "web-admin": {
         "enabled": true,

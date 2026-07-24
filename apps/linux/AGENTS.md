@@ -2,14 +2,15 @@
 
 ## Module Overview
 
-- **Platform**: Linux Desktop
-- **Tech Stack**: To be determined
+- **Platform**: Linux
+- **Language**: 待定
+- **UI Framework**: 待定
 - **To be initialized**
 
 ## Directory Structure
 
 ```
-linux/
+apps/linux/
 ├── AGENTS.md                # This file
 └── ...                      # To be added
 ```

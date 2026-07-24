@@ -2,14 +2,15 @@
 
 ## Module Overview
 
-- **Platform**: macOS Desktop
-- **Tech Stack**: To be determined
+- **Platform**: macOS
+- **Language**: 待定
+- **UI Framework**: 待定
 - **To be initialized**
 
 ## Directory Structure
 
 ```
-macos/
+apps/macos/
 ├── AGENTS.md                # This file
 └── ...                      # To be added
 ```

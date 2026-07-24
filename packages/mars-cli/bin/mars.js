@@ -7,7 +7,7 @@ const { execSync, spawn } = require('child_process');
 
 const DEFAULT_TEMPLATE = 'https://github.com/sunquakes/marsquakes.git';
 
-const ALL_PLATFORMS = [
+const DEFAULT_PLATFORMS = [
   { name: 'web', category: 'web', label: 'Web 用户端', default: false, description: '面向用户的 Web 前端应用' },
   { name: 'web-admin', category: 'web', label: 'Web 后台管理', default: true, description: '后台管理系统' },
   { name: 'api', category: 'api', label: '后端接口服务', default: true, description: 'RESTful API 服务' },
@@ -16,7 +16,29 @@ const ALL_PLATFORMS = [
   { name: 'windows', category: 'desktop', label: 'Windows 桌面端', default: false, description: 'Windows 桌面应用' },
   { name: 'linux', category: 'desktop', label: 'Linux 桌面端', default: false, description: 'Linux 桌面应用' },
   { name: 'macos', category: 'desktop', label: 'macOS 桌面端', default: false, description: 'macOS 桌面应用' },
+  { name: 'desktop', category: 'desktop', label: '跨平台桌面端', default: false, description: 'Tauri 跨平台桌面应用' },
 ];
+
+function getPlatformsFromConfig(config) {
+  if (!config || !config.platforms) return DEFAULT_PLATFORMS;
+  
+  const platforms = [];
+  for (const [category, group] of Object.entries(config.platforms)) {
+    for (const [name, info] of Object.entries(group)) {
+      const defaultPlatform = DEFAULT_PLATFORMS.find(p => p.name === name);
+      platforms.push({
+        name,
+        category,
+        label: info.description || defaultPlatform?.label || name,
+        default: !!info.enabled,
+        description: info.description || defaultPlatform?.description || '',
+        enabled: !!info.enabled,
+        status: info.status || null,
+      });
+    }
+  }
+  return platforms;
+}
 
 function showUsage() {
   console.log(`
@@ -204,6 +226,7 @@ function replaceProjectName(targetDir, projectName) {
     'apps/windows/AGENTS.md',
     'apps/linux/AGENTS.md',
     'apps/macos/AGENTS.md',
+    'apps/desktop/AGENTS.md',
   ];
 
   for (const file of filesToReplace) {
@@ -224,8 +247,8 @@ function prompt(question) {
   });
 }
 
-async function selectPlatforms() {
-  const selected = ALL_PLATFORMS.map(p => ({ ...p, selected: p.default }));
+async function selectPlatforms(platforms) {
+  const selected = platforms.map(p => ({ ...p, selected: p.default }));
   
   const hasTTY = process.stdout.isTTY && process.stdin.isTTY;
   
@@ -251,6 +274,7 @@ async function selectPlatformsInteractive(selected) {
     process.stdout.write('\x1B[2J\x1B[0f');
     console.log('\n📋 请选择需要创建的平台模块\n');
     console.log('   操作提示: 上下键移动 | 空格键切换选择 | 回车确认\n');
+    console.log('   ⚠️  灰色显示的模块当前不可选（开发中）\n');
     
     const categoryGroups = {};
     selected.forEach(p => {
@@ -272,10 +296,17 @@ async function selectPlatformsInteractive(selected) {
       platforms.forEach((p, idx) => {
         const globalIdx = selected.findIndex(s => s.name === p.name);
         const isCursor = globalIdx === cursor;
+        const isDisabled = !p.enabled;
         const checkbox = p.selected ? '[✓]' : '[ ]';
         const prefix = isCursor ? ' → ' : '   ';
-        console.log(`${prefix}${checkbox} ${p.label}`);
-        if (isCursor) {
+        
+        let line = `${prefix}${checkbox} ${p.label}`;
+        if (isDisabled) {
+          line = `\x1B[90m${prefix}${checkbox} ${p.label} [${p.status || '开发中'}]\x1B[0m`;
+        }
+        
+        console.log(line);
+        if (isCursor && !isDisabled) {
           console.log(`      ${p.description}`);
         }
       });
@@ -293,6 +324,12 @@ async function selectPlatformsInteractive(selected) {
   const handleKeypress = (_, key) => {
     if (!key) return;
     
+    if (key.ctrl && key.name === 'c') {
+      cleanup();
+      console.log('\n\n🛑 已取消创建项目。');
+      process.exit(0);
+    }
+    
     if (key.name === 'up') {
       cursor = Math.max(0, cursor - 1);
       render();
@@ -300,6 +337,7 @@ async function selectPlatformsInteractive(selected) {
       cursor = Math.min(selected.length - 1, cursor + 1);
       render();
     } else if (key.name === 'space') {
+      if (!selected[cursor].enabled) return;
       selected[cursor].selected = !selected[cursor].selected;
       render();
     } else if (key.name === 'return') {
@@ -323,9 +361,6 @@ async function selectPlatformsInteractive(selected) {
     try {
       process.stdin.setRawMode(false);
     } catch (e) {}
-    if (resolveFn) {
-      resolveFn(selected.filter(p => p.selected));
-    }
   });
   
   process.stdin.on('keypress', handleKeypress);
@@ -338,6 +373,7 @@ async function selectPlatformsInteractive(selected) {
 
 async function selectPlatformsSimple(selected) {
   console.log('\n📋 请选择需要创建的平台模块\n');
+  console.log('   ⚠️  灰色显示的模块当前不可选（开发中）\n');
   
   const categoryGroups = {};
   selected.forEach(p => {
@@ -361,7 +397,11 @@ async function selectPlatformsSimple(selected) {
     console.log(`\n  ${categoryLabels[category]}:`);
     platforms.forEach(p => {
       const checkbox = p.selected ? '[✓]' : '[ ]';
-      console.log(`   ${index}. ${checkbox} ${p.label}`);
+      let line = `   ${index}. ${checkbox} ${p.label}`;
+      if (!p.enabled) {
+        line = `\x1B[90m   ${index}. ${checkbox} ${p.label} [${p.status || '开发中'}]\x1B[0m`;
+      }
+      console.log(line);
       indexMap.push({ index, platform: p });
       index++;
     });
@@ -369,7 +409,7 @@ async function selectPlatformsSimple(selected) {
   
   console.log('\n  操作提示:');
   console.log('   - 输入数字切换选中状态（如：1 2 3）');
-  console.log('   - 输入 a 全选');
+  console.log('   - 输入 a 全选可选模块');
   console.log('   - 输入 n 取消全选');
   console.log('   - 直接回车使用默认配置');
   
@@ -383,7 +423,7 @@ async function selectPlatformsSimple(selected) {
   
   for (const input of inputs) {
     if (input === 'a') {
-      selected.forEach(p => p.selected = true);
+      selected.forEach(p => { if (p.enabled) p.selected = true; });
     } else if (input === 'n') {
       selected.forEach(p => p.selected = false);
     } else {
@@ -392,7 +432,7 @@ async function selectPlatformsSimple(selected) {
         const item = indexMap.find(i => i.index === num);
         if (item) {
           const p = selected.find(s => s.name === item.platform.name);
-          if (p) {
+          if (p && p.enabled) {
             p.selected = !p.selected;
           }
         }
@@ -422,18 +462,27 @@ function updatePlatformsConfig(targetDir, selectedPlatforms) {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
 }
 
-function removeUnselectedPlatforms(targetDir, selectedPlatforms) {
+function copySelectedPlatforms(srcDir, destDir, selectedPlatforms) {
+  const appsSrcDir = path.join(srcDir, 'apps');
+  const appsDestDir = path.join(destDir, 'apps');
+  
+  if (!fs.existsSync(appsSrcDir)) return;
+  
   const selectedNames = new Set(selectedPlatforms.map(p => p.name));
   
-  ALL_PLATFORMS.forEach(p => {
-    if (!selectedNames.has(p.name)) {
-      const platformDir = path.join(targetDir, 'apps', p.name);
-      if (fs.existsSync(platformDir)) {
-        fs.rmSync(platformDir, { recursive: true, force: true });
-        console.log(`   ✅ 已移除: ${p.label}`);
-      }
+  if (!fs.existsSync(appsDestDir)) {
+    fs.mkdirSync(appsDestDir, { recursive: true });
+  }
+  
+  const entries = fs.readdirSync(appsSrcDir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (entry.isDirectory() && selectedNames.has(entry.name)) {
+      const srcPath = path.join(appsSrcDir, entry.name);
+      const destPath = path.join(appsDestDir, entry.name);
+      console.log(`   📁 拷贝平台: ${entry.name}`);
+      copyDir(srcPath, destPath, new Set(['.git', 'node_modules', '.gradle', 'build', 'dist', '.turbo', '.idea']));
     }
-  });
+  }
 }
 
 async function createProject(args) {
@@ -447,21 +496,27 @@ async function createProject(args) {
 
   console.log(`\n📦 Creating project "${projectName}"...\n`);
 
+  let templateDir;
+  let isTempDir = false;
+
   if (fromPath) {
-    const templateDir = path.resolve(fromPath);
+    templateDir = path.resolve(fromPath);
     if (!fs.existsSync(templateDir)) {
       console.error(`\n❌ Error: Template directory "${fromPath}" does not exist.`);
       process.exit(1);
     }
-    console.log(`📁 Copying from local template: ${templateDir}`);
-    const exclude = new Set(['.git', 'node_modules', '.gradle', 'build', 'dist', '.turbo', '.idea', projectName]);
-    copyDir(templateDir, targetDir, exclude);
+    console.log(`📁 Using local template: ${templateDir}`);
   } else if (templateUrl) {
+    templateDir = path.join(require('os').tmpdir(), `marsquakes-template-${Date.now()}`);
+    isTempDir = true;
     console.log(`🌐 Cloning template from: ${templateUrl}`);
     try {
-      execSync(`git clone --depth 1 ${templateUrl} "${projectName}"`, { stdio: 'inherit' });
+      execSync(`git clone --depth 1 ${templateUrl} "${templateDir}"`, { stdio: 'inherit' });
     } catch (e) {
       console.error('\n❌ Failed to clone template. Please check the URL or your network connection.');
+      if (fs.existsSync(templateDir)) {
+        fs.rmSync(templateDir, { recursive: true, force: true });
+      }
       process.exit(1);
     }
   } else {
@@ -471,25 +526,36 @@ async function createProject(args) {
     );
     
     if (isMarsquakesProject) {
-      console.log(`📁 Copying from current directory: ${currentDir}`);
-      const exclude = new Set(['.git', 'node_modules', '.gradle', 'build', 'dist', '.turbo', '.idea', projectName]);
-      copyDir(currentDir, targetDir, exclude);
+      templateDir = currentDir;
+      console.log(`📁 Using current directory as template: ${templateDir}`);
     } else {
+      templateDir = path.join(require('os').tmpdir(), `marsquakes-template-${Date.now()}`);
+      isTempDir = true;
       console.log(`🌐 Cloning template from: ${DEFAULT_TEMPLATE}`);
       try {
-        execSync(`git clone --depth 1 ${DEFAULT_TEMPLATE} "${projectName}"`, { stdio: 'inherit' });
+        execSync(`git clone --depth 1 ${DEFAULT_TEMPLATE} "${templateDir}"`, { stdio: 'inherit' });
       } catch (e) {
         console.error('\n❌ Failed to clone template. Please check the URL or your network connection.');
+        if (fs.existsSync(templateDir)) {
+          fs.rmSync(templateDir, { recursive: true, force: true });
+        }
         process.exit(1);
       }
     }
   }
 
-  let selectedPlatforms = ALL_PLATFORMS.filter(p => p.default);
+  const configPath = path.join(templateDir, 'platforms.json');
+  let platformsConfig = null;
+  if (fs.existsSync(configPath)) {
+    platformsConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  }
+  const allPlatforms = getPlatformsFromConfig(platformsConfig);
+
+  let selectedPlatforms = allPlatforms.filter(p => p.default);
   
   if (interactive) {
     console.log('\n🔧 进入交互式平台选择模式...');
-    selectedPlatforms = await selectPlatforms();
+    selectedPlatforms = await selectPlatforms(allPlatforms);
     console.log(`\n✅ 已选择 ${selectedPlatforms.length} 个模块:`);
     selectedPlatforms.forEach(p => console.log(`   - ${p.label}`));
   } else {
@@ -498,14 +564,39 @@ async function createProject(args) {
     console.log('   使用 -n / --non-interactive 参数跳过交互模式');
   }
 
-  console.log('\n🔧 更新平台配置...');
+  console.log('\n🔧 创建项目目录...');
+  fs.mkdirSync(targetDir, { recursive: true });
+
+  const sigintHandler = () => {
+    console.log('\n\n🛑 已取消创建项目，正在清理...');
+    if (fs.existsSync(targetDir)) {
+      fs.rmSync(targetDir, { recursive: true, force: true });
+    }
+    if (isTempDir && fs.existsSync(templateDir)) {
+      fs.rmSync(templateDir, { recursive: true, force: true });
+    }
+    process.exit(0);
+  };
+  process.on('SIGINT', sigintHandler);
+
+  console.log('🔧 拷贝项目基础文件...');
+  const excludeApps = new Set(['.git', 'node_modules', '.gradle', 'build', 'dist', '.turbo', '.idea', projectName, 'apps']);
+  copyDir(templateDir, targetDir, excludeApps);
+
+  console.log('🔧 拷贝选中的平台模块...');
+  copySelectedPlatforms(templateDir, targetDir, selectedPlatforms);
+
+  process.removeListener('SIGINT', sigintHandler);
+
+  console.log('🔧 更新平台配置...');
   updatePlatformsConfig(targetDir, selectedPlatforms);
-  
-  console.log('\n🔧 清理未选择的平台目录...');
-  removeUnselectedPlatforms(targetDir, selectedPlatforms);
 
   console.log('\n🔧 Customizing project name...');
   replaceProjectName(targetDir, projectName);
+
+  if (isTempDir && fs.existsSync(templateDir)) {
+    fs.rmSync(templateDir, { recursive: true, force: true });
+  }
 
   const gitDir = path.join(targetDir, '.git');
   if (fs.existsSync(gitDir)) {
@@ -610,6 +701,7 @@ const PLATFORM_COMMANDS = {
   dev: {
     web: { cmd: 'pnpm', args: ['dev', '--filter=web'], native: false },
     'web-admin': { cmd: 'pnpm', args: ['dev', '--filter=web-admin'], native: false },
+    desktop: { cmd: 'pnpm', args: ['dev', '--filter=desktop'], native: false },
     android: { cmd: null, script: 'gradlew installDebug', native: true },
     ios: { cmd: null, script: 'xcodebuild', native: true },
     api: { cmd: null, script: null, native: true },
@@ -620,6 +712,7 @@ const PLATFORM_COMMANDS = {
   build: {
     web: { cmd: 'pnpm', args: ['build', '--filter=web'], native: false },
     'web-admin': { cmd: 'pnpm', args: ['build', '--filter=web-admin'], native: false },
+    desktop: { cmd: 'pnpm', args: ['build', '--filter=desktop'], native: false },
     android: { cmd: null, script: 'gradlew assembleRelease', native: true },
     ios: { cmd: null, script: 'xcodebuild', native: true },
     api: { cmd: null, script: null, native: true },
@@ -735,6 +828,12 @@ function buildCommand(args) {
     }
   }
 
+  if (platform === 'all' || platform === 'desktop') {
+    if (enabledPlatforms.some(p => p.name === 'desktop')) {
+      run('pnpm build --filter=desktop', rootDir);
+    }
+  }
+
   if (platform === 'all' || platform === 'android') {
     if (enabledPlatforms.some(p => p.name === 'android')) {
       const androidDir = path.join(rootDir, 'apps', 'android');
@@ -745,7 +844,7 @@ function buildCommand(args) {
   }
 
   for (const p of enabledPlatforms) {
-    if (['web', 'web-admin', 'android'].includes(p.name)) continue;
+    if (['web', 'web-admin', 'desktop', 'android'].includes(p.name)) continue;
     if (platform !== 'all' && platform !== p.name) continue;
     console.log(`⏳ ${p.name}: ${p.description} (待支持)`);
   }
