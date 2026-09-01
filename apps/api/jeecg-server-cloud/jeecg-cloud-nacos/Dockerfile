@@ -4,7 +4,7 @@ MAINTAINER jeecgos@163.com
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# 解决linuxkit 精简镜像对 locale 裁剪导致中文乱码问题 java:21-anolis基于anolis（CentOS/RHEL 系）应当使用yum
+# The slim linuxkit image strips locales, which garbles CJK output; java:21-anolis is anolis based (CentOS/RHEL family), so use yum
 RUN yum install -y --setopt=tsflags=nodocs \
         glibc-langpack-en \
         glibc-common \

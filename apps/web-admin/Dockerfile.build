@@ -1,0 +1,61 @@
+# Marsquakes Web Admin - self-contained multi-stage build, works on a clean checkout.
+# The host needs no Node/pnpm; everything is built inside the image.
+# Build context is the repository root:
+#   docker build -f apps/web-admin/Dockerfile.build -t marsquakes/web-admin:build .
+#
+# The other two variants in this directory:
+#   Dockerfile      no build stage; packages the dist the pipeline already
+#                   produced (the default entry point)
+#   Dockerfile.dev  Vite dev server inside the container, with a volume mount
+#
+# All base images are official Docker Hub images. A direct connection to
+# docker.io is DNS-poisoned here, so the Docker daemon needs an HTTP/HTTPS proxy
+# (Settings -> Resources -> Proxies).
+#
+# The node tag is pinned to bullseye (glibc 2.31); this was verified, do not bump
+# it casually: Docker 20.10.8 on this machine has no clone3 in its seccomp
+# whitelist, so on glibc 2.34+ images (trixie, which is node's default tag)
+# thread creation returns EPERM and both the JVM and Node die.
+# The major version is 20 (package.json engines is "^18 || >=20").
+#
+# vite build used to fail randomly inside the container with "[less] timed-out",
+# on a different .less file every run. That was not a node version problem: the
+# root cause is that Vite 7 enables the less worker pool by default and each
+# worker's Atomics.wait timeout is hard-coded to 5s. It is fixed by setting
+# preprocessorMaxWorkers: 0 in vite.config.ts.
+ARG NODE_IMAGE=node:20-bullseye-slim
+ARG NGINX_IMAGE=nginx:stable
+FROM ${NODE_IMAGE} AS builder
+
+# The pnpm version must stay on 9: pnpm-lock.yaml is lockfileVersion 9.0, and
+# pnpm 10+ no longer runs dependency build scripts by default, so install fails
+# outright with ERR_PNPM_IGNORED_BUILDS. This project's .npmrc configures an
+# electron mirror, which means the dependency tree contains native packages that
+# need postinstall, so silencing the error with strict-dep-builds=false is not an
+# option (that would skip the build scripts silently).
+ARG PNPM_VERSION=9.15.9
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm install -g pnpm@${PNPM_VERSION} \
+    && pnpm config set registry https://registry.npmmirror.com
+
+WORKDIR /app
+
+# web-admin ships its own lockfile, so it can be installed outside the workspace
+COPY apps/web-admin/package.json apps/web-admin/pnpm-lock.yaml apps/web-admin/.npmrc ./
+RUN pnpm install --frozen-lockfile
+
+COPY apps/web-admin/ ./
+
+ENV NODE_OPTIONS=--max-old-space-size=8192
+# build:docker reads .env.docker, where the API address points at /jeecgboot
+RUN pnpm build:docker
+
+# Runtime: nginx serves the static output and reverse-proxies the backend
+FROM ${NGINX_IMAGE}
+ENV LANG=en_US.UTF-8
+
+COPY apps/web-admin/nginx.conf /etc/nginx/conf.d/default.conf
+RUN mkdir -p /var/www/html
+COPY --from=builder /app/dist /var/www/html/
+
+EXPOSE 80

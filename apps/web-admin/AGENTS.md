@@ -38,9 +38,9 @@ To be added.
 ```bash
 # Development
 pnpm dev --filter=web-admin
-npm run dev:web-admin
+pnpm dev:web-admin
 
 # Build
 pnpm build --filter=web-admin
-npm run build:web-admin
+pnpm build:web-admin
 ```

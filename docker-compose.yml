@@ -1,0 +1,59 @@
+services:
+  # Backend API (JeecgBoot 3.9.3 / Spring Boot / Java 17)
+  # The bare Dockerfile has no compile stage; it packages an already-built jar.
+  # To compile inside the image instead: docker compose -f docker-compose.build.yml build
+  api:
+    build:
+      # Build context is always the repository root, matching the mars CLI behaviour
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: marsquakes/api:3.9.3
+    # Container name / hostname MUST be jeecg-boot-system:
+    # both the web-admin nginx reverse proxy and .env.docker hard-code this address
+    container_name: jeecg-boot-system
+    hostname: jeecg-boot-system
+    ports:
+      - '8080:8080'
+    # To override the config bundled in the jar, create apps/api/config first, then uncomment
+    # volumes:
+    #   - ./apps/api/config:/jeecg-boot/config
+    environment:
+      # External MySQL (not part of this stack; injected via .env or the environment)
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_URL: jdbc:mysql://${MYSQL_HOST:-host.docker.internal}:${MYSQL_PORT:-3306}/${MYSQL_DATABASE:-jeecg-boot}?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_USERNAME: ${MYSQL_USERNAME:-root}
+      SPRING_DATASOURCE_DYNAMIC_DATASOURCE_MASTER_PASSWORD: ${MYSQL_PASSWORD:-root}
+      # External Redis
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST:-host.docker.internal}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT:-6379}
+      SPRING_DATA_REDIS_DATABASE: ${REDIS_DATABASE:-0}
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      JEECG_REDISSON_ADDRESS: ${REDIS_HOST:-host.docker.internal}:${REDIS_PORT:-6379}
+      JEECG_REDISSON_PASSWORD: ${REDIS_PASSWORD:-}
+    extra_hosts:
+      # Make host.docker.internal resolve to the host on Linux as well
+      - 'host.docker.internal:host-gateway'
+    networks:
+      - jeecg-boot
+    restart: on-failure
+
+  # Admin frontend (JeecgBoot Vue3 / Vite); the build output is served by nginx.
+  # nginx proxies /jeecgboot/ to http://jeecg-boot-system:8080/jeecg-boot/
+  web-admin:
+    build:
+      context: .
+      dockerfile: apps/web-admin/Dockerfile
+    image: marsquakes/web-admin:3.9.3
+    container_name: jeecg-boot-web-admin
+    hostname: jeecg-boot-web-admin
+    ports:
+      - '${WEB_ADMIN_PORT:-8807}:80'
+    depends_on:
+      - api
+    networks:
+      - jeecg-boot
+    restart: on-failure
+
+networks:
+  jeecg-boot:
+    name: jeecg_boot
+    driver: bridge

@@ -1,0 +1,48 @@
+# Marsquakes API Development
+# Build context is the repository root:
+#   docker build -f apps/api/Dockerfile.dev -t marsquakes/api:dev .
+# Mount the sources as a volume; the container runs spring-boot:run for hot reload.
+#
+# Base image matches Dockerfile.build: the official maven image with the tag
+# pinned to focal. The default tag does not work - Docker 20.10.8 on this machine
+# blocks clone3 in seccomp, so the JVM cannot start on glibc 2.34+ images
+# (see the comments in Dockerfile.build).
+ARG MAVEN_IMAGE=maven:3.9-eclipse-temurin-17-focal
+FROM ${MAVEN_IMAGE}
+
+RUN mkdir -p /root/.m2 && printf '%s\n' \
+    '<settings>' \
+    '  <mirrors>' \
+    '    <mirror>' \
+    '      <id>aliyun</id>' \
+    '      <name>aliyun maven</name>' \
+    '      <url>https://maven.aliyun.com/repository/public</url>' \
+    '      <mirrorOf>central</mirrorOf>' \
+    '    </mirror>' \
+    '  </mirrors>' \
+    '</settings>' > /root/.m2/settings.xml
+
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+ENV LANG=C.UTF-8
+ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8"
+
+WORKDIR /app
+
+# Warm up the dependency cache so it is not re-downloaded on every container start
+COPY apps/api/pom.xml ./
+COPY apps/api/jeecg-boot-base-core/pom.xml ./jeecg-boot-base-core/
+COPY apps/api/jeecg-boot-module/pom.xml ./jeecg-boot-module/
+COPY apps/api/jeecg-boot-module/jeecg-boot-module-airag/pom.xml ./jeecg-boot-module/jeecg-boot-module-airag/
+COPY apps/api/jeecg-boot-module/jeecg-module-demo/pom.xml ./jeecg-boot-module/jeecg-module-demo/
+COPY apps/api/jeecg-module-system/pom.xml ./jeecg-module-system/
+COPY apps/api/jeecg-module-system/jeecg-system-api/pom.xml ./jeecg-module-system/jeecg-system-api/
+COPY apps/api/jeecg-module-system/jeecg-system-api/jeecg-system-cloud-api/pom.xml ./jeecg-module-system/jeecg-system-api/jeecg-system-cloud-api/
+COPY apps/api/jeecg-module-system/jeecg-system-api/jeecg-system-local-api/pom.xml ./jeecg-module-system/jeecg-system-api/jeecg-system-local-api/
+COPY apps/api/jeecg-module-system/jeecg-system-biz/pom.xml ./jeecg-module-system/jeecg-system-biz/
+COPY apps/api/jeecg-module-system/jeecg-system-start/pom.xml ./jeecg-module-system/jeecg-system-start/
+RUN mvn -B -P docker dependency:go-offline -DskipTests || true
+
+COPY apps/api/ ./
+
+EXPOSE 8080
+CMD ["mvn", "-B", "-P", "docker", "-pl", "jeecg-module-system/jeecg-system-start", "-am", "spring-boot:run"]

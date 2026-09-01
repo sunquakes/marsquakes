@@ -1,10 +1,32 @@
-node_modules
 .git
-dist
-.build
-.turbo
 .idea
-*.md
+.turbo
+.build
 design
-docs
 scripts
+
+# `docs` is the Docusaurus site (a Node app of its own) and `.docs` holds the
+# internal design documents. Neither is part of any runtime image, so excluding
+# them also keeps docs/node_modules out of the build context.
+docs
+.docs
+
+# Dependencies and build output (the **/ prefix is required to also match
+# subdirectories such as apps/web-admin/node_modules)
+**/node_modules
+**/dist
+**/target
+
+# The default Dockerfile has no compile stage and consumes the artifacts
+# directly, so these two specific paths must be re-included.
+# Rules are evaluated in order and the last match wins, hence they come after
+# the exclusions above.
+!apps/api/jeecg-module-system/jeecg-system-start/target/*.jar
+!apps/web-admin/dist
+!apps/web-admin/dist/**
+
+# Docs stay out of the image, but flyway's md resources are part of the Java
+# packaging and must be re-included
+*.md
+**/*.md
+!apps/api/**/src/main/resources/**/*.md

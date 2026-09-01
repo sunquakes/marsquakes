@@ -1,0 +1,334 @@
+/**
+ * Landing page styles. Scoped through CSS modules so they never leak into the
+ * documentation pages, and built on Infima variables so the light/dark themes
+ * and the brand colour stay in sync with `custom.css`.
+ */
+
+.hero {
+  /* Single tempo for every animation in the banner: the sweeping trace, the
+     shockwave rings, the epicentre dot and the planet all read from these two
+     variables, so the beat can be retuned in one place. */
+  --mq-beat: 2.6s;
+  /* The spike sits 27.3% along the trace (cumulative segment lengths of
+     `TRACE` in index.tsx, normalised by pathLength="100"). The 14-unit pulse
+     is centred on its midpoint, so it covers the spike at
+     (27.3 - 7) / 100 = 20.3% of the cycle. Everything that fires "on the beat"
+     waits that long. */
+  --mq-beat-peak: 0.53s;
+
+  padding: 5rem 0 4.5rem;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--ifm-color-primary-darkest) 0%,
+    var(--ifm-color-primary) 100%
+  );
+  color: #fff;
+}
+
+.heroInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 3rem;
+  align-items: center;
+}
+
+.heroTitle {
+  font-size: 3.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.heroTagline {
+  max-width: 34rem;
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.6;
+  opacity: 0.92;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2.25rem;
+}
+
+/* --- Banner artwork: Mars crossed by a beating seismograph trace ---------- */
+
+.heroArt {
+  display: block;
+  width: 100%;
+  max-width: 23rem;
+  margin: 0 auto;
+  /* The shockwave rings and the pulse glow deliberately spill past the
+     viewBox, so the SVG viewport must not clip them. */
+  overflow: visible;
+}
+
+/* Each animated element is scaled about its own centre. `fill-box` resolves
+   the origin against the shape's bounding box, which is what makes this work
+   inside an SVG without hand-computing transform-origin coordinates. */
+.heroPlanet,
+.heroRing,
+.heroCore {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.heroPlanet {
+  animation: mq-breathe var(--mq-beat) ease-out infinite;
+  animation-delay: var(--mq-beat-peak);
+}
+
+.heroRing {
+  animation: mq-shock var(--mq-beat) ease-out infinite;
+  animation-delay: var(--mq-beat-peak);
+}
+
+.heroRingLate {
+  animation-delay: calc(var(--mq-beat-peak) + 0.16s);
+}
+
+/* `pathLength="100"` normalises the geometry, so the dash pattern below is
+   expressed as a percentage of the trace regardless of its real length. */
+.heroPulse {
+  stroke-dasharray: 14 86;
+  animation: mq-sweep var(--mq-beat) linear infinite;
+  filter: drop-shadow(0 0 6px rgb(255 241 239 / 0.7));
+}
+
+.heroCore {
+  animation: mq-core var(--mq-beat) ease-out infinite;
+  animation-delay: var(--mq-beat-peak);
+}
+
+@keyframes mq-sweep {
+  from {
+    stroke-dashoffset: 100;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes mq-breathe {
+  0%,
+  24%,
+  100% {
+    transform: scale(1);
+  }
+
+  8% {
+    transform: scale(1.02);
+  }
+}
+
+@keyframes mq-shock {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.55;
+  }
+
+  70% {
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(3.4);
+    opacity: 0;
+  }
+}
+
+@keyframes mq-core {
+  0%,
+  22%,
+  100% {
+    transform: scale(1);
+  }
+
+  7% {
+    transform: scale(1.6);
+  }
+}
+
+/* Motion is decorative here, so honour the OS-level preference and fall back
+   to a fully drawn, static trace. */
+@media (prefers-reduced-motion: reduce) {
+  .heroPlanet,
+  .heroRing,
+  .heroPulse,
+  .heroCore {
+    animation: none;
+  }
+
+  .heroPulse {
+    stroke-dasharray: none;
+    filter: none;
+  }
+
+  .heroRing {
+    opacity: 0;
+  }
+}
+
+.section {
+  padding: 4rem 0;
+}
+
+.sectionAlt {
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.sectionTitle {
+  text-align: center;
+  margin-bottom: 2.5rem;
+  /* Both section headings are short enough for one line, but the zh-Hans copy
+     mixes CJK with a Latin token ("为什么用这套 monorepo"), so the browser is
+     free to break almost anywhere. Pin them to a single line, then let the font
+     shrink with the viewport so the pinned line can never overflow. Infima's
+     --ifm-h2-font-size is 1.5rem (24px), so `min()` only starts clamping below
+     a 343px viewport — desktop and normal phones keep the theme value. */
+  white-space: nowrap;
+  font-size: min(var(--ifm-h2-font-size), 7vw);
+}
+
+.sectionLead {
+  max-width: 46rem;
+  margin: 0 auto 1.5rem;
+  text-align: center;
+  color: var(--ifm-color-emphasis-700);
+}
+
+/* Keeps the code block aligned with `.sectionLead` instead of stretching to the
+   full container width, which made four short shell commands look oversized. */
+.codeBlock {
+  max-width: 46rem;
+  margin: 0 auto 1.5rem;
+}
+
+.featureGrid {
+  display: grid;
+  gap: 1rem;
+  /* Five equal tracks so all five cards sit on a single row. minmax(0, 1fr)
+     rather than a bare 1fr: a 1fr track keeps an automatic minimum, so one
+     long word would push the row wider than the container instead of wrapping. */
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.featureCard {
+  height: 100%;
+  padding: 1.25rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+.featureTitle {
+  font-size: 1.05rem;
+  line-height: 1.35;
+  margin-bottom: 0.5rem;
+}
+
+.featureDescription {
+  margin-bottom: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--ifm-color-emphasis-700);
+}
+
+/* Five across stops being readable once each card drops below ~12rem, so fall
+   back to three per row: six tracks with every card spanning two. */
+@media screen and (max-width: 1080px) {
+  .featureGrid {
+    gap: 1.5rem;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .featureCard {
+    grid-column: span 2;
+    padding: 1.75rem;
+  }
+
+  .featureTitle {
+    font-size: 1.15rem;
+  }
+
+  .featureDescription {
+    font-size: inherit;
+  }
+
+  /* Fires only when the grid holds exactly five cards: shift the trailing pair
+     inwards by one track so 3 + 2 reads as deliberate rather than ragged. */
+  .featureCard:nth-child(4):nth-last-child(2) {
+    grid-column: 2 / span 2;
+  }
+
+  .featureCard:nth-child(5):nth-last-child(1) {
+    grid-column: 4 / span 2;
+  }
+}
+
+@media screen and (max-width: 996px) {
+  .heroInner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.5rem;
+    text-align: center;
+  }
+
+  .heroTagline {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .heroActions {
+    justify-content: center;
+  }
+
+  .heroArt {
+    max-width: 17rem;
+  }
+
+  /* Two per row: four tracks, each card spanning two. The 3 + 2 offsets from
+     the 1080px step are reset, and the odd card out is centred instead. */
+  .featureGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .featureCard:nth-child(4):nth-last-child(2),
+  .featureCard:nth-child(5):nth-last-child(1) {
+    grid-column: span 2;
+  }
+
+  .featureCard:last-child:nth-child(odd) {
+    grid-column: 2 / span 2;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .hero {
+    padding: 3.5rem 0 3rem;
+  }
+
+  .heroTitle {
+    font-size: 2.25rem;
+  }
+
+  .heroTagline {
+    font-size: 1.05rem;
+  }
+
+  .heroArt {
+    max-width: 14rem;
+  }
+
+  /* Single column: one track, no spans, no centring offsets. */
+  .featureGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .featureCard,
+  .featureCard:nth-child(4):nth-last-child(2),
+  .featureCard:nth-child(5):nth-last-child(1),
+  .featureCard:last-child:nth-child(odd) {
+    grid-column: auto;
+  }
+}

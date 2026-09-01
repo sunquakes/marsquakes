@@ -4,7 +4,7 @@ VOLUME /tmp
 ENV LANG en_US.UTF-8
 RUN echo "server {  \
                       listen       80; \
-                      #使用docker内嵌DNS运行时解析，避免gateway容器重启换IP后nginx缓存旧IP导致502 \
+                      #Resolve at runtime through the embedded docker DNS, so nginx does not cache a stale IP and return 502 after the gateway container restarts \
                       resolver 127.0.0.11 valid=10s ipv6=off; \
                       location   /jeecgboot/ { \
                       set \$jeecg_gateway jeecg-boot-gateway; \
@@ -15,7 +15,7 @@ RUN echo "server {  \
                       proxy_set_header        X-Real-IP \$remote_addr; \
                       proxy_set_header        X-Forwarded-For \$proxy_add_x_forwarded_for; \
                   } \
-                  #解决Router(mode: 'history')模式下，刷新路由地址不能找到页面的问题 \
+                  #Fix "page not found" when refreshing a route under Router(mode: 'history') \
                   location / { \
                      root   /var/www/html/; \
                       index  index.html index.htm; \

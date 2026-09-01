@@ -10,3 +10,6 @@ local.properties
 node_modules/
 dist/
 .turbo/
+.docusaurus/
+/docs/build
+.env

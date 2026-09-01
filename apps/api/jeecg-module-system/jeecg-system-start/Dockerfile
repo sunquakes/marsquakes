@@ -4,7 +4,7 @@ MAINTAINER jeecgos@163.com
 
 RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 
-# 解决linuxkit 精简镜像对 locale 裁剪导致中文乱码问题 java:17-anolis基于anolis（CentOS/RHEL 系）应当使用yum
+# The slim linuxkit image strips locales, which garbles CJK output; java:17-anolis is anolis based (CentOS/RHEL family), so use yum
 RUN yum install -y --setopt=tsflags=nodocs \
         glibc-langpack-en \
         glibc-common \
@@ -25,5 +25,5 @@ ADD ./target/jeecg-system-start-3.9.3.jar ./
 
 RUN mkdir -p /jeecg-boot/config
 
-# 【PR#9345】编码已通过JAVA_TOOL_OPTIONS设置，CMD改用&&和exec
+# [PR#9345] The encoding is already set through JAVA_TOOL_OPTIONS; CMD now uses && and exec
 CMD sleep 60 && exec java -Djava.security.egd=file:/dev/./urandom -jar jeecg-system-start-3.9.3.jar

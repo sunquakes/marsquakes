@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Marsquakes">
+  <!--
+    Navbar mark: the planet Mars (rust sphere with impact craters) crossed by a
+    seismograph trace, with the epicentre highlighted at the peak.
+    Rendered at 32px, so detail is deliberately limited; favicon.svg carries a
+    coarser cut of the same geometry and social-card.svg a richer one.
+  -->
+  <defs>
+    <radialGradient id="mq-logo-surface" cx="34%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#e4705a" />
+      <stop offset="58%" stop-color="#b3312c" />
+      <stop offset="100%" stop-color="#71201b" />
+    </radialGradient>
+    <clipPath id="mq-logo-disc">
+      <circle cx="16" cy="16" r="15.5" />
+    </clipPath>
+  </defs>
+
+  <circle cx="16" cy="16" r="15.5" fill="url(#mq-logo-surface)" />
+
+  <g clip-path="url(#mq-logo-disc)" fill="#8a2621" opacity="0.5">
+    <ellipse cx="23.9" cy="22.6" rx="3.7" ry="3.1" />
+    <ellipse cx="6.6" cy="21.8" rx="2.2" ry="1.9" />
+    <circle cx="21.6" cy="7.4" r="1.8" />
+    <circle cx="7.2" cy="7.6" r="1.5" />
+  </g>
+
+  <path d="M3.8 18.6 h4.2 l2.8 -7.6 l3.9 14.2 l3.3 -10.6 l2.4 4 h8"
+        fill="none" stroke="#fff1ef" stroke-width="2.4"
+        stroke-linecap="round" stroke-linejoin="round" />
+
+  <circle cx="10.8" cy="11" r="2.1" fill="#fff1ef" />
+  <circle cx="10.8" cy="11" r="0.85" fill="#b3312c" />
+</svg>

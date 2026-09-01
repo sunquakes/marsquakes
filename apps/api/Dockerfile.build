@@ -1,0 +1,75 @@
+# Marsquakes API - self-contained multi-stage build, works on a clean checkout.
+# The host needs no JDK/Maven; everything is compiled inside the image.
+# Build context is the repository root:
+#   docker build -f apps/api/Dockerfile.build -t marsquakes/api:build .
+#
+# The other two variants in this directory:
+#   Dockerfile      no compile stage; packages the jar the pipeline already
+#                   produced (the default entry point)
+#   Dockerfile.dev  spring-boot:run inside the container, with a volume mount
+#
+# All base images are official Docker Hub images. A direct connection to
+# docker.io is DNS-poisoned here, so the Docker daemon needs an HTTP/HTTPS proxy
+# (Settings -> Resources -> Proxies).
+#
+# The tags MUST stay on focal (Ubuntu 20.04 / glibc 2.31); the default tags do
+# not work: Docker 20.10.8 on this machine has no clone3 in its seccomp
+# whitelist, so on glibc 2.34+ images (jammy / trixie / amazoncorretto)
+# pthread_create returns EPERM and the JVM misreports it as
+# "insufficient memory ... Cannot create worker GC thread", which is highly
+# misleading. Upgrading Docker to 23+ lifts this constraint.
+ARG MAVEN_IMAGE=maven:3.9-eclipse-temurin-17-focal
+ARG JRE_IMAGE=eclipse-temurin:17-jre-focal
+FROM ${MAVEN_IMAGE} AS builder
+
+# Route Maven Central through aliyun, otherwise dependency downloads stall on
+# repo.maven.apache.org
+RUN mkdir -p /root/.m2 && printf '%s\n' \
+    '<settings>' \
+    '  <mirrors>' \
+    '    <mirror>' \
+    '      <id>aliyun</id>' \
+    '      <name>aliyun maven</name>' \
+    '      <url>https://maven.aliyun.com/repository/public</url>' \
+    '      <mirrorOf>central</mirrorOf>' \
+    '    </mirror>' \
+    '  </mirrors>' \
+    '</settings>' > /root/.m2/settings.xml
+
+WORKDIR /build
+
+# Copy only the module poms first so the dependency layer stays cached and is not
+# re-downloaded whenever the sources change
+COPY apps/api/pom.xml ./
+COPY apps/api/jeecg-boot-base-core/pom.xml ./jeecg-boot-base-core/
+COPY apps/api/jeecg-boot-module/pom.xml ./jeecg-boot-module/
+COPY apps/api/jeecg-boot-module/jeecg-boot-module-airag/pom.xml ./jeecg-boot-module/jeecg-boot-module-airag/
+COPY apps/api/jeecg-boot-module/jeecg-module-demo/pom.xml ./jeecg-boot-module/jeecg-module-demo/
+COPY apps/api/jeecg-module-system/pom.xml ./jeecg-module-system/
+COPY apps/api/jeecg-module-system/jeecg-system-api/pom.xml ./jeecg-module-system/jeecg-system-api/
+COPY apps/api/jeecg-module-system/jeecg-system-api/jeecg-system-cloud-api/pom.xml ./jeecg-module-system/jeecg-system-api/jeecg-system-cloud-api/
+COPY apps/api/jeecg-module-system/jeecg-system-api/jeecg-system-local-api/pom.xml ./jeecg-module-system/jeecg-system-api/jeecg-system-local-api/
+COPY apps/api/jeecg-module-system/jeecg-system-biz/pom.xml ./jeecg-module-system/jeecg-system-biz/
+COPY apps/api/jeecg-module-system/jeecg-system-start/pom.xml ./jeecg-module-system/jeecg-system-start/
+RUN mvn -B -P docker dependency:go-offline -DskipTests || true
+
+# Copy the sources and package; -P docker replaces @profile.name@ in
+# application.yml with "docker"
+COPY apps/api/ ./
+RUN mvn -B -P docker clean package -DskipTests
+
+# Runtime image: also Temurin 17 / focal, same JDK lineage as the builder to
+# avoid version drift
+FROM ${JRE_IMAGE}
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+# The focal base image already ships en_US.utf8, so no locale package is needed
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8"
+
+WORKDIR /jeecg-boot
+RUN mkdir -p /jeecg-boot/config
+COPY --from=builder /build/jeecg-module-system/jeecg-system-start/target/jeecg-system-start-3.9.3.jar ./app.jar
+
+EXPOSE 8080
+CMD ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

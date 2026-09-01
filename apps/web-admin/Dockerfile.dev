@@ -1,0 +1,32 @@
+# Marsquakes Web Admin Development
+# Build context is the repository root:
+#   docker build -f apps/web-admin/Dockerfile.dev -t marsquakes/web-admin:dev .
+# Mount the sources at /app as a volume to get hot reload.
+# Base image matches Dockerfile.build: the official node image with the tag pinned
+# to 20-bullseye. bullseye is required because Docker 20.10.8 blocks clone3 in
+# seccomp (see the comments in Dockerfile.build).
+ARG NODE_IMAGE=node:20-bullseye-slim
+FROM ${NODE_IMAGE}
+
+# pnpm stays on 9 for the same reason as in Dockerfile.build: lockfileVersion 9.0,
+# and from pnpm 10 on dependency build scripts are no longer run by default, which
+# fails with ERR_PNPM_IGNORED_BUILDS.
+ARG PNPM_VERSION=9.15.9
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm install -g pnpm@${PNPM_VERSION} \
+    && pnpm config set registry https://registry.npmmirror.com
+
+WORKDIR /app
+
+COPY apps/web-admin/package.json apps/web-admin/pnpm-lock.yaml apps/web-admin/.npmrc ./
+RUN pnpm install --frozen-lockfile
+
+COPY apps/web-admin/ ./
+
+ENV NODE_OPTIONS=--max-old-space-size=8192
+# Inside the container localhost points at the container itself, so the proxy must
+# target the api service name
+ENV VITE_PROXY=[["/jeecgboot","http://jeecg-boot-system:8080/jeecg-boot"]]
+
+EXPOSE 3100
+CMD ["pnpm", "dev", "--host", "0.0.0.0", "--port", "3100"]

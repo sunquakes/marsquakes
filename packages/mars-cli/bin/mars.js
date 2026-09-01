@@ -7,16 +7,176 @@ const { execSync, spawn } = require('child_process');
 
 const DEFAULT_TEMPLATE = 'https://github.com/sunquakes/marsquakes.git';
 
+const LOCALES = {
+  en: {
+    'web-label': 'Web Client',
+    'web-desc': 'User-facing web frontend application',
+    'web-admin-label': 'Web Admin',
+    'web-admin-desc': 'Backend administration system',
+    'api-label': 'API Service',
+    'api-desc': 'RESTful API service',
+    'android-label': 'Android',
+    'android-desc': 'Android native application',
+    'ios-label': 'iOS',
+    'ios-desc': 'iOS native application',
+    'windows-label': 'Windows',
+    'windows-desc': 'Windows desktop application',
+    'linux-label': 'Linux',
+    'linux-desc': 'Linux desktop application',
+    'macos-label': 'macOS',
+    'macos-desc': 'macOS desktop application',
+    'desktop-label': 'Desktop',
+    'desktop-desc': 'Tauri (Win / macOS / Linux)',
+    'category-web': '🌐 Web',
+    'category-api': '⚙️ API',
+    'category-mobile': '📱 Mobile',
+    'category-desktop': '🖥️ Desktop',
+    'status-developing': 'developing',
+    'select-platforms': '📋 Select platforms to create',
+    'select-hint': 'Use arrow keys to navigate | Space to toggle | Enter to confirm',
+    'disabled-hint': '⚠️ Grayed out modules are not available (developing)',
+    'current-selection': 'Currently selected: {{count}} modules',
+    'cancelled': '🛑 Project creation cancelled.',
+    'cancelled-cleanup': '🛑 Cancelled project creation, cleaning up...',
+    'enter-selection': 'Please enter selection (space-separated numbers): ',
+    'input-hint': 'Input tips:',
+    'input-select': '- Enter numbers to toggle selection (e.g., 1 2 3)',
+    'input-select-all': '- Enter "a" to select all available modules',
+    'input-deselect-all': '- Enter "n" to deselect all',
+    'input-default': '- Press Enter to use default configuration',
+    'selected-modules': '✅ Selected {{count}} modules:',
+    'copy-platform': '📁 Copying platform: {{name}}',
+    'enter-interactive': '🔧 Entering interactive platform selection mode...',
+    'using-default': '🔧 Using default module configuration...',
+    'selected-count': 'Selected {{count}} modules: {{list}}',
+    'skip-interactive': 'Use -n / --non-interactive flag to skip interactive mode',
+    'creating-directory': '🔧 Creating project directory...',
+    'copying-base': '🔧 Copying base files...',
+    'copying-platforms': '🔧 Copying selected platforms...',
+    'updating-config': '🔧 Updating platform configuration...',
+    'customizing-name': '🔧 Customizing project name...',
+    'initializing-git': '🔨 Initializing git repository...',
+    'project-created': '✅ Project "{{name}}" created successfully!',
+    'next-steps': 'Next steps:',
+    'project-name': 'Project Name',
+    'multi-platform-project': 'Multi-platform Project',
+    'template-not-found': '❌ Error: Template directory "{{path}}" does not exist.',
+    'failed-clone': '❌ Failed to clone template. Please check the URL or your network connection.',
+    'directory-exists': '❌ Error: Directory "{{name}}" already exists.',
+    'not-project': '❌ Error: Not in a Marsquakes project.',
+    'pnpm-not-installed': '❌ pnpm is not installed. Enable it with: corepack enable pnpm',
+    'initializing-dependencies': '🔧 Initializing project dependencies...',
+    'initializing': '🔧 Initializing...',
+    'installing-dependencies': '📦 Installing dependencies...',
+    'starting-dev': '🚀 Starting development servers...',
+    'stopping-dev': '🛑 Stopping all development servers...',
+    'building': '🏗️ Building...',
+    'platform-not-found': '❌ Error: Platform "{{platform}}" not found or not enabled.',
+    'platform-pending': '⏳ {{name}}: {{desc}} (pending)',
+    'platform-not-ready': '⏳ {{name}}: {{desc}} (directory not ready)',
+    'platform-not-supported': '⏳ {{name}}: {{desc}} (not supported yet)',
+  },
+  zh: {
+    'web-label': 'Web 用户端',
+    'web-desc': '面向用户的 Web 前端应用',
+    'web-admin-label': 'Web 后台管理',
+    'web-admin-desc': '后台管理系统',
+    'api-label': '后端接口服务',
+    'api-desc': 'RESTful API 服务',
+    'android-label': 'Android 客户端',
+    'android-desc': 'Android 原生应用',
+    'ios-label': 'iOS 客户端',
+    'ios-desc': 'iOS 原生应用',
+    'windows-label': 'Windows 桌面端',
+    'windows-desc': 'Windows 桌面应用',
+    'linux-label': 'Linux 桌面端',
+    'linux-desc': 'Linux 桌面应用',
+    'macos-label': 'macOS 桌面端',
+    'macos-desc': 'macOS 桌面应用',
+    'desktop-label': 'Desktop',
+    'desktop-desc': 'Tauri (Win / macOS / Linux)',
+    'category-web': '🌐 Web',
+    'category-api': '⚙️ API',
+    'category-mobile': '📱 移动端',
+    'category-desktop': '🖥️ 桌面端',
+    'status-developing': '开发中',
+    'select-platforms': '📋 请选择需要创建的平台模块',
+    'select-hint': '操作提示: 上下键移动 | 空格键切换选择 | 回车确认',
+    'disabled-hint': '⚠️ 灰色显示的模块当前不可选（开发中）',
+    'current-selection': '当前已选择 {{count}} 个模块',
+    'cancelled': '🛑 已取消创建项目。',
+    'cancelled-cleanup': '🛑 已取消创建项目，正在清理...',
+    'enter-selection': '请输入选择（多个数字用空格分隔）: ',
+    'input-hint': '操作提示:',
+    'input-select': '- 输入数字切换选中状态（如：1 2 3）',
+    'input-select-all': '- 输入 a 全选可选模块',
+    'input-deselect-all': '- 输入 n 取消全选',
+    'input-default': '- 直接回车使用默认配置',
+    'selected-modules': '✅ 已选择 {{count}} 个模块:',
+    'copy-platform': '📁 拷贝平台: {{name}}',
+    'enter-interactive': '🔧 进入交互式平台选择模式...',
+    'using-default': '🔧 使用默认模块配置...',
+    'selected-count': '已选择 {{count}} 个模块: {{list}}',
+    'skip-interactive': '使用 -n / --non-interactive 参数跳过交互模式',
+    'creating-directory': '🔧 创建项目目录...',
+    'copying-base': '🔧 拷贝项目基础文件...',
+    'copying-platforms': '🔧 拷贝选中的平台模块...',
+    'updating-config': '🔧 更新平台配置...',
+    'customizing-name': '🔧 自定义项目名称...',
+    'initializing-git': '🔨 初始化 git 仓库...',
+    'project-created': '✅ 项目 "{{name}}" 创建成功！',
+    'next-steps': '下一步操作:',
+    'project-name': '项目名称',
+    'multi-platform-project': '多平台项目',
+    'template-not-found': '❌ 错误: 模板目录 "{{path}}" 不存在。',
+    'failed-clone': '❌ 克隆模板失败，请检查 URL 或网络连接。',
+    'directory-exists': '❌ 错误: 目录 "{{name}}" 已存在。',
+    'not-project': '❌ 错误: 不在 Marsquakes 项目中。',
+    'pnpm-not-installed': '❌ pnpm 未安装，请先启用: corepack enable pnpm',
+    'initializing-dependencies': '🔧 初始化项目依赖...',
+    'initializing': '🔧 初始化中...',
+    'installing-dependencies': '📦 安装依赖中...',
+    'starting-dev': '🚀 启动开发服务器...',
+    'stopping-dev': '🛑 停止所有开发服务器...',
+    'building': '🏗️ 构建中...',
+    'platform-not-found': '❌ 错误: 平台 "{{platform}}" 不存在或未启用。',
+    'platform-pending': '⏳ {{name}}: {{desc}} (待初始化)',
+    'platform-not-ready': '⏳ {{name}}: {{desc}} (目录未就绪)',
+    'platform-not-supported': '⏳ {{name}}: {{desc}} (待支持)',
+  },
+};
+
+let CURRENT_LANG = 'en';
+
+function t(key, params = {}) {
+  const locales = LOCALES[CURRENT_LANG] || LOCALES.en;
+  let text = locales[key] || key;
+  for (const [name, value] of Object.entries(params)) {
+    text = text.replace(`{{${name}}}`, value);
+  }
+  return text;
+}
+
+function parseLangArg(args) {
+  const langIndex = args.indexOf('--lang');
+  if (langIndex > -1 && args[langIndex + 1]) {
+    const lang = args[langIndex + 1].toLowerCase();
+    if (LOCALES[lang]) {
+      CURRENT_LANG = lang;
+    }
+  }
+}
+
 const DEFAULT_PLATFORMS = [
-  { name: 'web', category: 'web', label: 'Web 用户端', default: false, description: '面向用户的 Web 前端应用' },
-  { name: 'web-admin', category: 'web', label: 'Web 后台管理', default: true, description: '后台管理系统' },
-  { name: 'api', category: 'api', label: '后端接口服务', default: true, description: 'RESTful API 服务' },
-  { name: 'android', category: 'mobile', label: 'Android 客户端', default: false, description: 'Android 原生应用' },
-  { name: 'ios', category: 'mobile', label: 'iOS 客户端', default: false, description: 'iOS 原生应用' },
-  { name: 'windows', category: 'desktop', label: 'Windows 桌面端', default: false, description: 'Windows 桌面应用' },
-  { name: 'linux', category: 'desktop', label: 'Linux 桌面端', default: false, description: 'Linux 桌面应用' },
-  { name: 'macos', category: 'desktop', label: 'macOS 桌面端', default: false, description: 'macOS 桌面应用' },
-  { name: 'desktop', category: 'desktop', label: '跨平台桌面端', default: false, description: 'Tauri 跨平台桌面应用' },
+  { name: 'web', category: 'web', label: 'Web Client', default: false, description: 'User-facing web frontend application' },
+  { name: 'web-admin', category: 'web', label: 'Web Admin', default: true, description: 'Backend administration system' },
+  { name: 'api', category: 'api', label: 'API Service', default: true, description: 'RESTful API service' },
+  { name: 'android', category: 'mobile', label: 'Android', default: false, description: 'Android native application' },
+  { name: 'ios', category: 'mobile', label: 'iOS', default: false, description: 'iOS native application' },
+  { name: 'windows', category: 'desktop', label: 'Windows', default: false, description: 'Windows desktop application' },
+  { name: 'linux', category: 'desktop', label: 'Linux', default: false, description: 'Linux desktop application' },
+  { name: 'macos', category: 'desktop', label: 'macOS', default: false, description: 'macOS desktop application' },
+  { name: 'desktop', category: 'desktop', label: 'Desktop', default: false, description: 'Tauri (Win / macOS / Linux)' },
 ];
 
 function getPlatformsFromConfig(config) {
@@ -26,12 +186,14 @@ function getPlatformsFromConfig(config) {
   for (const [category, group] of Object.entries(config.platforms)) {
     for (const [name, info] of Object.entries(group)) {
       const defaultPlatform = DEFAULT_PLATFORMS.find(p => p.name === name);
+      const labelKey = `${name}-label`;
+      const descKey = `${name}-desc`;
       platforms.push({
         name,
         category,
-        label: info.description || defaultPlatform?.label || name,
+        label: t(labelKey) || defaultPlatform?.label || name,
         default: !!info.enabled,
-        description: info.description || defaultPlatform?.description || '',
+        description: t(descKey) || info.description || defaultPlatform?.description || '',
         enabled: !!info.enabled,
         status: info.status || null,
       });
@@ -46,7 +208,7 @@ Usage: mars <command> [options]
 
 Commands:
   create <project-name>    Create a new project from template
-  update                   Update project from template (preserves apps/docs)
+  update                   Update project from template (preserves apps, docs, .docs)
   dev                      Start development server (default: all enabled platforms)
   build                    Build project (default: all enabled platforms)
   init                     Initialize project dependencies and check environment
@@ -61,6 +223,7 @@ Options:
   -n, --non-interactive    (create) Non-interactive mode (use default platforms)
   --platform <platform>    (dev/build) Run only for specific platform
   --docker                 (dev/build) Run in Docker container
+  --lang <en|zh>           Set language (default: en)
   --help                   Show this help message
 
 Examples:
@@ -111,6 +274,18 @@ function loadPlatformsConfig(rootDir) {
     return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
   }
   return null;
+}
+
+function getPlatformDir(rootDir, platform) {
+  const config = loadPlatformsConfig(rootDir);
+  if (config && config.platforms) {
+    for (const group of Object.values(config.platforms)) {
+      if (group[platform] && group[platform].dir) {
+        return group[platform].dir;
+      }
+    }
+  }
+  return `apps/${platform}`;
 }
 
 function getEnabledPlatforms(config) {
@@ -209,8 +384,10 @@ function replaceProjectName(targetDir, projectName) {
     ['"name": "marsquakes"', `"name": "${projectName}"`],
     ['"project_name": "Marsquakes"', `"project_name": "${projectName}"`],
     ['# Marsquakes - AGENTS.md', `# ${projectName} - AGENTS.md`],
+    ['- **Project Name**: Marsquakes', `- **Project Name**: ${projectName}`],
     ['- **项目名称**: Marsquakes', `- **项目名称**: ${projectName}`],
     ['Marsquakes/', `${projectName}/`],
+    ['Marsquakes - Multi-platform Project', `${projectName} - Multi-platform Project`],
     ['Marsquakes - 多平台项目', `${projectName} - 多平台项目`],
   ];
 
@@ -272,9 +449,9 @@ async function selectPlatformsInteractive(selected) {
   
   const render = () => {
     process.stdout.write('\x1B[2J\x1B[0f');
-    console.log('\n📋 请选择需要创建的平台模块\n');
-    console.log('   操作提示: 上下键移动 | 空格键切换选择 | 回车确认\n');
-    console.log('   ⚠️  灰色显示的模块当前不可选（开发中）\n');
+    console.log(`\n${t('select-platforms')}\n`);
+    console.log(`   ${t('select-hint')}\n`);
+    console.log(`   ${t('disabled-hint')}\n`);
     
     const categoryGroups = {};
     selected.forEach(p => {
@@ -285,10 +462,10 @@ async function selectPlatformsInteractive(selected) {
     });
     
     const categoryLabels = {
-      web: '🌐 Web',
-      api: '⚙️  API',
-      mobile: '📱 移动端',
-      desktop: '🖥️ 桌面端',
+      web: t('category-web'),
+      api: t('category-api'),
+      mobile: t('category-mobile'),
+      desktop: t('category-desktop'),
     };
     
     for (const [category, platforms] of Object.entries(categoryGroups)) {
@@ -302,18 +479,19 @@ async function selectPlatformsInteractive(selected) {
         
         let line = `${prefix}${checkbox} ${p.label}`;
         if (isDisabled) {
-          line = `\x1B[90m${prefix}${checkbox} ${p.label} [${p.status || '开发中'}]\x1B[0m`;
+          line = `\x1B[90m${prefix}${checkbox} ${p.label} [${p.status || t('status-developing')}]\x1B[0m`;
         }
         
         console.log(line);
-        if (isCursor && !isDisabled) {
-          console.log(`      ${p.description}`);
+        if (p.description) {
+          const descPrefix = isCursor && !isDisabled ? '      ' : '         ';
+          console.log(`${descPrefix}${p.description}`);
         }
       });
     }
     
     const selectedCount = selected.filter(p => p.selected).length;
-    console.log(`\n  当前已选择 ${selectedCount} 个模块`);
+    console.log(`\n  ${t('current-selection', { count: selectedCount })}`);
   };
   
   const cleanup = () => {
@@ -326,7 +504,7 @@ async function selectPlatformsInteractive(selected) {
     
     if (key.ctrl && key.name === 'c') {
       cleanup();
-      console.log('\n\n🛑 已取消创建项目。');
+      console.log(`\n\n${t('cancelled')}`);
       process.exit(0);
     }
     
@@ -372,8 +550,8 @@ async function selectPlatformsInteractive(selected) {
 }
 
 async function selectPlatformsSimple(selected) {
-  console.log('\n📋 请选择需要创建的平台模块\n');
-  console.log('   ⚠️  灰色显示的模块当前不可选（开发中）\n');
+  console.log(`\n${t('select-platforms')}\n`);
+  console.log(`   ${t('disabled-hint')}\n`);
   
   const categoryGroups = {};
   selected.forEach(p => {
@@ -384,10 +562,10 @@ async function selectPlatformsSimple(selected) {
   });
   
   const categoryLabels = {
-    web: '🌐 Web',
-    api: '⚙️  API',
-    mobile: '📱 移动端',
-    desktop: '🖥️ 桌面端',
+    web: t('category-web'),
+    api: t('category-api'),
+    mobile: t('category-mobile'),
+    desktop: t('category-desktop'),
   };
   
   let index = 1;
@@ -399,21 +577,24 @@ async function selectPlatformsSimple(selected) {
       const checkbox = p.selected ? '[✓]' : '[ ]';
       let line = `   ${index}. ${checkbox} ${p.label}`;
       if (!p.enabled) {
-        line = `\x1B[90m   ${index}. ${checkbox} ${p.label} [${p.status || '开发中'}]\x1B[0m`;
+        line = `\x1B[90m   ${index}. ${checkbox} ${p.label} [${p.status || t('status-developing')}]\x1B[0m`;
       }
       console.log(line);
+      if (p.description) {
+        console.log(`         ${p.description}`);
+      }
       indexMap.push({ index, platform: p });
       index++;
     });
   }
   
-  console.log('\n  操作提示:');
-  console.log('   - 输入数字切换选中状态（如：1 2 3）');
-  console.log('   - 输入 a 全选可选模块');
-  console.log('   - 输入 n 取消全选');
-  console.log('   - 直接回车使用默认配置');
+  console.log(`\n  ${t('input-hint')}`);
+  console.log(`   ${t('input-select')}`);
+  console.log(`   ${t('input-select-all')}`);
+  console.log(`   ${t('input-deselect-all')}`);
+  console.log(`   ${t('input-default')}`);
   
-  const answer = await prompt('\n  请输入选择（多个数字用空格分隔）: ');
+  const answer = await prompt(`\n  ${t('enter-selection')}`);
   
   if (!answer.trim()) {
     return selected.filter(p => p.selected);
@@ -440,7 +621,7 @@ async function selectPlatformsSimple(selected) {
     }
   }
   
-  console.log(`\n✅ 已选择 ${selected.filter(p => p.selected).length} 个模块:`);
+  console.log(`\n${t('selected-modules', { count: selected.filter(p => p.selected).length })}`);
   selected.filter(p => p.selected).forEach(p => console.log(`   - ${p.label}`));
   
   return selected.filter(p => p.selected);
@@ -479,7 +660,7 @@ function copySelectedPlatforms(srcDir, destDir, selectedPlatforms) {
     if (entry.isDirectory() && selectedNames.has(entry.name)) {
       const srcPath = path.join(appsSrcDir, entry.name);
       const destPath = path.join(appsDestDir, entry.name);
-      console.log(`   📁 拷贝平台: ${entry.name}`);
+      console.log(`   ${t('copy-platform', { name: entry.name })}`);
       copyDir(srcPath, destPath, new Set(['.git', 'node_modules', '.gradle', 'build', 'dist', '.turbo', '.idea']));
     }
   }
@@ -554,21 +735,21 @@ async function createProject(args) {
   let selectedPlatforms = allPlatforms.filter(p => p.default);
   
   if (interactive) {
-    console.log('\n🔧 进入交互式平台选择模式...');
+    console.log(`\n${t('enter-interactive')}`);
     selectedPlatforms = await selectPlatforms(allPlatforms);
-    console.log(`\n✅ 已选择 ${selectedPlatforms.length} 个模块:`);
+    console.log(`\n${t('selected-modules', { count: selectedPlatforms.length })}`);
     selectedPlatforms.forEach(p => console.log(`   - ${p.label}`));
   } else {
-    console.log('\n🔧 使用默认模块配置...');
-    console.log(`   已选择 ${selectedPlatforms.length} 个模块: ${selectedPlatforms.map(p => p.label).join(', ')}`);
-    console.log('   使用 -n / --non-interactive 参数跳过交互模式');
+    console.log(`\n${t('using-default')}`);
+    console.log(`   ${t('selected-count', { count: selectedPlatforms.length, list: selectedPlatforms.map(p => p.label).join(', ') })}`);
+    console.log(`   ${t('skip-interactive')}`);
   }
 
-  console.log('\n🔧 创建项目目录...');
+  console.log(`\n${t('creating-directory')}`);
   fs.mkdirSync(targetDir, { recursive: true });
 
   const sigintHandler = () => {
-    console.log('\n\n🛑 已取消创建项目，正在清理...');
+    console.log(`\n\n${t('cancelled-cleanup')}`);
     if (fs.existsSync(targetDir)) {
       fs.rmSync(targetDir, { recursive: true, force: true });
     }
@@ -579,19 +760,19 @@ async function createProject(args) {
   };
   process.on('SIGINT', sigintHandler);
 
-  console.log('🔧 拷贝项目基础文件...');
+  console.log(t('copying-base'));
   const excludeApps = new Set(['.git', 'node_modules', '.gradle', 'build', 'dist', '.turbo', '.idea', projectName, 'apps']);
   copyDir(templateDir, targetDir, excludeApps);
 
-  console.log('🔧 拷贝选中的平台模块...');
+  console.log(t('copying-platforms'));
   copySelectedPlatforms(templateDir, targetDir, selectedPlatforms);
 
   process.removeListener('SIGINT', sigintHandler);
 
-  console.log('🔧 更新平台配置...');
+  console.log(t('updating-config'));
   updatePlatformsConfig(targetDir, selectedPlatforms);
 
-  console.log('\n🔧 Customizing project name...');
+  console.log(`\n${t('customizing-name')}`);
   replaceProjectName(targetDir, projectName);
 
   if (isTempDir && fs.existsSync(templateDir)) {
@@ -602,7 +783,7 @@ async function createProject(args) {
   if (fs.existsSync(gitDir)) {
     fs.rmSync(gitDir, { recursive: true, force: true });
   }
-  console.log('\n🔨 Initializing git repository...');
+  console.log(`\n${t('initializing-git')}`);
   try {
     execSync('git init', { cwd: targetDir, stdio: 'pipe' });
     execSync('git config user.email "admin@example.com"', { cwd: targetDir, stdio: 'pipe' });
@@ -613,11 +794,11 @@ async function createProject(args) {
     console.warn('\n⚠️  Git initialization skipped (non-fatal). You can manually run git init later.');
   }
 
-  console.log(`\n✅ Project "${projectName}" created successfully!\n`);
+  console.log(`\n${t('project-created', { name: projectName })}\n`);
   console.log('Selected platforms:');
   selectedPlatforms.forEach(p => console.log(`   ✓ ${p.label}`));
   console.log('');
-  console.log('Next steps:');
+  console.log(t('next-steps'));
   console.log(`  cd ${projectName}`);
   console.log('  pnpm install');
   console.log('  mars dev');
@@ -642,6 +823,42 @@ function dockerImageExists(imageName) {
   }
 }
 
+const DOCKER_PORTS = {
+  web: '3100:3100',
+  'web-admin': '3100:3100',
+  api: '8080:8080',
+};
+
+// Dockerfile 变体按「产物由谁生产」区分，而不是按 CLI 动词：
+//   Dockerfile        不含编译阶段，只消费已有产物（默认入口，流水线场景）
+//   Dockerfile.build  自包含编译（多阶段），干净检出即可构建
+//   Dockerfile.dev    容器内热启动，配合 volume 挂载（dev 模式默认）
+const DOCKERFILE_VARIANTS = {
+  dev: ['Dockerfile.dev', 'Dockerfile.build', 'Dockerfile'],
+  build: ['Dockerfile.build', 'Dockerfile'],
+  artifact: ['Dockerfile'],
+};
+
+function resolveDockerfile(rootDir, platform, mode) {
+  const platformDir = getPlatformDir(rootDir, platform);
+  const candidates = DOCKERFILE_VARIANTS[mode] || DOCKERFILE_VARIANTS.build;
+
+  // 按优先级回退：没有专用变体时退回不含编译的 Dockerfile
+  let fileName = candidates[candidates.length - 1];
+  for (const name of candidates) {
+    if (fs.existsSync(path.join(rootDir, platformDir, name))) {
+      fileName = name;
+      break;
+    }
+  }
+
+  return {
+    platformDir,
+    dockerfile: path.join(rootDir, platformDir, fileName),
+    relativePath: `${platformDir}/${fileName}`,
+  };
+}
+
 function runDocker(rootDir, platform, mode) {
   if (!checkDocker()) {
     console.error('\n❌ Docker is not installed or not running.');
@@ -649,10 +866,23 @@ function runDocker(rootDir, platform, mode) {
     process.exit(1);
   }
 
-  const targetPlatform = platform === 'all' ? 'web' : platform;
+  let targetPlatform = platform;
 
-  const dockerfileDir = path.join(rootDir, 'docker', targetPlatform);
-  const dockerfile = path.join(dockerfileDir, mode === 'build' ? 'Dockerfile.build' : 'Dockerfile');
+  // platform=all 时挑第一个「已启用且带 Dockerfile」的平台，避免写死某个平台
+  if (platform === 'all') {
+    const candidates = getEnabledPlatforms(loadPlatformsConfig(rootDir));
+    const hit = candidates.find((p) => fs.existsSync(resolveDockerfile(rootDir, p.name, mode).dockerfile));
+    if (!hit) {
+      console.error(`\n❌ No enabled platform provides a Dockerfile (mode: ${mode}).`);
+      console.log('   Please specify one explicitly, e.g. --platform api');
+      process.exit(1);
+    }
+    targetPlatform = hit.name;
+    console.log(`\nℹ️  --platform not specified, using "${targetPlatform}"`);
+  }
+
+  // Dockerfile 放在各平台自己的目录下，构建上下文仍为仓库根目录
+  const { dockerfile, relativePath } = resolveDockerfile(rootDir, targetPlatform, mode);
 
   if (!fs.existsSync(dockerfile)) {
     console.error(`\n❌ Dockerfile not found for platform "${targetPlatform}" (mode: ${mode})`);
@@ -664,7 +894,7 @@ function runDocker(rootDir, platform, mode) {
   const containerName = `marsquakes-${targetPlatform}-${mode}`;
 
   console.log(`\n🐳 Building Docker image: ${imageName}`);
-  console.log(`   Dockerfile: ${dockerfile}`);
+  console.log(`   Dockerfile: ${relativePath} (context: repo root)`);
   try {
     execSync(`docker build -f "${dockerfile}" -t ${imageName} "${rootDir}"`, { stdio: 'inherit' });
   } catch (e) {
@@ -679,12 +909,10 @@ function runDocker(rootDir, platform, mode) {
   if (mode === 'dev') {
     dockerArgs.push('-it');
     dockerArgs.push('-v', `${rootDir}:/app`);
+  }
 
-    if (targetPlatform === 'web') {
-      dockerArgs.push('-p', '3100:3100');
-    }
-  } else {
-    dockerArgs.push('-v', `${rootDir}:/app`);
+  if (DOCKER_PORTS[targetPlatform]) {
+    dockerArgs.push('-p', DOCKER_PORTS[targetPlatform]);
   }
 
   dockerArgs.push(imageName);
@@ -735,7 +963,7 @@ function devCommand(args) {
 
   const config = loadPlatformsConfig(rootDir);
   const enabledPlatforms = getEnabledPlatforms(config);
-  const npmPlatforms = enabledPlatforms.filter(p => !['android', 'ios', 'windows', 'linux', 'macos'].includes(p.name));
+  const workspacePlatforms = enabledPlatforms.filter(p => !['android', 'ios', 'windows', 'linux', 'macos'].includes(p.name));
   const nativePlatforms = enabledPlatforms.filter(p => ['android', 'ios', 'windows', 'linux', 'macos'].includes(p.name));
 
   if (useDocker) {
@@ -747,12 +975,12 @@ function devCommand(args) {
 
   const children = [];
 
-  const npmTargets = platform === 'all'
-    ? npmPlatforms.map(p => p.name)
-    : (npmPlatforms.some(p => p.name === platform) ? [platform] : []);
+  const workspaceTargets = platform === 'all'
+    ? workspacePlatforms.map(p => p.name)
+    : (workspacePlatforms.some(p => p.name === platform) ? [platform] : []);
 
-  if (npmTargets.length > 0) {
-    for (const target of npmTargets) {
+  if (workspaceTargets.length > 0) {
+    for (const target of workspaceTargets) {
       const filterFlag = `--filter=${target}`;
       const child = spawnProcess('pnpm', ['dev', filterFlag], rootDir);
       children.push(child);
@@ -766,7 +994,7 @@ function devCommand(args) {
   for (const target of nativeTargets) {
     const platformCmd = PLATFORM_COMMANDS.dev[target.name];
     if (!platformCmd || !platformCmd.script) {
-      console.log(`⏳ ${target.name}: ${target.description} (待初始化)`);
+      console.log(t('platform-pending', { name: target.name, desc: target.description }));
       continue;
     }
     const targetDir = path.join(rootDir, target.dir);
@@ -774,7 +1002,7 @@ function devCommand(args) {
       const child = spawnProcess(platformCmd.script, [], targetDir);
       children.push(child);
     } else {
-      console.log(`⏳ ${target.name}: ${target.description} (目录未就绪)`);
+      console.log(t('platform-not-ready', { name: target.name, desc: target.description }));
     }
   }
 
@@ -846,7 +1074,7 @@ function buildCommand(args) {
   for (const p of enabledPlatforms) {
     if (['web', 'web-admin', 'desktop', 'android'].includes(p.name)) continue;
     if (platform !== 'all' && platform !== p.name) continue;
-    console.log(`⏳ ${p.name}: ${p.description} (待支持)`);
+    console.log(t('platform-not-supported', { name: p.name, desc: p.description }));
   }
 
   console.log('\n✅ Build complete!\n');
@@ -865,7 +1093,7 @@ function initCommand() {
     execSync('pnpm --version', { stdio: 'pipe' });
     console.log('✅ pnpm');
   } catch {
-    console.error('❌ pnpm 未安装，请先安装: npm install -g pnpm');
+    console.error(t('pnpm-not-installed'));
     process.exit(1);
   }
 
@@ -938,7 +1166,6 @@ async function updateCommand(args) {
       'package.json',
       'scripts/',
       'packages/',
-      'docker/',
     ];
 
     const skippedFiles = [
@@ -951,6 +1178,7 @@ async function updateCommand(args) {
       '.idea',
       'apps/',
       'docs/',
+      '.docs/',
       'design/',
       '.mars-update-backup',
     ];
@@ -1000,7 +1228,7 @@ async function updateCommand(args) {
     }
 
     console.log('\n✅ Update complete!');
-    console.log('\n📝 Note: Your apps/ and docs/ directories were preserved.');
+    console.log('\n📝 Note: Your apps/, docs/ and .docs/ directories were preserved.');
     console.log(`   A backup was saved to: ${backupDir}`);
 
   } catch (e) {
@@ -1052,6 +1280,7 @@ function copyDirRecursive(src, dest, skip, changes) {
 
 function main() {
   const args = process.argv.slice(2);
+  parseLangArg(args);
 
   if (args.length === 0 || args.includes('--help')) {
     showUsage();

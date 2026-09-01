@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Marsquakes">
+  <!--
+    Open Graph / Twitter card. Richest cut of the logo.svg mark: the same planet
+    and seismograph geometry, drawn in logo coordinates and scaled up, plus the
+    epicentre shockwave rings that are too fine to survive at icon sizes.
+  -->
+  <defs>
+    <radialGradient id="mq-card-surface" cx="34%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#e4705a" />
+      <stop offset="58%" stop-color="#b3312c" />
+      <stop offset="100%" stop-color="#71201b" />
+    </radialGradient>
+    <clipPath id="mq-card-disc">
+      <circle cx="0" cy="0" r="15.5" />
+    </clipPath>
+  </defs>
+
+  <rect width="1200" height="630" fill="#1c1e21" />
+
+  <g transform="translate(600 238) scale(6.8)">
+    <circle cx="0" cy="0" r="15.5" fill="url(#mq-card-surface)" />
+
+    <g clip-path="url(#mq-card-disc)" fill="#8a2621" opacity="0.5">
+      <ellipse cx="7.9" cy="6.6" rx="3.7" ry="3.1" />
+      <ellipse cx="-9.4" cy="5.8" rx="2.2" ry="1.9" />
+      <circle cx="5.6" cy="-8.6" r="1.8" />
+      <circle cx="-8.8" cy="-8.4" r="1.5" />
+    </g>
+
+    <g fill="none" stroke="#fff1ef" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="-5.2" cy="-5" r="5.4" stroke-width="0.45" opacity="0.28" />
+      <circle cx="-5.2" cy="-5" r="8.6" stroke-width="0.35" opacity="0.16" />
+      <path d="M-14.6 2.6 h4.6 l2.8 -7.6 l3.9 14.2 l3.3 -10.6 l2.4 4 h11" stroke-width="1.9" />
+    </g>
+
+    <circle cx="-5.2" cy="-5" r="2.1" fill="#fff1ef" />
+    <circle cx="-5.2" cy="-5" r="0.85" fill="#b3312c" />
+  </g>
+
+  <text x="600" y="440" fill="#ffffff" font-family="Helvetica, Arial, sans-serif" font-size="76" font-weight="700" text-anchor="middle">Marsquakes</text>
+  <text x="600" y="500" fill="#b8bcc0" font-family="Helvetica, Arial, sans-serif" font-size="32" text-anchor="middle">A multi-platform monorepo</text>
+</svg>

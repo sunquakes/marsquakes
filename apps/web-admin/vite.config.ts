@@ -154,6 +154,13 @@ export default async ({ command, mode }: ConfigEnv): Promise<UserConfig> => {
       __APP_INFO__: JSON.stringify(__APP_INFO__),
     },
     css: {
+      // Vite 7 enables the less preprocessor worker pool by default
+      // (preprocessorMaxWorkers: true). Each worker's Atomics.wait timeout is
+      // hard-coded to 5s, so when the main thread stalls inside a container the
+      // build randomly throws "[less] timed-out" on a different .less file every
+      // run. 0 disables the pool and runs less in-process: slower, but
+      // deterministic. Do not set this back to true.
+      preprocessorMaxWorkers: 0,
       preprocessorOptions: {
         less: {
           modifyVars: generateModifyVars(),

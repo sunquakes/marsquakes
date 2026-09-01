@@ -1,0 +1,77 @@
+{
+  "theme.docs.sidebar.collapseSidebarButtonTitle": {
+    "message": "收起侧边栏"
+  },
+  "theme.docs.sidebar.expandButtonTitle": {
+    "message": "展开侧边栏"
+  },
+  "theme.NotFound.title": {
+    "message": "找不到页面"
+  },
+  "theme.tags.tagsListLabel": {
+    "message": "标签："
+  },
+  "theme.SearchBar.label": {
+    "message": "搜索"
+  },
+  "theme.lastUpdated.lastUpdatedAtBy": {
+    "message": "最后更新于 {atDate}{byUser}"
+  },
+  "home.meta.title": {
+    "message": "首页"
+  },
+  "home.hero.tagline": {
+    "message": "一个用于生成多端 monorepo 的 npm 包。装一次，运行 mars create，勾选需要的端 —— 后端 API、管理后台、桌面端与移动端已经串联好，开箱可跑。"
+  },
+  "home.hero.primaryCta": {
+    "message": "快速开始"
+  },
+  "home.hero.secondaryCta": {
+    "message": "阅读文档"
+  },
+  "home.features.title": {
+    "message": "为什么用生成器"
+  },
+  "home.feature.selective.title": {
+    "message": "按需勾选端"
+  },
+  "home.feature.selective.description": {
+    "message": "mars create 会询问你需要哪些端，只复制这些端。没勾的平台不会出现在生成的仓库里。"
+  },
+  "home.feature.running.title": {
+    "message": "可运行，而不是空架子"
+  },
+  "home.feature.running.description": {
+    "message": "Spring Boot 后端与 Vue 3 管理后台开箱即可构建、启动，且已经串联好 —— 不是等着你填充的空目录。"
+  },
+  "home.feature.registry.title": {
+    "message": "单一事实来源"
+  },
+  "home.feature.registry.description": {
+    "message": "platforms.json 声明了每个平台的目录、技术栈以及是否启用。每个 mars 命令都读取它，而不是把路径写死在代码里。"
+  },
+  "home.feature.docker.title": {
+    "message": "无需本地工具链的 Docker"
+  },
+  "home.feature.docker.description": {
+    "message": ".build 变体镜像会在镜像内部从源码编译，因此全新检出的仓库既不需要宿主机装 JDK 和 Maven，也不需要装 Node。"
+  },
+  "home.feature.update.title": {
+    "message": "生成之后仍可升级"
+  },
+  "home.feature.update.description": {
+    "message": "mars update 会把后续对构建配置的改进拉进已有项目，同时绝不触碰你的业务代码。"
+  },
+  "home.quickstart.title": {
+    "message": "快速开始"
+  },
+  "home.quickstart.lead": {
+    "message": "前置条件只有 Node 18 及以上和 pnpm。mars create 会提示你勾选端；启用原生端时，它们各自的工具链才需要就位。"
+  },
+  "home.quickstart.next": {
+    "message": "需要完整的平台矩阵、Docker 变体和 CLI 参数说明？"
+  },
+  "home.quickstart.nextLink": {
+    "message": "继续阅读《快速开始》"
+  }
+}

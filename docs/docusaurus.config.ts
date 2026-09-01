@@ -1,0 +1,120 @@
+import type * as Preset from '@docusaurus/preset-classic';
+import type { Config } from '@docusaurus/types';
+import { themes as prismThemes } from 'prism-react-renderer';
+
+// Published Markdown lives in `docs/content/`, kept in its own subdirectory so
+// that the site configuration (config, sidebars, src, static, i18n) never mixes
+// with the pages. Internal design documents are NOT here — they live in the
+// repository-level `.docs/` folder and are never published.
+const CONTENT_DIR = './content';
+
+const config: Config = {
+  title: 'Marsquakes',
+  tagline: 'A multi-platform monorepo driven by a single platforms.json',
+  favicon: 'img/favicon.svg',
+
+  // Update these two when the site gets its final hosting location.
+  url: 'https://sunquakes.github.io',
+  baseUrl: '/marsquakes/',
+
+  organizationName: 'sunquakes',
+  projectName: 'marsquakes',
+
+  onBrokenLinks: 'throw',
+  markdown: {
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
+  },
+
+  i18n: {
+    defaultLocale: 'en',
+    locales: ['en', 'zh-Hans'],
+    localeConfigs: {
+      en: { label: 'English' },
+      'zh-Hans': { label: '简体中文' },
+    },
+  },
+
+  presets: [
+    [
+      'classic',
+      {
+        docs: {
+          path: CONTENT_DIR,
+          // `/` is taken by the standalone landing page in `src/pages/index.tsx`,
+          // so every published page is served under the `/docs` prefix.
+          routeBasePath: '/docs',
+          sidebarPath: './sidebars.ts',
+          editUrl: 'https://github.com/sunquakes/marsquakes/tree/main/docs/content/',
+          showLastUpdateTime: true,
+        },
+        blog: false,
+        theme: {
+          customCss: './src/css/custom.css',
+        },
+      } satisfies Preset.Options,
+    ],
+  ],
+
+  themeConfig: {
+    image: 'img/social-card.svg',
+    navbar: {
+      title: 'Marsquakes',
+      logo: {
+        alt: 'Marsquakes logo',
+        src: 'img/logo.svg',
+      },
+      items: [
+        {
+          type: 'docSidebar',
+          sidebarId: 'guideSidebar',
+          position: 'left',
+          label: 'Guide',
+        },
+        { type: 'localeDropdown', position: 'right' },
+        {
+          href: 'https://github.com/sunquakes/marsquakes',
+          label: 'GitHub',
+          position: 'right',
+        },
+      ],
+    },
+    footer: {
+      style: 'dark',
+      links: [
+        {
+          title: 'Docs',
+          items: [
+            { label: 'Introduction', to: '/docs' },
+            { label: 'Getting Started', to: '/docs/getting-started' },
+            { label: 'Docker', to: '/docs/docker' },
+          ],
+        },
+        {
+          title: 'Reference',
+          items: [
+            { label: 'Platforms', to: '/docs/platforms' },
+            { label: 'CLI', to: '/docs/cli' },
+            { label: 'Conventions', to: '/docs/conventions' },
+          ],
+        },
+        {
+          title: 'More',
+          items: [
+            { label: 'GitHub', href: 'https://github.com/sunquakes/marsquakes' },
+            { label: 'License', href: 'https://www.apache.org/licenses/LICENSE-2.0' },
+          ],
+        },
+      ],
+      copyright: `Copyright © ${new Date().getFullYear()} Shing Rui. Licensed under Apache-2.0.`,
+    },
+    prism: {
+      theme: prismThemes.github,
+      darkTheme: prismThemes.dracula,
+      additionalLanguages: ['bash', 'json', 'yaml', 'docker', 'java', 'kotlin', 'swift', 'rust'],
+    },
+  } satisfies Preset.ThemeConfig,
+};
+
+export default config;

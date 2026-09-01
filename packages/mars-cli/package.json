@@ -1,7 +1,7 @@
 {
   "name": "@marsquakes/cli",
   "version": "1.0.0",
-  "description": "CLI tool for Marsquakes multi-platform projects",
+  "description": "Scaffold multi-platform monorepos (API, web, admin, desktop, mobile) with the mars command",
   "main": "bin/mars.js",
   "bin": {
     "mars": "bin/mars.js"
@@ -9,6 +9,9 @@
   "files": [
     "bin/"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "node bin/mars.js --help"
   },
@@ -20,8 +23,17 @@
     "monorepo",
     "multi-platform"
   ],
-  "author": "sunquakes",
-  "license": "MIT",
+  "author": "Shing Rui <sunquakes@outlook.com>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sunquakes/marsquakes.git",
+    "directory": "packages/mars-cli"
+  },
+  "homepage": "https://sunquakes.github.io/marsquakes/",
+  "bugs": {
+    "url": "https://github.com/sunquakes/marsquakes/issues"
+  },
   "engines": {
     "node": ">=18"
   }

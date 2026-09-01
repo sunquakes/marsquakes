@@ -6,78 +6,81 @@
         "enabled": false,
         "dir": "apps/android",
         "tech_stack": "Kotlin / Jetpack Compose",
-        "description": "Android 客户端",
-        "status": "开发中"
+        "description": "Android Client",
+        "status": "developing"
       },
       "ios": {
         "enabled": false,
         "dir": "apps/ios",
         "tech_stack": "Swift / SwiftUI",
-        "description": "iOS 客户端",
-        "status": "开发中"
+        "description": "iOS Client",
+        "status": "developing"
       }
     },
     "desktop": {
       "windows": {
         "enabled": false,
         "dir": "apps/windows",
-        "tech_stack": "待定",
-        "description": "Windows 桌面端",
-        "status": "开发中"
+        "tech_stack": "TBD",
+        "description": "Windows Desktop",
+        "status": "developing"
       },
       "linux": {
         "enabled": false,
         "dir": "apps/linux",
-        "tech_stack": "待定",
-        "description": "Linux 桌面端",
-        "status": "开发中"
+        "tech_stack": "TBD",
+        "description": "Linux Desktop",
+        "status": "developing"
       },
       "macos": {
         "enabled": false,
         "dir": "apps/macos",
-        "tech_stack": "待定",
-        "description": "macOS 桌面端",
-        "status": "开发中"
+        "tech_stack": "TBD",
+        "description": "macOS Desktop",
+        "status": "developing"
       },
       "desktop": {
         "enabled": true,
         "dir": "apps/desktop",
         "tech_stack": "Tauri / React / Rust",
-        "description": "跨平台桌面端"
+        "description": "Tauri (Win / macOS / Linux)"
       }
     },
     "web": {
       "web": {
         "enabled": false,
         "dir": "apps/web",
-        "tech_stack": "待定",
-        "description": "Web 用户端",
-        "status": "开发中"
+        "tech_stack": "TBD",
+        "description": "Web Client",
+        "status": "developing"
       },
       "web-admin": {
         "enabled": true,
         "dir": "apps/web-admin",
         "tech_stack": "Vue3 / Vite",
-        "description": "Web 后台管理端"
+        "description": "Web Admin"
       }
     },
     "api": {
       "api": {
         "enabled": true,
         "dir": "apps/api",
-        "tech_stack": "待定",
-        "description": "后端接口服务"
+        "tech_stack": "TBD",
+        "description": "API Service"
       }
     }
   },
   "docs": {
-    "dir": "docs",
-    "api_doc_dir": "docs/api",
-    "task_dir": "docs/task",
-    "description": "文档、任务、PRD、接口文档"
+    "site_dir": "docs",
+    "site_content_dir": "docs/content",
+    "site_tech_stack": "Docusaurus 3",
+    "internal_dir": ".docs",
+    "api_doc_dir": ".docs/api",
+    "task_dir": ".docs/task",
+    "description": "Project documentation, not a platform: docs is the public documentation site, .docs holds internal program design documents, tasks, PRDs and API interface docs"
   },
   "design": {
     "dir": "design",
-    "description": "设计稿、图片、页面、切图"
+    "description": "Design drafts, images, pages, cutouts"
   }
 }

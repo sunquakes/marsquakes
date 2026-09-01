@@ -3,13 +3,17 @@ const path = require('path');
 const fs = require('fs');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
+const IS_WINDOWS = process.platform === 'win32';
+
+const errors = [];
+const warnings = [];
 
 function run(command, cwd = PROJECT_ROOT, options = {}) {
   console.log(`\n> ${command}`);
   try {
     execSync(command, { cwd, stdio: 'inherit', ...options });
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
@@ -29,95 +33,183 @@ function step(title) {
   console.log(`${'='.repeat(50)}`);
 }
 
+function ok(message) {
+  console.log(`[OK] ${message}`);
+}
+
+function warn(message) {
+  console.warn(`[WARN] ${message}`);
+  warnings.push(message);
+}
+
+function fail(message) {
+  console.error(`[FAIL] ${message}`);
+  errors.push(message);
+}
+
+function skip(message) {
+  console.log(`[SKIP] ${message}`);
+}
+
+function readPlatforms() {
+  const configPath = path.join(PROJECT_ROOT, 'platforms.json');
+  if (!fs.existsSync(configPath)) {
+    warn('platforms.json not found, platform steps will be skipped');
+    return [];
+  }
+
+  try {
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    const list = [];
+    for (const group of Object.values(config.platforms || {})) {
+      for (const [name, item] of Object.entries(group)) {
+        list.push({ name, ...item });
+      }
+    }
+    return list;
+  } catch (e) {
+    warn(`Failed to parse platforms.json: ${e.message}`);
+    return [];
+  }
+}
+
+const PLATFORMS = readPlatforms();
+
+function isEnabled(name) {
+  return PLATFORMS.some((p) => p.name === name && p.enabled);
+}
+
 // ============================================
-step('1. 环境检查');
+step('1. Environment check');
 // ============================================
 
-const nodeVersion = process.version;
-console.log(`Node.js: ${nodeVersion}`);
+console.log(`Node.js: ${process.version}`);
 
-if (!check('pnpm --version')) {
-  console.error('❌ pnpm 未安装，请先安装 pnpm: npm install -g pnpm');
+const requiredNodeMajor = 18;
+const nodeMajor = Number(process.version.replace('v', '').split('.')[0]);
+if (Number.isFinite(nodeMajor) && nodeMajor < requiredNodeMajor) {
+  fail(`Node.js >= ${requiredNodeMajor} is required, current: ${process.version}`);
   process.exit(1);
 }
-console.log('✅ pnpm 已安装');
+
+if (!check('pnpm --version')) {
+  fail('pnpm is not installed. Enable it first: corepack enable pnpm');
+  process.exit(1);
+}
+ok('pnpm is installed');
+
+if (check('git --version')) {
+  ok('git is installed');
+} else {
+  warn('git is not installed, git hooks will be skipped');
+}
 
 // ============================================
-step('2. 安装 Monorepo 依赖');
+step('2. Install monorepo dependencies');
 // ============================================
 
 if (run('pnpm install', PROJECT_ROOT)) {
-  console.log('✅ pnpm workspace 依赖安装完成');
+  ok('pnpm workspace dependencies installed');
 } else {
-  console.error('❌ 依赖安装失败');
+  warn('Frozen lockfile install failed, retrying with --no-frozen-lockfile');
+  if (run('pnpm install --no-frozen-lockfile', PROJECT_ROOT)) {
+    ok('pnpm workspace dependencies installed (lockfile updated)');
+  } else {
+    fail('Failed to install dependencies');
+  }
 }
 
 // ============================================
-step('3. 初始化 Android 端');
+step('3. Initialize Android');
 // ============================================
 
 const androidDir = path.join(PROJECT_ROOT, 'apps', 'android');
-if (fs.existsSync(path.join(androidDir, 'gradlew'))) {
-  if (run('.\\gradlew --version', androidDir)) {
-    console.log('✅ Android Gradle 环境正常');
-  } else {
-    console.error('❌ Android Gradle 初始化失败，请检查 JDK 11+ 和 Android SDK');
-  }
+const gradlewFile = IS_WINDOWS ? 'gradlew.bat' : 'gradlew';
+
+if (!isEnabled('android')) {
+  skip('android is disabled in platforms.json');
+} else if (!fs.existsSync(path.join(androidDir, gradlewFile))) {
+  skip(`apps/android/${gradlewFile} not found, skipping Android`);
+} else if (!process.env.JAVA_HOME && !check('java -version')) {
+  warn('JAVA_HOME is not set and java was not found, skipping Gradle check');
 } else {
-  console.log('⚠️ 未找到 apps/android/gradlew，跳过 Android 端');
+  const gradlewCmd = IS_WINDOWS ? '.\\gradlew.bat --version' : './gradlew --version';
+  if (run(gradlewCmd, androidDir)) {
+    ok('Android Gradle environment is ready');
+  } else {
+    fail('Android Gradle init failed, check JDK 17+ and Android SDK');
+  }
 }
 
 // ============================================
-step('4. 安装 Git Hooks');
+step('4. Install git hooks');
 // ============================================
 
-const hooksDir = path.join(PROJECT_ROOT, '.git', 'hooks');
+const gitDir = path.join(PROJECT_ROOT, '.git');
+const hooksDir = path.join(gitDir, 'hooks');
 const sourceHook = path.join(PROJECT_ROOT, 'scripts', 'hooks', 'commit-msg');
 const targetHook = path.join(hooksDir, 'commit-msg');
 
-if (fs.existsSync(hooksDir)) {
-  if (fs.existsSync(sourceHook)) {
-    try {
-      fs.copyFileSync(sourceHook, targetHook);
-      fs.chmodSync(targetHook, 0o755);
-      console.log('✅ Git commit-msg hook installed');
-      console.log('   Commit messages are now enforced to be in English');
-    } catch (e) {
-      console.warn('⚠️  Failed to install git hook:', e.message);
-    }
-  } else {
-    console.warn('⚠️  Git hook script not found');
-  }
+if (!fs.existsSync(gitDir)) {
+  warn('Not a git repository, run "git init" first to enable hooks');
+} else if (!fs.existsSync(sourceHook)) {
+  warn('scripts/hooks/commit-msg not found, skipping hook installation');
 } else {
-  console.warn('⚠️  .git/hooks directory not found, run "git init" first');
+  try {
+    fs.mkdirSync(hooksDir, { recursive: true });
+    fs.copyFileSync(sourceHook, targetHook);
+    fs.chmodSync(targetHook, 0o755);
+    ok('Git commit-msg hook installed');
+    console.log('     Commit messages are now enforced to be in English');
+  } catch (e) {
+    warn(`Failed to install git hook: ${e.message}`);
+  }
 }
 
 // ============================================
-step('5. 其他平台状态');
+step('5. Platform status');
 // ============================================
 
-const platforms = [
-  { name: 'iOS', dir: 'apps/ios', tip: 'Open apps/ios/ directory with Xcode' },
-  { name: 'API', dir: 'apps/api', tip: 'apps/api/ directory pending initialization' },
-  { name: 'Windows', dir: 'apps/windows', tip: 'apps/windows/ directory pending initialization' },
-  { name: 'Linux', dir: 'apps/linux', tip: 'apps/linux/ directory pending initialization' },
-  { name: 'macOS', dir: 'apps/macos', tip: 'apps/macos/ directory pending initialization' },
-];
+for (const platform of PLATFORMS) {
+  if (!platform.enabled) {
+    console.log(`[OFF]      ${platform.name.padEnd(10)} disabled in platforms.json`);
+    continue;
+  }
 
-for (const p of platforms) {
-  const dir = path.join(PROJECT_ROOT, p.dir);
-  const exists = fs.existsSync(dir) && fs.readdirSync(dir).length > 0;
-  console.log(`${exists ? '✅' : '⏳'} ${p.name}: ${p.tip}`);
+  const dir = path.join(PROJECT_ROOT, platform.dir || '');
+  const initialized = fs.existsSync(dir) && fs.readdirSync(dir).length > 0;
+  const label = initialized ? '[READY]  ' : '[PENDING]';
+  const detail = initialized
+    ? `${platform.dir} (${platform.tech_stack || 'TBD'})`
+    : `${platform.dir} pending initialization`;
+  console.log(`${label}  ${platform.name.padEnd(10)} ${detail}`);
 }
 
 // ============================================
-step('初始化完成');
+step('Summary');
 // ============================================
 
-console.log('\n常用命令:');
-console.log('  pnpm dev             - Turborepo 启动所有 dev');
-console.log('  pnpm dev --filter=web- 仅启动 Web 开发服务器');
-console.log('  pnpm build           - Turborepo 构建全部');
-console.log('  npm run dev:android  - 安装 Android Debug 包');
-console.log('  npm run build:android- 构建 Android Release 包');
+if (errors.length > 0) {
+  console.log(`\n${errors.length} error(s):`);
+  errors.forEach((message) => console.log(`  - ${message}`));
+}
+
+if (warnings.length > 0) {
+  console.log(`\n${warnings.length} warning(s):`);
+  warnings.forEach((message) => console.log(`  - ${message}`));
+}
+
+if (errors.length === 0) {
+  console.log('\nInitialization complete!');
+}
+
+console.log('\nCommon commands:');
+console.log('  pnpm dev                  Start all dev tasks via Turborepo');
+console.log('  pnpm dev --filter=web     Start the web dev server only');
+console.log('  pnpm build                Build everything via Turborepo');
+console.log('  pnpm clean                Clean build artifacts');
+console.log('  pnpm dev:android          Install the Android debug build');
+console.log('  pnpm build:android        Build the Android release package');
 console.log('');
+
+process.exit(errors.length > 0 ? 1 : 0);
