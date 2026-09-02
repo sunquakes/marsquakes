@@ -30,3 +30,10 @@ docs
 *.md
 **/*.md
 !apps/api/**/src/main/resources/**/*.md
+
+# The mysql image only seeds the JeecgBoot schema, so the two microservice-only
+# dumps are kept on disk but never sent to the daemon. They are named
+# explicitly rather than excluded as a group: jeecgboot-mysql-5.7.sql sits in
+# the same directory and is still COPYed by apps/api/db/Dockerfile.
+apps/api/db/tables_nacos.sql
+apps/api/db/tables_xxl_job.sql

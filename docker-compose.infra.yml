@@ -1,0 +1,138 @@
+# Base services (MySQL + Redis) for local development.
+#
+# The main stack in docker-compose.yml treats MySQL and Redis as *external*
+# dependencies, which is the right default for a deployed environment. This
+# file provides them locally instead, so a clean checkout can run end to end
+# without installing a database on the host.
+#
+# Usage
+#   Base services only (run your app from the IDE against them):
+#     docker compose -f docker-compose.infra.yml up -d
+#
+#   Full stack, artifacts already compiled:
+#     docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d
+#
+#   Full stack, compiling inside the images:
+#     docker compose -f docker-compose.build.yml -f docker-compose.infra.yml up -d
+#
+# IMPORTANT: when stacking this file with the application stack, point the app
+# at the in-network service names instead of the host, otherwise api keeps
+# talking to host.docker.internal and ignores the containers started here:
+#     MYSQL_HOST=mysql
+#     REDIS_HOST=redis
+#     MYSQL_PORT=3306
+#     REDIS_PORT=6379
+# .env.example ships these as a commented block, ready to be swapped in.
+#
+# Startup order: api cannot declare depends_on for services that only exist in
+# this file, and adding an api stub here would break the "base services only"
+# mode. api therefore starts before MySQL has finished importing the schema and
+# exits; its `restart: on-failure` brings it back until the database answers.
+# Expect a few restarts on the very first `up`.
+services:
+  # MySQL 8.0 pre-loaded with the JeecgBoot schema.
+  #
+  # The image is built rather than pulled because the init scripts have to be
+  # baked in; the build context is the repository root, matching every other
+  # image in this repository.
+  mysql:
+    build:
+      context: .
+      dockerfile: apps/api/db/Dockerfile
+    image: marsquakes/mysql:8.0.36
+    container_name: jeecg-boot-mysql
+    hostname: mysql
+    # A sequence rather than a single string: YAML forbids comments inside a
+    # multi-line plain scalar. The entrypoint prepends `mysqld` on its own
+    # because the first argument starts with a dash.
+    command:
+      # utf8mb4 is required: the schema declares utf8mb4_unicode_ci and the
+      # seed data contains characters outside the BMP.
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+      - --explicit_defaults_for_timestamp=true
+      # Without this, table names are case sensitive on Linux while the
+      # JeecgBoot mappers assume they are not, producing "table doesn't exist".
+      - --lower_case_table_names=1
+      # The main dump is ~10k lines; the 4M default aborts the import midway.
+      - --max_allowed_packet=128M
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-root}
+      MYSQL_ROOT_HOST: '%'
+      TZ: Asia/Shanghai
+    ports:
+      # Published on the standard 3306 so existing connection strings, IDE data
+      # sources and the JeecgBoot defaults work untouched. If the host already
+      # runs a MySQL of its own, set MYSQL_HOST_PORT to something free instead
+      # of editing this file: on Linux the bind fails loudly, but Docker Desktop
+      # on Windows may still accept the bind, in which case clients silently
+      # keep reaching the host instance. Inside the network it is always 3306.
+      - '${MYSQL_HOST_PORT:-3306}:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-p${MYSQL_PASSWORD:-root}']
+      interval: 10s
+      timeout: 5s
+      # Importing the schema on first boot takes a while; start_period keeps
+      # those early failures from counting against the retry budget.
+      retries: 10
+      start_period: 90s
+    networks:
+      - jeecg-boot
+    restart: unless-stopped
+
+  redis:
+    # Official image, alpine tag: unaffected by the glibc 2.31 / clone3 seccomp
+    # constraint documented in AGENTS.md.
+    image: redis:7-alpine
+    container_name: jeecg-boot-redis
+    hostname: redis
+    # REDIS_PASSWORD is passed in as an env var and the `:+` expansion is left
+    # to the container's shell, hence `$$` and the `sh -c` wrapper. Compose
+    # v2.0.0 rejects `${VAR:+...}` at parse time ("invalid interpolation
+    # format"), and older 1.x silently emitted the braces literally, which made
+    # redis die with "wrong number of arguments" reading its config. Deferring
+    # keeps one file working across compose versions.
+    #
+    # `:+` expands to nothing when REDIS_PASSWORD is unset or empty, leaving an
+    # unauthenticated instance - the default the application config assumes.
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      TZ: Asia/Shanghai
+    command:
+      - sh
+      - -c
+      - exec redis-server --appendonly yes $${REDIS_PASSWORD:+--requirepass "$$REDIS_PASSWORD"}
+    ports:
+      # Standard 6379, same reasoning as MySQL above: override with
+      # REDIS_HOST_PORT when the host port is already taken.
+      - '${REDIS_HOST_PORT:-6379}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      # Same deferred expansion as command above.
+      test: ['CMD-SHELL', 'redis-cli $${REDIS_PASSWORD:+-a "$$REDIS_PASSWORD"} ping | grep -q PONG']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - jeecg-boot
+    restart: unless-stopped
+
+volumes:
+  # Named volumes, so the data survives `docker compose down`. Note that the
+  # init scripts only run when the data directory is empty: to re-import the
+  # schema you must drop the volume with `docker compose down -v`.
+  mysql-data:
+    name: jeecg_boot_mysql_data
+  redis-data:
+    name: jeecg_boot_redis_data
+
+# Same key and name as in docker-compose.yml, so stacking the files with -f
+# resolves to a single shared network instead of creating a second one.
+networks:
+  jeecg-boot:
+    name: jeecg_boot
+    driver: bridge

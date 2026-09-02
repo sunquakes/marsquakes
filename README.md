@@ -163,12 +163,23 @@ node packages/mars-cli/bin/mars.js create my-project --from .
 
 ### Docker
 
-Copy the environment template first — MySQL and Redis are **external** to the
-stack:
+Copy the environment template first — there are two, differing only in where
+packages are downloaded from:
 
 ```bash
-cp .env.example .env         # then edit MYSQL_* / REDIS_* / WEB_ADMIN_PORT
+cp .env.example .env         # official registries (default)
+cp .env.example.cn .env      # mainland-China mirrors
 ```
+
+Then edit `MYSQL_*` / `REDIS_*` / `WEB_ADMIN_PORT`. Both templates declare the
+same keys with the same values, so switching later means changing two URLs, not
+rebuilding your `.env`.
+
+`.env` also carries `COMPOSE_PROJECT_NAME`, which pins the compose project name
+instead of letting it default to the lower-cased directory name — otherwise a
+checkout in a differently named folder silently becomes a different project.
+It has to live here rather than in the YAML: compose v2.0.0 rejects the
+top-level `name:` key.
 
 Two compose files, picked by whether the image compiles the source itself:
 
@@ -181,12 +192,63 @@ docker compose up -d
 ```
 
 Both files are complete and standalone-runnable with a single `-f`, so the
-VS Code Docker extension can run either directly.
+VS Code Docker extension can run either directly. Both treat MySQL and Redis as
+**external** dependencies, reached through `host.docker.internal`.
 
-| Service     | Image                        | Port                         |
-| ----------- | ---------------------------- | ---------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                  |
-| `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80` |
+#### Package sources
+
+`docker-compose.build.yml` compiles inside the image, so it has to download npm
+and Maven dependencies. Both sources default to the **official** registries and
+are configurable in `.env`. Picking a template is the same thing as picking a
+row of this table:
+
+| Variable | `.env.example` (default) | `.env.example.cn` |
+|----------|--------------------------|-------------------|
+| `NPM_REGISTRY` | `https://registry.npmjs.org` | `https://registry.npmmirror.com` |
+| `MAVEN_MIRROR_URL` | `https://repo.maven.apache.org/maven2` | `https://maven.aliyun.com/repository/public` |
+
+> These are **build-time** values. They reach the build through `build.args`, so
+> changing them does nothing to an image that is already built — rebuild it. And
+> because a bare `docker build` never reads `.env`, only
+> `docker compose -f docker-compose.build.yml build` and
+> `mars build --platform <p> --docker` pick them up; the latter parses `.env` and
+> forwards the values as `--build-arg`.
+>
+> `NPM_REGISTRY` cannot override a `tarball:` URL already pinned inside a pnpm
+> lockfile, because the builds run `pnpm install --frozen-lockfile`. Keep the
+> lockfiles free of `tarball:` fields or this setting silently does nothing.
+
+Run `pnpm check:env` after touching either template — it fails when the two files
+stop declaring the same keys and values.
+
+To run the database locally instead, stack the base services on top:
+
+```bash
+# Base services only — develop from the IDE against them
+docker compose -f docker-compose.infra.yml up -d
+
+# Or together with the application stack
+docker compose -f docker-compose.build.yml -f docker-compose.infra.yml up -d
+```
+
+The MySQL image bakes in the JeecgBoot schema from
+`apps/api/db/jeecgboot-mysql-5.7.sql`; the init scripts only run while the data
+directory is empty, so re-importing means `docker compose down -v`. The
+microservice-only `tables_nacos.sql` and `tables_xxl_job.sql` dumps sit in the
+same directory but are not seeded — import them by hand if you move to the cloud
+modules.
+
+> When stacking, set `MYSQL_HOST=mysql` / `REDIS_HOST=redis` in `.env` — the
+> defaults point at `host.docker.internal`, and leaving them alone makes `api`
+> quietly ignore the containers you just started. `.env.example` ships the
+> replacement block ready to uncomment.
+
+| Service     | Image                        | Port                          |
+| ----------- | ---------------------------- | ----------------------------- |
+| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                   |
+| `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80`  |
+| `mysql`     | `marsquakes/mysql:8.0.36`    | `${MYSQL_HOST_PORT:-3306}:3306` |
+| `redis`     | `redis:7-alpine`             | `${REDIS_HOST_PORT:-6379}:6379` |
 
 Dockerfiles live next to the code they build, inside each platform directory:
 
@@ -227,6 +289,7 @@ marsquakes/
 ├── turbo.json                  # Turborepo pipeline
 ├── docker-compose.yml          # Default stack (no compile stage)
 ├── docker-compose.build.yml    # Stack that compiles inside the images
+├── docker-compose.infra.yml    # Base services (MySQL + Redis), stacked with -f
 ├── .env.example                # Environment variable template
 └── AGENTS.md                   # Global conventions
 ```

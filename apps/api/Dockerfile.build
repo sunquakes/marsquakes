@@ -22,15 +22,29 @@ ARG MAVEN_IMAGE=maven:3.9-eclipse-temurin-17-focal
 ARG JRE_IMAGE=eclipse-temurin:17-jre-focal
 FROM ${MAVEN_IMAGE} AS builder
 
-# Route Maven Central through aliyun, otherwise dependency downloads stall on
-# repo.maven.apache.org
+# Where Maven resolves dependencies from. The default is Maven Central itself, so
+# a clean checkout behaves the same everywhere; set MAVEN_MIRROR_URL in .env to
+# point at a closer mirror when Central is slow (in mainland China
+# https://maven.aliyun.com/repository/public is the usual choice, and without it
+# the dependency download can stall for a very long time).
+#
+# docker compose passes this through build.args (see docker-compose.build.yml);
+# a bare `docker build` does not read .env, so pass --build-arg by hand or use
+# `mars build --platform api --docker`, which forwards it.
+ARG MAVEN_MIRROR_URL=https://repo.maven.apache.org/maven2
+
+# The mirror entry is written unconditionally: pointing mirrorOf central at
+# Central's own URL is a no-op, which keeps this a single code path instead of a
+# conditional that only ever runs in one of its two branches on any given host.
+# Note the url line is double-quoted while the rest are single-quoted -- printf
+# arguments are shell-literal, so only a double-quoted line expands the ARG.
 RUN mkdir -p /root/.m2 && printf '%s\n' \
     '<settings>' \
     '  <mirrors>' \
     '    <mirror>' \
-    '      <id>aliyun</id>' \
-    '      <name>aliyun maven</name>' \
-    '      <url>https://maven.aliyun.com/repository/public</url>' \
+    '      <id>configured-mirror</id>' \
+    '      <name>mirror from MAVEN_MIRROR_URL</name>' \
+    "      <url>${MAVEN_MIRROR_URL}</url>" \
     '      <mirrorOf>central</mirrorOf>' \
     '    </mirror>' \
     '  </mirrors>' \

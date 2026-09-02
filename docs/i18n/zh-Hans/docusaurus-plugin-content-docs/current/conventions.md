@@ -81,4 +81,5 @@ sidebar_position: 6
 `.docusaurus/`、`/docs/build` 与 `.env` 均已加入 gitignore。注意构建产物是
 按精确路径忽略的，而不是用裸的 `build/` 规则，因为 `apps/web-admin/build/` 是被
 纳入版本管理的源码（Vite 构建配置）。切勿提交密钥 —— 请使用 `.env`，并把
-`.env.example` 作为带说明的模板保留。
+`.env.example` 与 `.env.example.cn` 作为带说明的模板保留。被忽略的只有 `.env` 本身
+（精确规则，不是 `.env*`），所以两份模板都是纳入版本管理的。

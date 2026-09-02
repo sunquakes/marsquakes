@@ -101,7 +101,7 @@ ok('pnpm is installed');
 if (check('git --version')) {
   ok('git is installed');
 } else {
-  warn('git is not installed, git hooks will be skipped');
+  warn('git is not installed, version control will be unavailable');
 }
 
 // ============================================
@@ -142,32 +142,7 @@ if (!isEnabled('android')) {
 }
 
 // ============================================
-step('4. Install git hooks');
-// ============================================
-
-const gitDir = path.join(PROJECT_ROOT, '.git');
-const hooksDir = path.join(gitDir, 'hooks');
-const sourceHook = path.join(PROJECT_ROOT, 'scripts', 'hooks', 'commit-msg');
-const targetHook = path.join(hooksDir, 'commit-msg');
-
-if (!fs.existsSync(gitDir)) {
-  warn('Not a git repository, run "git init" first to enable hooks');
-} else if (!fs.existsSync(sourceHook)) {
-  warn('scripts/hooks/commit-msg not found, skipping hook installation');
-} else {
-  try {
-    fs.mkdirSync(hooksDir, { recursive: true });
-    fs.copyFileSync(sourceHook, targetHook);
-    fs.chmodSync(targetHook, 0o755);
-    ok('Git commit-msg hook installed');
-    console.log('     Commit messages are now enforced to be in English');
-  } catch (e) {
-    warn(`Failed to install git hook: ${e.message}`);
-  }
-}
-
-// ============================================
-step('5. Platform status');
+step('4. Platform status');
 // ============================================
 
 for (const platform of PLATFORMS) {

@@ -153,11 +153,19 @@ node packages/mars-cli/bin/mars.js create my-project --from .
 
 ### Docker
 
-先复制环境变量模板 —— MySQL 与 Redis 是这套栈的**外部依赖**：
+先复制环境变量模板。一共两份，区别只在依赖从哪里下载：
 
 ```bash
-cp .env.example .env         # 然后修改 MYSQL_* / REDIS_* / WEB_ADMIN_PORT
+cp .env.example .env         # 官方源（默认）
+cp .env.example.cn .env      # 国内镜像源
 ```
+
+复制完再改 `MYSQL_*` / `REDIS_*` / `WEB_ADMIN_PORT`。两份模板声明的键和值完全一致，
+所以之后想换源，改的是两个 URL，不需要重新整理 `.env`。
+
+`.env` 里还有一个 `COMPOSE_PROJECT_NAME`，用来固定 compose 的项目名，避免它默认取
+小写的目录名——否则换个目录名检出，整个项目就悄悄变成另一个项目了。它只能写在这里，
+不能写进 YAML：compose v2.0.0 不支持顶层的 `name:` 字段。
 
 两个 compose 文件，区别在于镜像本身是否编译源码：
 
@@ -170,12 +178,58 @@ docker compose up -d
 ```
 
 两个文件都是完整、可单独用一个 `-f` 运行的，因此 VS Code 的 Docker 插件可以直接
-右键运行任意一个。
+右键运行任意一个。它们都把 MySQL 与 Redis 视为**外部依赖**，通过
+`host.docker.internal` 访问。
 
-| 服务        | 镜像                         | 端口                         |
-| ----------- | ---------------------------- | ---------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                  |
-| `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80` |
+#### 依赖源
+
+`docker-compose.build.yml` 在镜像内部编译，需要下载 npm 与 Maven 依赖。两个源默认都用
+**官方源**，可以在 `.env` 里配置。选哪份模板，等价于选下面表格的哪一列：
+
+| 变量 | `.env.example`（默认） | `.env.example.cn` |
+|------|------------------------|-------------------|
+| `NPM_REGISTRY` | `https://registry.npmjs.org` | `https://registry.npmmirror.com` |
+| `MAVEN_MIRROR_URL` | `https://repo.maven.apache.org/maven2` | `https://maven.aliyun.com/repository/public` |
+
+> 这两个是**构建期**变量，通过 `build.args` 传入，因此改了之后对已经构建好的镜像没有
+> 任何影响，必须重新构建。另外裸 `docker build` 不会读 `.env`，只有
+> `docker compose -f docker-compose.build.yml build` 和
+> `mars build --platform <p> --docker` 能生效——后者会自己解析 `.env`，再以
+> `--build-arg` 传进去。
+>
+> 注意 `NPM_REGISTRY` 管不了 pnpm lockfile 里已经写死的 `tarball:` 地址，因为构建用的是
+> `pnpm install --frozen-lockfile`。要保证 lockfile 里没有 `tarball:` 字段，否则这个配置
+> 会静默失效。
+>
+> 在国内网络下建议直接用 `.env.example.cn`，否则 Maven 拉依赖可能会非常慢甚至看起来卡住。
+
+改完任意一份模板后跑一下 `pnpm check:env`——两份文件的键或值一旦不一致，它会直接报错。
+
+如果希望数据库也跑在本地容器里，把基础服务叠加上去：
+
+```bash
+# 只起基础服务 —— 应用仍从 IDE 里跑，连这两个容器
+docker compose -f docker-compose.infra.yml up -d
+
+# 或者与应用栈一起启动
+docker compose -f docker-compose.build.yml -f docker-compose.infra.yml up -d
+```
+
+MySQL 镜像内置了 `apps/api/db/jeecgboot-mysql-5.7.sql` 里的 JeecgBoot 表结构；初始化
+脚本只在数据目录为空时执行，因此想重新导入需要先 `docker compose down -v`。同目录下的
+`tables_nacos.sql` 和 `tables_xxl_job.sql` 只属于微服务部署，不会被初始化 —— 切到 cloud
+模块时手动导入即可。
+
+> 叠加使用时记得在 `.env` 里设置 `MYSQL_HOST=mysql` / `REDIS_HOST=redis` ——
+> 默认值指向 `host.docker.internal`，不改的话 `api` 会绕开刚刚启动的容器而毫无提示。
+> `.env.example` 里已经准备好这段注释掉的配置，取消注释即可。
+
+| 服务        | 镜像                         | 端口                            |
+| ----------- | ---------------------------- | ------------------------------- |
+| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                     |
+| `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80`    |
+| `mysql`     | `marsquakes/mysql:8.0.36`    | `${MYSQL_HOST_PORT:-3306}:3306` |
+| `redis`     | `redis:7-alpine`             | `${REDIS_HOST_PORT:-6379}:6379` |
 
 Dockerfile 与它所构建的代码放在一起，位于各自的平台目录内：
 
@@ -215,6 +269,7 @@ marsquakes/
 ├── turbo.json                  # Turborepo 流水线
 ├── docker-compose.yml          # 默认栈（不含编译阶段）
 ├── docker-compose.build.yml    # 在镜像内编译的栈
+├── docker-compose.infra.yml    # 基础服务（MySQL + Redis），用 -f 叠加
 ├── .env.example                # 环境变量模板
 └── AGENTS.md                   # 全局规范
 ```

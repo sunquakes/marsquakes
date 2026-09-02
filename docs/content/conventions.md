@@ -93,5 +93,6 @@ Rules that are easy to get wrong:
 `.docusaurus/`, `/docs/build` and `.env` are all gitignored. Note that the
 build output is ignored by its exact path rather than a bare `build/` pattern,
 because `apps/web-admin/build/` is tracked source (Vite build configuration).
-Never commit secrets — use `.env`, and keep `.env.example` as the documented
-template.
+Never commit secrets — use `.env`, and keep `.env.example` and `.env.example.cn`
+as the documented templates. Only `.env` itself is ignored (an exact rule, not
+`.env*`), so the templates stay tracked.

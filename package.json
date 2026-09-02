@@ -8,6 +8,7 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "init": "node scripts/init.js",
+    "check:env": "node scripts/check-env-example.js",
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",

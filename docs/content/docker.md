@@ -11,12 +11,27 @@ Every file described on this page is generated into your project by
 each `apps/<platform>/`. You can drive them with `mars dev --docker` /
 `mars build --docker`, or with `docker compose` directly.
 
-Copy the environment template first — MySQL and Redis are **external** to the
-stack:
+Copy the environment template first. There are two, differing only in where the
+image builds download npm packages and Maven dependencies from:
 
 ```bash
-cp .env.example .env         # then edit MYSQL_* / REDIS_* / WEB_ADMIN_PORT
+cp .env.example .env         # official registries (default)
+cp .env.example.cn .env      # mainland-China mirrors
 ```
+
+Then edit `MYSQL_*` / `REDIS_*` / `WEB_ADMIN_PORT`. Both templates declare the
+same keys with the same values — only `NPM_REGISTRY` and `MAVEN_MIRROR_URL`
+differ — so switching sources later is a two-line edit rather than a re-copy.
+Run `pnpm check:env` after editing either one; it exits non-zero if the two ever
+drift apart.
+
+`.env` also carries `COMPOSE_PROJECT_NAME`, which `mars create` rewrites to your
+project's name. It pins the compose project name instead of letting it default
+to the lower-cased directory name, so a checkout in a differently named folder
+does not silently become a different project. It has to live in the environment
+rather than the YAML: compose v2.0.0 rejects the top-level `name:` key with
+`(root) Additional property name is not allowed`. Project names must be
+lower-case.
 
 ## Two compose files
 
@@ -31,7 +46,8 @@ docker compose up -d
 ```
 
 Both files are complete and standalone-runnable with a single `-f`, so the
-VS Code Docker extension can run either directly.
+VS Code Docker extension can run either directly. Both treat MySQL and Redis as
+**external** dependencies, reached through `host.docker.internal`.
 
 | Service     | Image                        | Port                         |
 | ----------- | ---------------------------- | ---------------------------- |
@@ -48,6 +64,75 @@ in the override file, otherwise compose fails with
 `service "api" refers to undefined network <net>`. `depends_on` and
 `container_name` *are* inherited and must not be repeated.
 :::
+
+## Base services
+
+`docker-compose.infra.yml` supplies MySQL and Redis locally, so a clean checkout
+runs end to end without a database installed on the host. It is a **separate
+file combined with `-f`**, not an `extends` override: stacking merges at the
+project level, which lets the same file compose with either application stack.
+
+```bash
+# Base services only — develop from the IDE against them
+docker compose -f docker-compose.infra.yml up -d
+
+# Together with the application stack
+docker compose -f docker-compose.yml -f docker-compose.infra.yml up -d
+docker compose -f docker-compose.build.yml -f docker-compose.infra.yml up -d
+```
+
+| Service | Image                     | Port                            |
+| ------- | ------------------------- | ------------------------------- |
+| `mysql` | `marsquakes/mysql:8.0.36` | `${MYSQL_HOST_PORT:-3306}:3306` |
+| `redis` | `redis:7-alpine`          | `${REDIS_HOST_PORT:-6379}:6379` |
+
+The host ports are the standard 3306 and 6379, so existing connection strings
+and IDE data sources keep working. If the host already runs a MySQL or Redis of
+its own, override `MYSQL_HOST_PORT` / `REDIS_HOST_PORT` in `.env` rather than
+editing the compose file. Do not rely on a port clash being reported: on Linux
+the bind fails loudly, but Docker Desktop on Windows may accept it anyway, in
+which case clients silently keep talking to the host instance instead of the
+container. Inside the network the ports are always 3306 and 6379.
+
+:::warning
+Set `MYSQL_HOST=mysql` and `REDIS_HOST=redis` in `.env` when stacking. The
+defaults point at `host.docker.internal`, so leaving them alone makes `api`
+quietly ignore the containers you just started — a failure that looks like a
+connection problem rather than a configuration one. `.env.example` ships the
+replacement block ready to uncomment.
+:::
+
+The MySQL image is built from `apps/api/db/Dockerfile`, which bakes the
+JeecgBoot schema into `/docker-entrypoint-initdb.d`. Those scripts run once, in
+filename order, and only while the data directory is empty — re-importing means
+dropping the volume with `docker compose down -v`. Three server flags are load
+bearing: `--lower_case_table_names=1` (Linux is case sensitive, the mappers are
+not), `--max_allowed_packet=128M` (the 4M default aborts the ~10k-line dump
+midway) and `--character-set-server=utf8mb4`.
+
+:::caution
+The base image pins a **patch** version, `mysql:8.0.36`, not the floating
+`mysql:8.0` — do not tidy that back. The official `mysql` images are Oracle
+Linux based, and OL 9 ships glibc 2.34, which trips the `clone3` seccomp
+constraint documented in AGENTS.md: on Docker 20.10.8 `mysql:8.0` (currently
+8.0.46 / OL 9.7) fails during `--initialize` with `Can't create thread to handle
+bootstrap (errno: 1)`, then restart-loops complaining the data directory is not
+empty, which buries the real first error. `8.0.36` (OL 8.9, glibc 2.28) works.
+Check a tag's glibc before bumping the pin:
+`docker run --rm --entrypoint sh mysql:<tag> -c "ldd --version | head -1"`.
+
+The `5.7` in the dump filename is the Navicat **source** server, not a
+requirement. Every identifier is backtick-quoted (so 8.0's new reserved words
+such as `rank` / `groups` / `over` are harmless), and there is no
+`NO_AUTO_CREATE_USER`, no `GRANT ... IDENTIFIED BY`, no zero-dates and no
+MyISAM. MySQL 5.7 has been EOL since October 2023 — do not downgrade the server
+to match the filename.
+:::
+
+`api` cannot declare `depends_on` for services that live in another file, so it
+starts before the schema import finishes and exits; `restart: on-failure` brings
+it back until the database answers. A few restarts on the first `up` are
+expected.
 
 ## Dockerfile variants
 

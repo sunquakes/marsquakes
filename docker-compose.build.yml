@@ -14,6 +14,14 @@
 # NOTE: `extends` extends a *service*, not the project, so the top-level
 # networks block is NOT inherited and must be re-declared here with the same
 # key and name as in docker-compose.yml.
+#
+# build.args is the only way to get a value from .env into a build: `environment`
+# is runtime-only and cannot influence `npm config set` or the generated
+# settings.xml. The `:-` fallback repeats the ARG default from the Dockerfile on
+# purpose, so that a .env without these keys still builds against the official
+# sources rather than passing an empty value through. Note that compose v2.0.0
+# accepts this `:-` (default) form, but NOT the `:+` (alternate) form -- see the
+# Redis command in docker-compose.infra.yml for that constraint.
 services:
   api:
     extends:
@@ -22,6 +30,8 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile.build
+      args:
+        MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-https://repo.maven.apache.org/maven2}
 
   web-admin:
     extends:
@@ -30,6 +40,8 @@ services:
     build:
       context: .
       dockerfile: apps/web-admin/Dockerfile.build
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
 
 networks:
   jeecg-boot:

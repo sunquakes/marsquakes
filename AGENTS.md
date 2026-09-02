@@ -125,8 +125,10 @@ The `--docker` flag automatically:
 2. Resolves the platform directory from `platforms.json` (`dir` field, defaults to `apps/<platform>`),
    then picks the variant for the mode: `dev` → `Dockerfile.dev`, `build` → `Dockerfile.build`,
    each falling back to the bare `Dockerfile` when the dedicated variant is absent
-3. Builds image: `docker build -f <platform-dir>/Dockerfile[.build|.dev] -t marsquakes/<platform>:<mode> .`
-4. Runs container: `docker run`
+3. Reads the whitelisted build-time keys from `.env` and forwards them as `--build-arg`
+   (see "Build-time configuration" below) — a bare `docker build` does not read `.env` itself
+4. Builds image: `docker build [--build-arg ...] -f <platform-dir>/Dockerfile[.build|.dev] -t marsquakes/<platform>:<mode> .`
+5. Runs container: `docker run`
 
 **Build context is always the repository root.** All `COPY` instructions must therefore use
 repo-root-relative paths (e.g. `COPY apps/api/pom.xml ./`), which allows a Dockerfile to reach
@@ -157,6 +159,20 @@ you right-click a compose file and run it.
 |------|---------|-------|
 | `docker-compose.yml` | Default. Packages artifacts that were already compiled (pipeline scenario) | `docker compose up -d` |
 | `docker-compose.build.yml` | Compiles inside the image — use on a clean checkout or when debugging locally | `docker compose -f docker-compose.build.yml up -d` |
+| `docker-compose.infra.yml` | Base services (MySQL + Redis). Additive, combined with `-f` | `docker compose -f docker-compose.infra.yml up -d` |
+
+The **project name is pinned to `marsquakes`** via `COMPOSE_PROJECT_NAME` in `.env`
+(shipped in `.env.example`, and rewritten by `mars create` to the new project's name).
+It must be set through the environment, not the YAML: compose v2.0.0 rejects the top-level
+`name:` key with `(root) Additional property name is not allowed`. Leaving it unset makes
+compose fall back to the lower-cased directory name, so a checkout in `RubyAlbum/` silently
+produces a project called `rubyalbum` — which then diverges from the containers a colleague
+started from a differently named folder. Project names must be lower-case.
+
+Renaming the project is safe for state here **only because** every volume and network sets an
+explicit `name:` and every service sets `container_name`, so none of them carry the project
+prefix. Drop any of those and a rename starts creating fresh, empty volumes instead of reusing
+the existing ones — which looks like data loss.
 
 Rules for the `extends`-based override file:
 - Override only the keys that genuinely differ (in practice just `build.dockerfile`).
@@ -169,6 +185,132 @@ Rules for the `extends`-based override file:
 - `depends_on` and `container_name` *are* inherited, so the override file must not repeat them.
 - Stacking both files (`-f docker-compose.yml -f docker-compose.build.yml`) still resolves
   correctly, so existing pipeline invocations keep working.
+
+Rules for the additive base-services file:
+- It contributes **new services only** and never `extends` anything, so it composes with either
+  application stack: `-f docker-compose.yml -f docker-compose.infra.yml` and
+  `-f docker-compose.build.yml -f docker-compose.infra.yml` both resolve. Two files that each
+  `extends` the same root file could not be stacked this way.
+- It re-declares `networks.jeecg-boot` with the same key **and** the same `name: jeecg_boot`,
+  which is what makes stacking resolve to one shared network instead of creating a second.
+- The app services keep `${MYSQL_HOST:-host.docker.internal}` as their default, so switching
+  between external and in-network databases is an `.env` change (`MYSQL_HOST=mysql`,
+  `REDIS_HOST=redis`), never a compose-file edit.
+- Host ports default to the standard 3306 / 6379 so existing connection strings and IDE data
+  sources keep working. A host that already has MySQL or Redis bound there must override
+  `MYSQL_HOST_PORT` / `REDIS_HOST_PORT` in `.env` rather than edit the compose file.
+- When adding a service here, keep it **optional**: nothing in `docker-compose.yml` may declare
+  `depends_on` against it, because compose rejects a dependency on a service it cannot resolve
+  when that file runs alone.
+
+**YAML gotcha:** never put a comment inside a multi-line plain scalar (e.g. a `command:` written
+as several unquoted lines). The parser reads the `#` line as a new mapping key and fails with
+`did not find expected key`. Use a sequence (`- --flag`) when the flags need comments.
+
+**Interpolation gotcha:** the `${VAR:-default}` form works fine on compose v2.0.0 (the version on
+this machine) and is used throughout these files — `${MYSQL_HOST:-host.docker.internal}`,
+`${MYSQL_HOST_PORT:-3306}`, the `build.args` in `docker-compose.build.yml`. What v2.0.0 does
+**not** support is the `${VAR:+value}` *alternate-value* form inside service definitions: it aborts
+with `invalid interpolation format ... You may need to escape any $ with another $`, and older
+1.x silently dropped the `$` and passed the braces through literally, which made redis die with
+`wrong number of arguments` while reading its own config. When a flag must appear only if a
+variable is set, pass the variable through `environment:` and defer the expansion to the
+container's shell by writing `$${VAR:+...}` inside an `sh -c` command. Note that
+`docker compose config` re-escapes `$$` on output, so it cannot confirm what the container
+actually receives — verify with `docker compose run --rm <svc> sh -c 'echo ...'` instead, and
+test both the set and the unset branch.
+
+### Build-time configuration (package sources)
+
+`.env` is read automatically by `docker compose` and **never** by a bare `docker build`. That
+asymmetry is the whole reason this section exists.
+
+Anything that has to influence a build — as opposed to a running container — must travel
+`.env` → `build.args` → Dockerfile `ARG` → shell reference. `environment:` cannot do it: it only
+exists at runtime, long after `npm config set` and the generated `settings.xml` have already run.
+
+Two knobs use this path today, and both default to the **official** sources so that a clean
+checkout behaves identically on every network:
+
+| Variable | ARG default | Consumed by |
+|----------|-------------|-------------|
+| `NPM_REGISTRY` | `https://registry.npmjs.org` | `apps/web-admin/Dockerfile.build`, `Dockerfile.dev` |
+| `MAVEN_MIRROR_URL` | `https://repo.maven.apache.org/maven2` | `apps/api/Dockerfile.build`, `Dockerfile.dev` |
+
+On a mainland-China network both are slow enough that the Maven dependency download can look
+like a hang, so the repository ships **two `.env` templates** instead of asking everyone to
+hand-edit one. Keep the mirrors *out* of the tracked defaults in the Dockerfiles and in
+`docker-compose.build.yml` — `.env` is gitignored precisely so network-local choices stay local.
+
+| Template | `NPM_REGISTRY` / `MAVEN_MIRROR_URL` | Use when |
+|----------|-------------------------------------|----------|
+| `.env.example` | `registry.npmjs.org` / `repo.maven.apache.org` | default; matches the `ARG` defaults |
+| `.env.example.cn` | `registry.npmmirror.com` / `maven.aliyun.com` | mainland-China network |
+
+Rules for the two templates:
+- They **must declare the same keys, in the same order, with the same values** — only the two
+  package-source URLs and the surrounding explanatory comments may differ. A key added to one
+  and forgotten in the other is the whole failure mode this pair invites.
+- `.env.example` is the canonical file: every reference in the READMEs, the docs site and
+  `docker-compose.infra.yml` points at it. Generate `.env.example.cn` *from* it rather than
+  editing both by hand.
+- Register every new template in `filesToReplace` in `packages/mars-cli/bin/mars.js`. `copyDir`
+  excludes only `.git`, `node_modules`, `.gradle`, `build`, `dist`, `.turbo` and `.idea`, so
+  dotfiles **are** copied into generated projects — an unregistered template ships with this
+  repository's `COMPOSE_PROJECT_NAME=marsquakes` still baked in.
+- Both files are LF-only with no BOM. A BOM would make compose read the first key name with
+  three invisible bytes glued to it.
+- `pnpm check:env` (`scripts/check-env-example.js`) enforces all of the above and exits non-zero
+  on drift. It also verifies the two source URLs actually *differ* — if they ever converge, the
+  mirror variant has no reason to exist.
+
+Rules when adding another build-time knob:
+- Declare the `ARG` with a working default, so a bare `docker build` with no flags still succeeds.
+- Add it to `build.args` in `docker-compose.build.yml` as `${VAR:-<same default>}`. Repeating the
+  default there is deliberate: it keeps a `.env` that lacks the key building against the same
+  source as the Dockerfile.
+- Add it to **both** `.env` templates, or `pnpm check:env` fails.
+- Add it to `DOCKER_BUILD_ARG_KEYS` in `packages/mars-cli/bin/mars.js` if `mars build --docker`
+  should forward it. That list is a **whitelist, not a passthrough** — `.env` also holds
+  `MYSQL_PASSWORD` / `REDIS_PASSWORD`, and build args are visible in plain text in
+  `docker history`, so forwarding `.env` wholesale would bake secrets into published layers.
+- Never bake a secret into an `ARG`. Use a runtime `environment:` entry, or BuildKit secrets.
+
+**Maven `settings.xml` quoting:** the file is generated by `printf '%s\n'` with one argument per
+line, and `printf` arguments are shell-literal when single-quoted. Only the `<url>` line is
+double-quoted, which is what lets `${MAVEN_MIRROR_URL}` expand; single-quoting it would write the
+literal text `${MAVEN_MIRROR_URL}` into the XML and break resolution in a way the Maven error
+message does not explain. The mirror entry is written unconditionally because a `mirrorOf central`
+pointing at Central's own URL is a no-op — one always-exercised code path beats a conditional
+whose branches are never both tested on the same host.
+
+**pnpm inherits npm's registry** from `~/.npmrc` (verified in a `node:20-bullseye-slim`
+container: `npm config set registry <mirror>` then `pnpm config get registry` returns the
+mirror). So the `npm config set` that runs *before* `npm install -g pnpm` is the call that
+actually matters. The following `pnpm config set` is redundant today and kept only as explicit
+intent should pnpm ever stop reading npm's config.
+
+**`NPM_REGISTRY` is overridden by pinned tarballs in the lockfile.** A lockfileVersion 9.0
+`resolution:` entry may carry an explicit `tarball:` field, which is an absolute URL and wins over
+any registry config. The official registry is the implicit default and therefore writes no
+`tarball:` at all, so a lockfile generated behind a mirror ends up with mirror URLs baked in — and
+because the Dockerfiles use `pnpm install --frozen-lockfile`, they cannot be re-resolved at build
+time. `apps/web-admin/pnpm-lock.yaml` had 246 of its 1665 resolutions pinned to
+`registry.npmmirror.com` this way, which silently made `NPM_REGISTRY` a no-op for those packages;
+the fields were stripped so every entry now honours the configured registry.
+
+Guard this when regenerating the file: run `pnpm install` with the official registry configured, and
+check with `Select-String -Pattern 'tarball:' apps/web-admin/pnpm-lock.yaml` — the expected count is
+**zero**. If a mirror is needed locally, set it in `.env` / `NPM_REGISTRY` for the *build*, not in
+the committed lockfile. Note the file is pure LF with no BOM, so edit it with
+`[System.IO.File]::WriteAllText` and a `UTF8Encoding($false)`; PowerShell's `Set-Content` rewrites
+all 15,603 lines to CRLF and turns a 246-line diff into a whole-file rewrite.
+
+To validate the lockfile the way the image does, add `--ignore-workspace`:
+`pnpm install --frozen-lockfile --lockfile-only --ignore-workspace` inside a copy of just
+`package.json` + `pnpm-lock.yaml` + `.npmrc`. Without that flag pnpm walks *up* to
+`pnpm-workspace.yaml`, reports "Scope: all N workspace projects" and validates the **root**
+lockfile instead — a green run that proves nothing about the file you edited.
 
 ### Base Image Constraints (verified on this machine)
 
@@ -188,6 +330,26 @@ non-existent memory problem. Verified working: `maven:3.9-eclipse-temurin-17-foc
 `eclipse-temurin:17-jre-focal`, `node:20-bullseye-slim`, `nginx:stable`, and any `alpine` tag.
 `--security-opt seccomp=unconfined` also bypasses it; upgrading Docker to 23+ removes the
 constraint entirely.
+
+**This applies to MySQL too — it is not a JVM/Node-only problem.** The `mysql` images are
+Oracle Linux based, and Oracle Linux 9 ships glibc 2.34, so a floating `mysql:8.0` breaks the
+moment upstream rebases. Measured here: `mysql:8.0.36` (OL 8.9, glibc 2.28) works,
+`mysql:8.0.40` (OL 9.5) and `mysql:8.0` (OL 9.7, currently 8.0.46) both fail. `apps/api/db/Dockerfile`
+therefore pins the **patch** version, not `8.0`. The MySQL symptom is different from the JVM
+one and much more misleading: `Can't create thread to handle bootstrap (errno: 1)` then
+`Data Dictionary initialization failed` during `--initialize`, i.e. **before any
+`/docker-entrypoint-initdb.d` script runs**. The container then restart-loops on
+`--initialize specified but the data directory has files in it`, which buries the first failure
+far up the log and looks like a corrupt volume. When bumping the pin, verify the tag's glibc
+first: `docker run --rm --entrypoint sh mysql:<tag> -c "ldd --version | head -1"`.
+
+**Schema-dump note:** `apps/api/db/jeecgboot-mysql-5.7.sql` is named after the Navicat *source*
+server (5.7.38), not a server requirement. It loads cleanly into 8.0 — every identifier is
+backtick-quoted (so 8.0's new reserved words such as `rank` / `groups` / `over` are harmless),
+and it contains no `NO_AUTO_CREATE_USER`, no `GRANT ... IDENTIFIED BY`, no zero-dates and no
+MyISAM. `CHARACTER SET utf8` and `int(11)` are deprecated but accepted, and at the default
+`log_error_verbosity` they do not even reach the error log. Do not "upgrade" the dump or
+downgrade the server: 5.7 has been EOL since October 2023.
 
 **2. `apps/web-admin` must keep `css.preprocessorMaxWorkers: 0` in `vite.config.ts`.**
 Vite 7 defaults to `preprocessorMaxWorkers: true`, which spawns `availableParallelism() - 1`

@@ -10,13 +10,17 @@
 ARG MAVEN_IMAGE=maven:3.9-eclipse-temurin-17-focal
 FROM ${MAVEN_IMAGE}
 
+# Same knob as Dockerfile.build: defaults to Maven Central, override with
+# MAVEN_MIRROR_URL in .env when Central is slow.
+ARG MAVEN_MIRROR_URL=https://repo.maven.apache.org/maven2
+
 RUN mkdir -p /root/.m2 && printf '%s\n' \
     '<settings>' \
     '  <mirrors>' \
     '    <mirror>' \
-    '      <id>aliyun</id>' \
-    '      <name>aliyun maven</name>' \
-    '      <url>https://maven.aliyun.com/repository/public</url>' \
+    '      <id>configured-mirror</id>' \
+    '      <name>mirror from MAVEN_MIRROR_URL</name>' \
+    "      <url>${MAVEN_MIRROR_URL}</url>" \
     '      <mirrorOf>central</mirrorOf>' \
     '    </mirror>' \
     '  </mirrors>' \

@@ -157,6 +157,13 @@ function t(key, params = {}) {
   return text;
 }
 
+// Unlike t(), this returns undefined instead of echoing the key back, so
+// callers can fall back to their own default when a translation is missing.
+function tOptional(key) {
+  const locales = LOCALES[CURRENT_LANG] || LOCALES.en;
+  return locales[key] || LOCALES.en[key];
+}
+
 function parseLangArg(args) {
   const langIndex = args.indexOf('--lang');
   if (langIndex > -1 && args[langIndex + 1]) {
@@ -191,9 +198,9 @@ function getPlatformsFromConfig(config) {
       platforms.push({
         name,
         category,
-        label: t(labelKey) || defaultPlatform?.label || name,
+        label: tOptional(labelKey) || defaultPlatform?.label || name,
         default: !!info.enabled,
-        description: t(descKey) || info.description || defaultPlatform?.description || '',
+        description: tOptional(descKey) || info.description || defaultPlatform?.description || '',
         enabled: !!info.enabled,
         status: info.status || null,
       });
@@ -389,12 +396,20 @@ function replaceProjectName(targetDir, projectName) {
     ['Marsquakes/', `${projectName}/`],
     ['Marsquakes - Multi-platform Project', `${projectName} - Multi-platform Project`],
     ['Marsquakes - 多平台项目', `${projectName} - 多平台项目`],
+    // Compose rejects capitals in a project name, so this one is lower-cased
+    // rather than passed through verbatim.
+    [
+      'COMPOSE_PROJECT_NAME=marsquakes',
+      `COMPOSE_PROJECT_NAME=${projectName.toLowerCase()}`,
+    ],
   ];
 
   const filesToReplace = [
     'package.json',
     'platforms.json',
     'AGENTS.md',
+    '.env.example',
+    '.env.example.cn',
     'apps/android/AGENTS.md',
     'apps/web/AGENTS.md',
     'apps/web-admin/AGENTS.md',
@@ -829,10 +844,14 @@ const DOCKER_PORTS = {
   api: '8080:8080',
 };
 
-// Dockerfile 变体按「产物由谁生产」区分，而不是按 CLI 动词：
-//   Dockerfile        不含编译阶段，只消费已有产物（默认入口，流水线场景）
-//   Dockerfile.build  自包含编译（多阶段），干净检出即可构建
-//   Dockerfile.dev    容器内热启动，配合 volume 挂载（dev 模式默认）
+// Dockerfile variants are named after who produces the artifact, not after a
+// CLI verb:
+//   Dockerfile        no compile stage, consumes an existing artifact
+//                     (default entry point, pipeline scenario)
+//   Dockerfile.build  self-contained multi-stage compile, works on a clean
+//                     checkout
+//   Dockerfile.dev    hot reload inside the container, paired with a volume
+//                     mount (default for dev mode)
 const DOCKERFILE_VARIANTS = {
   dev: ['Dockerfile.dev', 'Dockerfile.build', 'Dockerfile'],
   build: ['Dockerfile.build', 'Dockerfile'],
@@ -843,7 +862,8 @@ function resolveDockerfile(rootDir, platform, mode) {
   const platformDir = getPlatformDir(rootDir, platform);
   const candidates = DOCKERFILE_VARIANTS[mode] || DOCKERFILE_VARIANTS.build;
 
-  // 按优先级回退：没有专用变体时退回不含编译的 Dockerfile
+  // Fall back in priority order: without a dedicated variant, use the bare
+  // Dockerfile that has no compile stage.
   let fileName = candidates[candidates.length - 1];
   for (const name of candidates) {
     if (fs.existsSync(path.join(rootDir, platformDir, name))) {
@@ -859,6 +879,59 @@ function resolveDockerfile(rootDir, platform, mode) {
   };
 }
 
+// Build-time knobs that .env is allowed to feed into `docker build`.
+// Keep this list explicit: .env also holds database passwords, and forwarding it
+// wholesale would bake secrets into image layers, where `docker history` shows
+// them in plain text.
+const DOCKER_BUILD_ARG_KEYS = ['NPM_REGISTRY', 'MAVEN_MIRROR_URL', 'HTTP_PROXY', 'HTTPS_PROXY', 'NO_PROXY'];
+
+// Minimal .env reader. `docker compose` parses .env by itself, but a bare
+// `docker build` does not, so the CLI has to do it to keep both paths
+// equivalent. Deliberately not a full dotenv implementation: this only needs to
+// handle the `KEY=value` lines, comments and optional quotes that .env.example
+// actually uses.
+function loadDotEnv(rootDir) {
+  const envPath = path.join(rootDir, '.env');
+  if (!fs.existsSync(envPath)) return {};
+
+  const result = {};
+  for (const rawLine of fs.readFileSync(envPath, 'utf8').split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+
+    const eq = line.indexOf('=');
+    if (eq === -1) continue;
+
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    // Strip one layer of matching quotes; an unquoted value keeps any inner '#'
+    // because .env has no trailing-comment syntax.
+    if (value.length >= 2 && ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")))) {
+      value = value.slice(1, -1);
+    }
+    if (key) result[key] = value;
+  }
+  return result;
+}
+
+// Turn the whitelisted .env entries into --build-arg flags. Empty values are
+// skipped so the Dockerfile's own ARG default stays in effect instead of being
+// overridden with an empty string.
+function resolveBuildArgs(rootDir) {
+  const env = loadDotEnv(rootDir);
+  const flags = [];
+  const used = [];
+
+  for (const key of DOCKER_BUILD_ARG_KEYS) {
+    const value = env[key];
+    if (value === undefined || value === '') continue;
+    flags.push(`--build-arg ${key}="${value}"`);
+    used.push(`${key}=${value}`);
+  }
+
+  return { flags, used };
+}
+
 function runDocker(rootDir, platform, mode) {
   if (!checkDocker()) {
     console.error('\n❌ Docker is not installed or not running.');
@@ -868,7 +941,8 @@ function runDocker(rootDir, platform, mode) {
 
   let targetPlatform = platform;
 
-  // platform=all 时挑第一个「已启用且带 Dockerfile」的平台，避免写死某个平台
+  // For platform=all, pick the first enabled platform that ships a Dockerfile
+  // instead of hard-coding one.
   if (platform === 'all') {
     const candidates = getEnabledPlatforms(loadPlatformsConfig(rootDir));
     const hit = candidates.find((p) => fs.existsSync(resolveDockerfile(rootDir, p.name, mode).dockerfile));
@@ -881,7 +955,8 @@ function runDocker(rootDir, platform, mode) {
     console.log(`\nℹ️  --platform not specified, using "${targetPlatform}"`);
   }
 
-  // Dockerfile 放在各平台自己的目录下，构建上下文仍为仓库根目录
+  // Dockerfiles live in each platform's own directory, but the build context
+  // is still the repository root.
   const { dockerfile, relativePath } = resolveDockerfile(rootDir, targetPlatform, mode);
 
   if (!fs.existsSync(dockerfile)) {
@@ -895,8 +970,16 @@ function runDocker(rootDir, platform, mode) {
 
   console.log(`\n🐳 Building Docker image: ${imageName}`);
   console.log(`   Dockerfile: ${relativePath} (context: repo root)`);
+
+  const { flags: buildArgFlags, used: buildArgSummary } = resolveBuildArgs(rootDir);
+  if (buildArgSummary.length > 0) {
+    console.log(`   Build args from .env: ${buildArgSummary.join(', ')}`);
+  }
+
+  const buildCmd = ['docker build', ...buildArgFlags, `-f "${dockerfile}"`, `-t ${imageName}`, `"${rootDir}"`].join(' ');
+
   try {
-    execSync(`docker build -f "${dockerfile}" -t ${imageName} "${rootDir}"`, { stdio: 'inherit' });
+    execSync(buildCmd, { stdio: 'inherit' });
   } catch (e) {
     console.error('\n❌ Docker build failed.');
     process.exit(1);

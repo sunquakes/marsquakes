@@ -34,9 +34,25 @@ FROM ${NODE_IMAGE} AS builder
 # need postinstall, so silencing the error with strict-dep-builds=false is not an
 # option (that would skip the build scripts silently).
 ARG PNPM_VERSION=9.15.9
-RUN npm config set registry https://registry.npmmirror.com \
+
+# Where npm and pnpm download packages from. The default is the official registry
+# so a clean checkout behaves the same everywhere; set NPM_REGISTRY in .env to
+# point at a closer mirror when the official one is slow (in mainland China
+# https://registry.npmmirror.com is the usual choice).
+#
+# docker compose passes this through build.args (see docker-compose.build.yml);
+# a bare `docker build` does not read .env, so pass --build-arg by hand or use
+# `mars build --platform web-admin --docker`, which forwards it.
+#
+# Both config calls are deliberate. The npm one is what actually matters: it is
+# in effect while npm installs pnpm, and pnpm then inherits it from ~/.npmrc
+# (verified). The pnpm one is redundant today and kept only so the registry stays
+# set if pnpm ever stops reading npm's config -- it costs nothing and makes the
+# intent explicit.
+ARG NPM_REGISTRY=https://registry.npmjs.org
+RUN npm config set registry ${NPM_REGISTRY} \
     && npm install -g pnpm@${PNPM_VERSION} \
-    && pnpm config set registry https://registry.npmmirror.com
+    && pnpm config set registry ${NPM_REGISTRY}
 
 WORKDIR /app
 

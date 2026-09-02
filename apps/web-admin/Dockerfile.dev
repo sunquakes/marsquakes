@@ -12,9 +12,13 @@ FROM ${NODE_IMAGE}
 # and from pnpm 10 on dependency build scripts are no longer run by default, which
 # fails with ERR_PNPM_IGNORED_BUILDS.
 ARG PNPM_VERSION=9.15.9
-RUN npm config set registry https://registry.npmmirror.com \
+
+# Same knob as Dockerfile.build: defaults to the official registry, override with
+# NPM_REGISTRY in .env when it is slow.
+ARG NPM_REGISTRY=https://registry.npmjs.org
+RUN npm config set registry ${NPM_REGISTRY} \
     && npm install -g pnpm@${PNPM_VERSION} \
-    && pnpm config set registry https://registry.npmmirror.com
+    && pnpm config set registry ${NPM_REGISTRY}
 
 WORKDIR /app
 

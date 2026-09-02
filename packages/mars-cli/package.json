@@ -7,7 +7,9 @@
     "mars": "bin/mars.js"
   },
   "files": [
-    "bin/"
+    "bin/",
+    "README.md",
+    "LICENSE"
   ],
   "publishConfig": {
     "access": "public"
