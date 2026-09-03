@@ -10,6 +10,10 @@ const sidebars: SidebarsConfig = {
     'platforms',
     'docker',
     'conventions',
+    'ai-agents',
+    'ai-setup',
+    'ai-workflow',
+    'ai-automation',
   ],
 };
 

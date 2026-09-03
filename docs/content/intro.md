@@ -72,6 +72,10 @@ two ways:
 | [Platforms](./platforms.md) | What each platform contains and how `platforms.json` works |
 | [Docker](./docker.md) | Building and running without a local JDK or Node toolchain |
 | [Conventions](./conventions.md) | Directory rules, commits, branches |
+| [AI Agents](./ai-agents.md) | Prompt examples for driving `mars` from an AI coding agent |
+| [Set Up the Agent](./ai-setup.md) | Installing and configuring OpenAI Codex CLI |
+| [Build a Project with AI](./ai-workflow.md) | End-to-end walkthrough, from scaffold to release |
+| [Automate with AI](./ai-automation.md) | Unattended runs, exit codes, CI |
 
 ## Requirements
 

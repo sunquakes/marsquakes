@@ -23,7 +23,7 @@ mars --help
 都会取到最新版本。
 :::
 
-CLI 本身只要求 Node >= 18 和 pnpm >= 9。如果还没有 pnpm，用 Node 自带的
+CLI 本身只要求 Node >= 22.12.0 和 pnpm >= 9。如果还没有 pnpm，用 Node 自带的
 Corepack 启用即可：
 
 ```bash
@@ -36,28 +36,46 @@ corepack enable pnpm
 mars create my-app
 ```
 
-命令会询问你要包含哪些端。`web-admin` 与 `api` 默认已勾选，其余都是可选：
+命令会询问你要包含哪些端。`web-admin` 与 `api` 默认已勾选，其余都是
+可选：
 
 ```
-? Select platforms to include:
- ❯ ◉ Web Admin      (Vue 3 + Vite)
-   ◉ API Service    (Spring Boot)
-   ◯ Web Client
-   ◯ Android
-   ◯ iOS
-   ◯ Desktop        (Tauri)
-   ◯ Windows / Linux / macOS
+📋 Select platforms to create
+
+  📱 Mobile:
+   1. [ ] Android [developing]
+   2. [ ] iOS [developing]
+
+  🖥️ Desktop:
+   3. [ ] Windows [developing]
+   4. [ ] Linux [developing]
+   5. [ ] macOS [developing]
+   6. [ ] Desktop
+         Tauri (Win / macOS / Linux)
+
+  🌐 Web:
+   7. [ ] Web Client [developing]
+   8. [✓] Web Admin
+         Backend administration system
+
+  ⚙️ API:
+   9. [✓] API Service
+         RESTful API service
 ```
 
 在交互式终端里，用 `↑` `↓` 移动、`space` 勾选、`enter` 确认。如果 CLI 检测不到
-TTY（比如 CI 任务，或编辑器内置的终端），会退化成编号列表：输入想要的编号，
-`a` 表示全选，`n` 表示全不选，直接回车则接受默认值。
+TTY（比如 CI 任务，或编辑器内置的终端），会退化成上面这种编号列表：输入想要切换
+的编号，`a` 表示全选，`n` 表示全不选，直接回车则接受默认值。
 
-想完全跳过询问、直接使用默认值：
+想完全跳过询问、直接使用这两个默认端：
 
 ```bash
 mars create my-app --non-interactive
 ```
+
+`create` 没有 `--platform` 参数，其他组合都只能通过交互选择完成。
+[配合 AI Agent 使用](./ai-agents.md) 详细说明了交互的输入语法，以及 Agent
+应该怎么驱动它。
 
 ## 开始开发
 
@@ -90,7 +108,7 @@ CLI 本身只需要 Node 和 pnpm。你每启用一个端，就会多一项要�
 | 端 | 本机需要 | 可用 Docker 规避 |
 | -- | -------- | ---------------- |
 | `api` | JDK 17 + Maven 3.9+ | 可以 |
-| `web-admin`、`web` | Node >= 18、pnpm 9.15.x | 可以 |
+| `web-admin`、`web` | Node >= 22.12.0、pnpm 9.15.x | 可以 |
 | `desktop` | Rust stable + Tauri 依赖 | 不可以 |
 | `android` | JDK 17 + Android SDK | 不可以 |
 | `ios` | Xcode（仅 macOS） | 不可以 |

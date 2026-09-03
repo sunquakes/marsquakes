@@ -85,10 +85,21 @@ step('1. Environment check');
 
 console.log(`Node.js: ${process.version}`);
 
-const requiredNodeMajor = 18;
-const nodeMajor = Number(process.version.replace('v', '').split('.')[0]);
-if (Number.isFinite(nodeMajor) && nodeMajor < requiredNodeMajor) {
-  fail(`Node.js >= ${requiredNodeMajor} is required, current: ${process.version}`);
+// Keep this in sync with engines.node in the root package.json and with .nvmrc.
+// The floor is a full version, not a major: Vite 7 refuses anything below
+// 22.12.0 on the 22 line, so a major-only comparison would wave 22.0-22.11
+// through and the failure would only surface later, inside vite.
+const requiredNode = '22.12.0';
+const toParts = (v) => v.replace(/^v/, '').split('.').map(Number);
+const isOlder = (a, b) => {
+  const [x, y] = [toParts(a), toParts(b)];
+  for (let i = 0; i < 3; i += 1) {
+    if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) < (y[i] || 0);
+  }
+  return false;
+};
+if (isOlder(process.version, requiredNode)) {
+  fail(`Node.js >= ${requiredNode} is required, current: ${process.version}`);
   process.exit(1);
 }
 

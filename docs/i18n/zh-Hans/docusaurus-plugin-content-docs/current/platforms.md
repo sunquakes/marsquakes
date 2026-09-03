@@ -39,7 +39,7 @@ sidebar_position: 4
 {
   "platforms": {
     "mobile":  { "android": { "enabled": false, "dir": "apps/android", ... } },
-    "desktop": { "desktop": { "enabled": true,  "dir": "apps/desktop", ... } },
+    "desktop": { "desktop": { "enabled": true,  "default": false, "dir": "apps/desktop", ... } },
     "web":     { "web-admin": { "enabled": true, "dir": "apps/web-admin", ... } },
     "api":     { "api": { "enabled": true, "dir": "apps/api", ... } }
   },
@@ -62,7 +62,8 @@ sidebar_position: 4
 
 | 字段          | 含义                                            |
 | ------------- | ----------------------------------------------- |
-| `enabled`     | `mars dev` / `mars build` 是否处理该平台        |
+| `enabled`     | `mars dev` / `mars build` 是否处理该平台，以及 `mars create` 里能否勾选它 |
+| `default`     | 可选；`mars create` 里初始是否打勾。不写时回退到 `enabled`。`desktop` 设为 `false`，因此它可选但不属于默认项目 |
 | `dir`         | 平台目录，相对项目根目录                        |
 | `tech_stack`  | 可读的技术栈描述                                |
 | `description` | 工具链输出中展示的简短说明                      |

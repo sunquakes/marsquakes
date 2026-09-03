@@ -62,17 +62,27 @@ CLI 按以下顺序确定模板来源，命中即停止：
 
 ### 端的选择
 
-| 端 | 分类 | 默认启用 |
-| -- | ---- | -------- |
-| `web-admin` | web | 是 |
-| `api` | api | 是 |
-| `web` | web | 否 |
-| `android` | mobile | 否 |
-| `ios` | mobile | 否 |
-| `desktop` | desktop | 否 |
-| `windows` | desktop | 否 |
-| `linux` | desktop | 否 |
-| `macos` | desktop | 否 |
+| 端 | 分类 | 默认勾选 | 可选中 |
+| -- | ---- | -------- | ------ |
+| `web-admin` | web | 是 | 是 |
+| `api` | api | 是 | 是 |
+| `desktop` | desktop | 否 | 是 |
+| `web` | web | 否 | 否 |
+| `android` | mobile | 否 | 否 |
+| `ios` | mobile | 否 | 否 |
+| `windows` | desktop | 否 | 否 |
+| `linux` | desktop | 否 | 否 |
+| `macos` | desktop | 否 | 否 |
+
+**默认勾选**和**可选中**在 `platforms.json` 里是两个不同的键：`enabled` 决定
+这一项能不能被选（为 `false` 时会置灰并标上 `[developing]`），可选的 `default`
+键决定它初始是否打勾。`desktop` 是目前唯一两者不同的端 —— 它是一个完整可用的
+Tauri 应用，你可以主动勾上，只是不属于默认项目。不写 `default` 时会回退到
+`enabled`。
+
+`--non-interactive` 选中的正是上面这两个默认勾选的端。`create` **没有
+`--platform` 参数**，因此其他任何组合都必须走交互。交互的输入语法见
+[AI Agent](./ai-agents.md)。
 
 未勾选的端根本不会被复制进新项目 —— 是直接跳过该目录，而不是先复制再删除。
 

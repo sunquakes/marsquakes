@@ -199,7 +199,7 @@ function getPlatformsFromConfig(config) {
         name,
         category,
         label: tOptional(labelKey) || defaultPlatform?.label || name,
-        default: !!info.enabled,
+        default: info.default === undefined ? !!info.enabled : !!info.default,
         description: tOptional(descKey) || info.description || defaultPlatform?.description || '',
         enabled: !!info.enabled,
         status: info.status || null,
@@ -652,6 +652,9 @@ function updatePlatformsConfig(targetDir, selectedPlatforms) {
     for (const [name] of Object.entries(group)) {
       const selected = selectedPlatforms.some(p => p.name === name);
       config.platforms[category][name].enabled = selected;
+      if (config.platforms[category][name].default !== undefined) {
+        config.platforms[category][name].default = selected;
+      }
     }
   }
   

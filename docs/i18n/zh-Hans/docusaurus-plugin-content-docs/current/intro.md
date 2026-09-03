@@ -66,6 +66,10 @@ my-app/
 | [平台](./platforms.md) | 每个端包含什么，以及 `platforms.json` 的作用 |
 | [Docker](./docker.md) | 不装本地 JDK / Node 工具链也能构建运行 |
 | [约定](./conventions.md) | 目录规则、提交信息、分支 |
+| [AI Agent](./ai-agents.md) | 让 AI 编程助手驱动 `mars` 的提示词示例 |
+| [配置 Agent](./ai-setup.md) | 安装并配置 DeepSeek Harness |
+| [用 AI 构建项目](./ai-workflow.md) | 从创建到打包的完整流程 |
+| [用 AI 做自动化](./ai-automation.md) | 无人值守运行、退出码、CI |
 
 ## 环境要求
 

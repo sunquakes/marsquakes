@@ -82,7 +82,7 @@ hard-coding paths.
 
 ## Requirements
 
-- Node.js >= 18
+- Node.js >= 22.12.0
 - pnpm >= 9 (`corepack enable pnpm`)
 - git
 

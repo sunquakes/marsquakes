@@ -327,7 +327,7 @@ on glibc >= 2.34 (`jammy`, `trixie` — which is node's *default* tag — and `a
 to create threads with `EPERM`. The JVM misreports this as
 `insufficient memory ... Cannot create worker GC thread`, which sends you hunting a
 non-existent memory problem. Verified working: `maven:3.9-eclipse-temurin-17-focal`,
-`eclipse-temurin:17-jre-focal`, `node:20-bullseye-slim`, `nginx:stable`, and any `alpine` tag.
+`eclipse-temurin:17-jre-focal`, `node:22-bullseye-slim`, `nginx:stable`, and any `alpine` tag.
 `--security-opt seccomp=unconfined` also bypasses it; upgrading Docker to 23+ removes the
 constraint entirely.
 

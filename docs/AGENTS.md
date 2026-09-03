@@ -50,7 +50,7 @@ docs/
 ├── docusaurus.config.ts      # Site config, i18n, navbar, footer, presets
 ├── sidebars.ts               # Explicit sidebar ids (must match front matter)
 ├── tsconfig.json             # Extends @docusaurus/tsconfig
-├── package.json              # name: "docs", requires Node >= 20
+├── package.json              # name: "docs", requires Node >= 22.12.0
 ├── content/                  # Published Markdown (the only publishable source)
 │   ├── intro.md  getting-started.md  platforms.md
 │   └── docker.md  cli.md  conventions.md
@@ -141,8 +141,11 @@ pnpm type-check               # tsc --noEmit
 
 ## Coding Standards
 
-- **Node >= 20** is required by Docusaurus 3, which is stricter than the
-  repository-wide `>= 18`. Keep the `engines` field in `package.json` accurate.
+- **Node >= 22.12.0** is required, which is the repository-wide floor declared in
+  every `package.json`, in `.nvmrc` and in the root `volta` pin. Docusaurus 3
+  itself only asks for `>= 20`, but Vite 7 elsewhere in the monorepo needs
+  `20.19+` or `22.12+`, so the whole repo is unified on one number rather than
+  each package carrying its own. Keep the `engines` field accurate.
 - **Code comments are written in English**, including `docusaurus.config.ts`,
   `sidebars.ts` and `custom.css`.
 - `onBrokenLinks` is `throw`. A dead relative link fails the build — always run

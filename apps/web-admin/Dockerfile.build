@@ -16,14 +16,16 @@
 # it casually: Docker 20.10.8 on this machine has no clone3 in its seccomp
 # whitelist, so on glibc 2.34+ images (trixie, which is node's default tag)
 # thread creation returns EPERM and both the JVM and Node die.
-# The major version is 20 (package.json engines is "^18 || >=20").
+# The major version is 22, matching the repository-wide engines ">=22.12.0".
+# node:22-bullseye-slim was measured here before the bump: glibc 2.31, node
+# v22.23.2, and 8 concurrent worker_threads created without error.
 #
 # vite build used to fail randomly inside the container with "[less] timed-out",
 # on a different .less file every run. That was not a node version problem: the
 # root cause is that Vite 7 enables the less worker pool by default and each
 # worker's Atomics.wait timeout is hard-coded to 5s. It is fixed by setting
 # preprocessorMaxWorkers: 0 in vite.config.ts.
-ARG NODE_IMAGE=node:20-bullseye-slim
+ARG NODE_IMAGE=node:22-bullseye-slim
 ARG NGINX_IMAGE=nginx:stable
 FROM ${NODE_IMAGE} AS builder
 

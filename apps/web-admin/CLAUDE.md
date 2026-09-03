@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-JeecgBoot Vue3 frontend — an enterprise low-code platform built with Vue 3 + Vite 6 + Ant Design Vue 4 + TypeScript. Uses pnpm as package manager. Node 18 or 20+ required (`engines: "^18 || >=20"`).
+JeecgBoot Vue3 frontend — an enterprise low-code platform built with Vue 3 + Vite 6 + Ant Design Vue 4 + TypeScript. Uses pnpm as package manager. Node 22.12.0+ required (`engines: ">=22.12.0"`).
 
 ## Common Commands
 

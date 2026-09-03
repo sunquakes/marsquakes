@@ -155,7 +155,7 @@ glibc >= 2.34 构建的镜像（`jammy`、`trixie` —— 也就是 node 的*默
 根本不存在的内存问题。
 
 已验证可用：`maven:3.9-eclipse-temurin-17-focal`、`eclipse-temurin:17-jre-focal`、
-`node:20-bullseye-slim`、`nginx:stable`，以及任意 `alpine` 标签。
+`node:22-bullseye-slim`、`nginx:stable`，以及任意 `alpine` 标签。
 `--security-opt seccomp=unconfined` 也能绕过；升级 Docker 到 23+ 可彻底消除该约束。
 
 ### 2. `apps/web-admin` 必须保留 `css.preprocessorMaxWorkers: 0`

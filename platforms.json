@@ -41,6 +41,7 @@
       },
       "desktop": {
         "enabled": true,
+        "default": false,
         "dir": "apps/desktop",
         "tech_stack": "Tauri / React / Rust",
         "description": "Tauri (Win / macOS / Linux)"

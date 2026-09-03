@@ -42,7 +42,7 @@ platform list from it, so no path is hard-coded anywhere.
 {
   "platforms": {
     "mobile":  { "android": { "enabled": false, "dir": "apps/android", ... } },
-    "desktop": { "desktop": { "enabled": true,  "dir": "apps/desktop", ... } },
+    "desktop": { "desktop": { "enabled": true,  "default": false, "dir": "apps/desktop", ... } },
     "web":     { "web-admin": { "enabled": true, "dir": "apps/web-admin", ... } },
     "api":     { "api": { "enabled": true, "dir": "apps/api", ... } }
   },
@@ -66,7 +66,8 @@ Each platform entry carries:
 
 | Field | Meaning |
 | ----- | ------- |
-| `enabled` | whether `mars dev` / `mars build` touch the platform |
+| `enabled` | whether `mars dev` / `mars build` touch the platform, and whether `mars create` lets you select it |
+| `default` | optional; whether `mars create` starts with the platform ticked. Falls back to `enabled` when absent. `desktop` sets it to `false` so it is available but not part of the default project |
 | `dir` | platform directory, relative to the project root |
 | `tech_stack` | human-readable stack description |
 | `description` | short summary shown by the tooling |

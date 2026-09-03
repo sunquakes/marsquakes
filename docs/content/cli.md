@@ -66,17 +66,29 @@ The CLI picks a template source in this order, stopping at the first match:
 
 ### Platform selection
 
-| Platform | Category | Enabled by default |
-| -------- | -------- | ------------------ |
-| `web-admin` | web | yes |
-| `api` | api | yes |
-| `web` | web | no |
-| `android` | mobile | no |
-| `ios` | mobile | no |
-| `desktop` | desktop | no |
-| `windows` | desktop | no |
-| `linux` | desktop | no |
-| `macos` | desktop | no |
+| Platform | Category | Pre-selected | Selectable |
+| -------- | -------- | ------------ | ---------- |
+| `web-admin` | web | yes | yes |
+| `api` | api | yes | yes |
+| `desktop` | desktop | no | yes |
+| `web` | web | no | no |
+| `android` | mobile | no | no |
+| `ios` | mobile | no | no |
+| `windows` | desktop | no | no |
+| `linux` | desktop | no | no |
+| `macos` | desktop | no | no |
+
+**Pre-selected** and **selectable** are separate keys in `platforms.json`:
+`enabled` controls whether the entry can be picked at all (a `false` entry is
+greyed out and labelled `[developing]`), while the optional `default` key
+controls whether it starts checked. `desktop` is the one platform where they
+differ — it is a complete Tauri app you can opt into, just not part of the
+default project. Omit `default` and it falls back to `enabled`.
+
+`--non-interactive` selects exactly the two pre-selected platforms. There is
+**no `--platform` option on `create`**, so any other combination has to go
+through the prompt. See [AI Agents](./ai-agents.md) for the prompt's input
+syntax.
 
 Unselected platforms are never copied into the new project — the directory is
 skipped entirely rather than copied and deleted.

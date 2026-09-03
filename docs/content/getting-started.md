@@ -23,7 +23,7 @@ Prefer not to install globally? `pnpm dlx @marsquakes/cli create my-app` works
 too, and always fetches the latest version.
 :::
 
-Node >= 18 and pnpm >= 9 are the only requirements. If pnpm is missing, enable
+Node >= 22.12.0 and pnpm >= 9 are the only requirements. If pnpm is missing, enable
 it through the Corepack shim that ships with Node:
 
 ```bash
@@ -36,30 +36,48 @@ corepack enable pnpm
 mars create my-app
 ```
 
-You will be asked which platforms to include. `web-admin` and `api` are
-pre-selected; everything else is opt-in.
+You will be asked which platforms to include. `web-admin` and `api`
+are pre-selected; everything else is opt-in.
 
 ```
-? Select platforms to include:
- ❯ ◉ Web Admin      (Vue 3 + Vite)
-   ◉ API Service    (Spring Boot)
-   ◯ Web Client
-   ◯ Android
-   ◯ iOS
-   ◯ Desktop        (Tauri)
-   ◯ Windows / Linux / macOS
+📋 Select platforms to create
+
+  📱 Mobile:
+   1. [ ] Android [developing]
+   2. [ ] iOS [developing]
+
+  🖥️ Desktop:
+   3. [ ] Windows [developing]
+   4. [ ] Linux [developing]
+   5. [ ] macOS [developing]
+   6. [ ] Desktop
+         Tauri (Win / macOS / Linux)
+
+  🌐 Web:
+   7. [ ] Web Client [developing]
+   8. [✓] Web Admin
+         Backend administration system
+
+  ⚙️ API:
+   9. [✓] API Service
+         RESTful API service
 ```
 
 In an interactive terminal, move with `↑` `↓`, toggle with `space`, confirm with
 `enter`. When the CLI cannot detect a TTY — a CI job, or a shell inside an
-editor — it falls back to a numbered list where you type the numbers you want,
-`a` for all, `n` for none, or press `enter` to accept the defaults.
+editor — it falls back to the numbered list shown above, where you type the
+numbers you want to toggle, `a` for all, `n` for none, or press `enter` to
+accept the defaults.
 
-To skip the prompt entirely and take the defaults:
+To skip the prompt entirely and take the two defaults:
 
 ```bash
 mars create my-app --non-interactive
 ```
+
+`create` has no `--platform` option, so any other combination must go through
+the prompt. [AI Agents](./ai-agents.md) documents the prompt's input syntax and
+how an agent should drive it.
 
 ## Start developing
 
@@ -94,7 +112,7 @@ requirement — but only when you build it **on the host**. The
 | Platform | Needs on the host | Avoidable with Docker |
 | -------- | ----------------- | --------------------- |
 | `api` | JDK 17 + Maven 3.9+ | yes |
-| `web-admin`, `web` | Node >= 18, pnpm 9.15.x | yes |
+| `web-admin`, `web` | Node >= 22.12.0, pnpm 9.15.x | yes |
 | `desktop` | Rust stable + Tauri prerequisites | no |
 | `android` | JDK 17 + Android SDK | no |
 | `ios` | Xcode (macOS only) | no |

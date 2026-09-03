@@ -189,6 +189,6 @@
   },
   "homepage": "https://www.jeecg.com",
   "engines": {
-    "node": "^18 || >=20"
+    "node": ">=22.12.0"
   }
 }

@@ -3,9 +3,9 @@
 #   docker build -f apps/web-admin/Dockerfile.dev -t marsquakes/web-admin:dev .
 # Mount the sources at /app as a volume to get hot reload.
 # Base image matches Dockerfile.build: the official node image with the tag pinned
-# to 20-bullseye. bullseye is required because Docker 20.10.8 blocks clone3 in
+# to 22-bullseye. bullseye is required because Docker 20.10.8 blocks clone3 in
 # seccomp (see the comments in Dockerfile.build).
-ARG NODE_IMAGE=node:20-bullseye-slim
+ARG NODE_IMAGE=node:22-bullseye-slim
 FROM ${NODE_IMAGE}
 
 # pnpm stays on 9 for the same reason as in Dockerfile.build: lockfileVersion 9.0,
