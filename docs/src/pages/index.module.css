@@ -207,6 +207,80 @@
   margin: 0 auto 1.5rem;
 }
 
+/* Two-path navigation explainer: two cards side by side, each with an icon,
+   a heading and a body. The AI Guide card gets a subtle visual emphasis. */
+.pathGrid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 52rem;
+  margin: 0 auto;
+}
+
+.pathCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.75rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: var(--ifm-card-border-radius, 12px);
+  background: var(--ifm-card-background-color, var(--ifm-background-surface-color));
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.06);
+}
+
+.pathCardRecommended {
+  border-color: var(--ifm-color-primary);
+  box-shadow: 0 0 0 1px var(--ifm-color-primary), 0 2px 8px rgb(0 0 0 / 0.08);
+}
+
+.pathCardRecommended::before {
+  content: attr(data-badge);
+  position: absolute;
+  top: -0.55rem;
+  right: 1rem;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.5;
+  border-radius: 999px;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pathCardIcon {
+  font-size: 1.8rem;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+}
+
+.pathCardTitle {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+.pathCardBody {
+  margin-bottom: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.pathCardLink {
+  margin-top: auto;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+@media screen and (max-width: 768px) {
+  .pathGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .featureGrid {
   display: grid;
   gap: 1rem;

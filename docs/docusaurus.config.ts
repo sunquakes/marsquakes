@@ -81,6 +81,19 @@ const config: Config = {
         src: 'img/logo.svg',
       },
       items: [
+        // Two entries, one per sidebar in `sidebars.ts`. They are split by
+        // audience: "AI Guide" is for someone driving the repository through a
+        // coding agent, "Guide" for a person running the commands by hand.
+        //
+        // AI Guide comes first because it is the intended default path: the
+        // agent installs the toolchain, so a reader who starts there types far
+        // fewer commands than one who starts in the manual guide.
+        {
+          type: 'docSidebar',
+          sidebarId: 'aiSidebar',
+          position: 'left',
+          label: 'AI Guide',
+        },
         {
           type: 'docSidebar',
           sidebarId: 'guideSidebar',
@@ -98,6 +111,14 @@ const config: Config = {
     footer: {
       style: 'dark',
       links: [
+        {
+          title: 'AI',
+          items: [
+            { label: 'Environment Setup', to: '/docs/ai-setup-agent' },
+            { label: 'Admin System', to: '/docs/ai-admin-env' },
+            { label: 'Desktop App', to: '/docs/ai-desktop-env' },
+          ],
+        },
         {
           title: 'Docs',
           items: [

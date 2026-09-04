@@ -29,6 +29,36 @@
   "home.hero.secondaryCta": {
     "message": "阅读文档"
   },
+  "home.paths.title": {
+    "message": "两种使用方式"
+  },
+  "home.paths.lead": {
+    "message": "顶部导航栏里的两个入口不是两类主题，而是两种做事方式。选择与你的动手方式相符的那一个。"
+  },
+  "home.paths.ai.badge": {
+    "message": "不需要写代码"
+  },
+  "home.paths.ai.title": {
+    "message": "AI 开发指南"
+  },
+  "home.paths.ai.description": {
+    "message": "你用日常语言描述想要什么，AI 编码助手替你执行每一条命令：安装工具链、创建项目、启动服务、修好报错。你不需要自己在终端里敲构建命令 —— 每一页都是一段提示词，复制、粘贴，然后照着页面上的预期结果核对一遍就行。"
+  },
+  "home.paths.ai.cta": {
+    "message": "从 AI 开发指南开始 →"
+  },
+  "home.paths.manual.title": {
+    "message": "使用指南"
+  },
+  "home.paths.manual.description": {
+    "message": "命令由你自己执行。这一条线是参考手册：完整的 mars 命令、每个端里装了什么、platforms.json 怎么组织、以及各个 Docker 变体。适合你已经熟悉这套技术栈，或者想弄清 AI 刚才替你做了什么。"
+  },
+  "home.paths.manual.cta": {
+    "message": "从使用指南开始 →"
+  },
+  "home.paths.beginner": {
+    "message": "没有开发经验？走 AI 开发指南这条线。它不预设你懂 Java、Vue、Docker 或 Rust —— 缺什么由 AI 助手装上；一套带登录页、用户管理和权限控制的完整后台系统，靠照着提示词一步步走就能跑起来，而不必自己写代码。"
+  },
   "home.features.title": {
     "message": "为什么用生成器"
   },
@@ -73,5 +103,11 @@
   },
   "home.quickstart.nextLink": {
     "message": "继续阅读《快速开始》"
+  },
+  "skillDownload.button.label": {
+    "message": "下载 Skill"
+  },
+  "skillDownload.button.ariaLabel": {
+    "message": "下载 {name}（{size}）"
   }
 }

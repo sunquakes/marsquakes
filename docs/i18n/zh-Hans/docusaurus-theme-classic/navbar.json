@@ -8,8 +8,12 @@
     "description": "The alt text of navbar logo"
   },
   "item.label.Guide": {
-    "message": "指南",
+    "message": "使用指南",
     "description": "Navbar item with label Guide"
+  },
+  "item.label.AI Guide": {
+    "message": "AI 开发指南",
+    "description": "Navbar item with label AI Guide"
   },
   "item.label.GitHub": {
     "message": "GitHub",

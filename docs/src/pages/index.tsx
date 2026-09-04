@@ -179,9 +179,95 @@ function Hero(): ReactNode {
   );
 }
 
-function QuickStart(): ReactNode {
+// Explains the two navbar entries, which are split by *how you work* rather
+// than by topic. Placed directly under the banner because "which of the two
+// menus is mine?" is the first question the navbar raises, and the answer
+// decides how much of the toolchain a reader has to install by hand.
+function Paths(): ReactNode {
   return (
     <section className={styles.section}>
+      <div className="container">
+        <h2 className={styles.sectionTitle}>
+          <Translate id="home.paths.title">Two ways to use it</Translate>
+        </h2>
+        <p className={styles.sectionLead}>
+          <Translate id="home.paths.lead">
+            The two entries in the top navigation bar are not two topics — they
+            are two ways of working. Pick the one that matches how you want to
+            drive the project.
+          </Translate>
+        </p>
+        <div className={styles.pathGrid}>
+          <div
+            className={clsx(styles.pathCard, styles.pathCardRecommended)}
+            data-badge={translate({
+              id: 'home.paths.ai.badge',
+              message: 'No coding needed',
+            })}
+          >
+            <div className={styles.pathCardIcon} aria-hidden="true">
+              🤖
+            </div>
+            <h3 className={styles.pathCardTitle}>
+              <Translate id="home.paths.ai.title">AI Guide</Translate>
+            </h3>
+            <p className={styles.pathCardBody}>
+              <Translate id="home.paths.ai.description">
+                You describe what you want in plain language and an AI coding
+                agent runs every command for you. It installs the toolchain,
+                creates the project, starts the services and fixes what breaks.
+                You never open a terminal to type a build command yourself —
+                each page is a prompt you copy, paste, and then check against
+                the expected result.
+              </Translate>
+            </p>
+            <Link className={styles.pathCardLink} to="/docs/ai-setup-agent">
+              <Translate id="home.paths.ai.cta">
+                Start with the AI Guide →
+              </Translate>
+            </Link>
+          </div>
+
+          <div className={styles.pathCard}>
+            <div className={styles.pathCardIcon} aria-hidden="true">
+              ⌨️
+            </div>
+            <h3 className={styles.pathCardTitle}>
+              <Translate id="home.paths.manual.title">Guide</Translate>
+            </h3>
+            <p className={styles.pathCardBody}>
+              <Translate id="home.paths.manual.description">
+                You run the commands yourself. This track is the reference: the
+                full mars command surface, what each platform contains, how
+                platforms.json is structured, and the Docker variants. Useful
+                when you already know the stack, or when you want to understand
+                what the agent did on your behalf.
+              </Translate>
+            </p>
+            <Link className={styles.pathCardLink} to="/docs/getting-started">
+              <Translate id="home.paths.manual.cta">
+                Start with the Guide →
+              </Translate>
+            </Link>
+          </div>
+        </div>
+        <p className={styles.sectionLead}>
+          <Translate id="home.paths.beginner">
+            New to development? Take the AI Guide. It assumes no prior
+            experience with Java, Vue, Docker or Rust — the agent installs
+            what is missing, and a full admin system with a login page, user
+            management and permissions is something you can reach by following
+            prompts rather than by writing code.
+          </Translate>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function QuickStart(): ReactNode {
+  return (
+    <section className={clsx(styles.section, styles.sectionAlt)}>
       <div className="container">
         <h2 className={styles.sectionTitle}>
           <Translate id="home.quickstart.title">Quick start</Translate>
@@ -245,6 +331,7 @@ export default function Home(): ReactNode {
     >
       <Hero />
       <main>
+        <Paths />
         <QuickStart />
         <Features />
       </main>
