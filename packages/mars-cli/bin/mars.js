@@ -32,6 +32,12 @@ const LOCALES = {
     'category-mobile': '📱 Mobile',
     'category-desktop': '🖥️ Desktop',
     'status-developing': 'developing',
+    'host-requires': 'requires {{hosts}}',
+    'host-current': 'Current host: {{host}}',
+    'host-hint': '⚠️ Modules that cannot be built on this host are not selectable',
+    'host-skipped': '⚠️ Skipped (cannot be built on {{host}}): {{list}}',
+    'host-blocked': '❌ Platform "{{platform}}" can only be built on {{hosts}} (current host: {{host}})',
+    'host-none-selected': '❌ No platform is selectable on {{host}}.',
     'select-platforms': '📋 Select platforms to create',
     'select-hint': 'Use arrow keys to navigate | Space to toggle | Enter to confirm',
     'disabled-hint': '⚠️ Grayed out modules are not available (developing)',
@@ -100,6 +106,12 @@ const LOCALES = {
     'category-mobile': '📱 移动端',
     'category-desktop': '🖥️ 桌面端',
     'status-developing': '开发中',
+    'host-requires': '需要 {{hosts}}',
+    'host-current': '当前宿主机: {{host}}',
+    'host-hint': '⚠️ 当前系统无法构建的模块不可选',
+    'host-skipped': '⚠️ 已跳过（在 {{host}} 上无法构建）: {{list}}',
+    'host-blocked': '❌ 平台 "{{platform}}" 只能在 {{hosts}} 上构建（当前宿主机: {{host}}）',
+    'host-none-selected': '❌ 在 {{host}} 上没有可选的平台。',
     'select-platforms': '📋 请选择需要创建的平台模块',
     'select-hint': '操作提示: 上下键移动 | 空格键切换选择 | 回车确认',
     'disabled-hint': '⚠️ 灰色显示的模块当前不可选（开发中）',
@@ -179,22 +191,52 @@ const DEFAULT_PLATFORMS = [
   { name: 'web-admin', category: 'web', label: 'Web Admin', default: true, description: 'Backend administration system' },
   { name: 'api', category: 'api', label: 'API Service', default: true, description: 'RESTful API service' },
   { name: 'android', category: 'mobile', label: 'Android', default: false, description: 'Android native application' },
-  { name: 'ios', category: 'mobile', label: 'iOS', default: false, description: 'iOS native application' },
-  { name: 'windows', category: 'desktop', label: 'Windows', default: false, description: 'Windows desktop application' },
-  { name: 'linux', category: 'desktop', label: 'Linux', default: false, description: 'Linux desktop application' },
-  { name: 'macos', category: 'desktop', label: 'macOS', default: false, description: 'macOS desktop application' },
+  { name: 'ios', category: 'mobile', label: 'iOS', default: false, description: 'iOS native application', hosts: ['darwin'] },
+  { name: 'windows', category: 'desktop', label: 'Windows', default: false, description: 'Windows desktop application', hosts: ['win32'] },
+  { name: 'linux', category: 'desktop', label: 'Linux', default: false, description: 'Linux desktop application', hosts: ['linux'] },
+  { name: 'macos', category: 'desktop', label: 'macOS', default: false, description: 'macOS desktop application', hosts: ['darwin'] },
   { name: 'desktop', category: 'desktop', label: 'Desktop', default: false, description: 'Tauri (Win / macOS / Linux)' },
 ];
 
+const HOST_LABELS = {
+  darwin: 'macOS',
+  win32: 'Windows',
+  linux: 'Linux',
+};
+
+function getCurrentHost() {
+  return process.platform;
+}
+
+function isHostSupported(hosts) {
+  if (!hosts || hosts.length === 0) return true;
+  return hosts.includes(getCurrentHost());
+}
+
+function hostLabel(hosts) {
+  if (!hosts || hosts.length === 0) return '';
+  return hosts.map(h => HOST_LABELS[h] || h).join(' / ');
+}
+
 function getPlatformsFromConfig(config) {
-  if (!config || !config.platforms) return DEFAULT_PLATFORMS;
-  
+  if (!config || !config.platforms) {
+    return DEFAULT_PLATFORMS.map(p => ({
+      ...p,
+      enabled: true,
+      status: null,
+      hostSupported: isHostSupported(p.hosts),
+    }));
+  }
+
   const platforms = [];
   for (const [category, group] of Object.entries(config.platforms)) {
     for (const [name, info] of Object.entries(group)) {
       const defaultPlatform = DEFAULT_PLATFORMS.find(p => p.name === name);
       const labelKey = `${name}-label`;
       const descKey = `${name}-desc`;
+      // platforms.json wins over the built-in table, so a fork can widen or
+      // narrow the host requirement without editing the CLI.
+      const hosts = info.hosts || defaultPlatform?.hosts || null;
       platforms.push({
         name,
         category,
@@ -203,6 +245,8 @@ function getPlatformsFromConfig(config) {
         description: tOptional(descKey) || info.description || defaultPlatform?.description || '',
         enabled: !!info.enabled,
         status: info.status || null,
+        hosts,
+        hostSupported: isHostSupported(hosts),
       });
     }
   }
@@ -301,11 +345,39 @@ function getEnabledPlatforms(config) {
   for (const [category, group] of Object.entries(config.platforms)) {
     for (const [name, info] of Object.entries(group)) {
       if (info.enabled) {
-        platforms.push({ name, ...info });
+        const hosts = info.hosts || DEFAULT_PLATFORMS.find(p => p.name === name)?.hosts || null;
+        platforms.push({ name, ...info, hosts, hostSupported: isHostSupported(hosts) });
       }
     }
   }
   return platforms;
+}
+
+// Drops platforms the current machine cannot build. An explicit --platform is a
+// hard error (the user asked for something impossible), while `all` only warns
+// so that a mixed project still builds whatever it can on this host.
+function filterPlatformsByHost(platforms, platform) {
+  const blocked = platforms.filter(p => p.hostSupported === false);
+  if (blocked.length === 0) return platforms;
+
+  if (platform !== 'all') {
+    const target = blocked.find(p => p.name === platform);
+    if (target) {
+      console.error(`\n${t('host-blocked', {
+        platform: target.name,
+        hosts: hostLabel(target.hosts),
+        host: hostLabel([getCurrentHost()]),
+      })}`);
+      process.exit(1);
+    }
+  } else {
+    console.log(`\n${t('host-skipped', {
+      host: hostLabel([getCurrentHost()]),
+      list: blocked.map(p => p.name).join(', '),
+    })}`);
+  }
+
+  return platforms.filter(p => p.hostSupported !== false);
 }
 
 function run(command, cwd, stdio = 'inherit') {
@@ -440,15 +512,29 @@ function prompt(question) {
 }
 
 async function selectPlatforms(platforms) {
-  const selected = platforms.map(p => ({ ...p, selected: p.default }));
-  
+  // A platform the current host cannot build is never pre-selected, otherwise
+  // pressing Enter straight away would produce a project that cannot be built.
+  const selected = platforms.map(p => ({
+    ...p,
+    selectable: !!p.enabled && p.hostSupported !== false,
+    selected: p.default && p.hostSupported !== false,
+  }));
+
   const hasTTY = process.stdout.isTTY && process.stdin.isTTY;
-  
+
   if (hasTTY) {
     return selectPlatformsInteractive(selected);
   } else {
     return selectPlatformsSimple(selected);
   }
+}
+
+// Renders the trailing marker for one row: either the developing status or the
+// host requirement, whichever is the reason it cannot be selected.
+function platformSuffix(p) {
+  if (!p.enabled) return ` [${p.status || t('status-developing')}]`;
+  if (p.hostSupported === false) return ` [${t('host-requires', { hosts: hostLabel(p.hosts) })}]`;
+  return '';
 }
 
 async function selectPlatformsInteractive(selected) {
@@ -466,7 +552,12 @@ async function selectPlatformsInteractive(selected) {
     process.stdout.write('\x1B[2J\x1B[0f');
     console.log(`\n${t('select-platforms')}\n`);
     console.log(`   ${t('select-hint')}\n`);
-    console.log(`   ${t('disabled-hint')}\n`);
+    console.log(`   ${t('disabled-hint')}`);
+    console.log(`   ${t('host-current', { host: hostLabel([getCurrentHost()]) })}`);
+    if (selected.some(p => p.enabled && p.hostSupported === false)) {
+      console.log(`   ${t('host-hint')}`);
+    }
+    console.log('');
     
     const categoryGroups = {};
     selected.forEach(p => {
@@ -488,13 +579,13 @@ async function selectPlatformsInteractive(selected) {
       platforms.forEach((p, idx) => {
         const globalIdx = selected.findIndex(s => s.name === p.name);
         const isCursor = globalIdx === cursor;
-        const isDisabled = !p.enabled;
+        const isDisabled = !p.selectable;
         const checkbox = p.selected ? '[✓]' : '[ ]';
         const prefix = isCursor ? ' → ' : '   ';
         
         let line = `${prefix}${checkbox} ${p.label}`;
         if (isDisabled) {
-          line = `\x1B[90m${prefix}${checkbox} ${p.label} [${p.status || t('status-developing')}]\x1B[0m`;
+          line = `\x1B[90m${prefix}${checkbox} ${p.label}${platformSuffix(p)}\x1B[0m`;
         }
         
         console.log(line);
@@ -530,7 +621,7 @@ async function selectPlatformsInteractive(selected) {
       cursor = Math.min(selected.length - 1, cursor + 1);
       render();
     } else if (key.name === 'space') {
-      if (!selected[cursor].enabled) return;
+      if (!selected[cursor].selectable) return;
       selected[cursor].selected = !selected[cursor].selected;
       render();
     } else if (key.name === 'return') {
@@ -566,7 +657,12 @@ async function selectPlatformsInteractive(selected) {
 
 async function selectPlatformsSimple(selected) {
   console.log(`\n${t('select-platforms')}\n`);
-  console.log(`   ${t('disabled-hint')}\n`);
+  console.log(`   ${t('disabled-hint')}`);
+  console.log(`   ${t('host-current', { host: hostLabel([getCurrentHost()]) })}`);
+  if (selected.some(p => p.enabled && p.hostSupported === false)) {
+    console.log(`   ${t('host-hint')}`);
+  }
+  console.log('');
   
   const categoryGroups = {};
   selected.forEach(p => {
@@ -591,8 +687,8 @@ async function selectPlatformsSimple(selected) {
     platforms.forEach(p => {
       const checkbox = p.selected ? '[✓]' : '[ ]';
       let line = `   ${index}. ${checkbox} ${p.label}`;
-      if (!p.enabled) {
-        line = `\x1B[90m   ${index}. ${checkbox} ${p.label} [${p.status || t('status-developing')}]\x1B[0m`;
+      if (!p.selectable) {
+        line = `\x1B[90m   ${index}. ${checkbox} ${p.label}${platformSuffix(p)}\x1B[0m`;
       }
       console.log(line);
       if (p.description) {
@@ -619,7 +715,7 @@ async function selectPlatformsSimple(selected) {
   
   for (const input of inputs) {
     if (input === 'a') {
-      selected.forEach(p => { if (p.enabled) p.selected = true; });
+      selected.forEach(p => { if (p.selectable) p.selected = true; });
     } else if (input === 'n') {
       selected.forEach(p => p.selected = false);
     } else {
@@ -628,7 +724,7 @@ async function selectPlatformsSimple(selected) {
         const item = indexMap.find(i => i.index === num);
         if (item) {
           const p = selected.find(s => s.name === item.platform.name);
-          if (p && p.enabled) {
+          if (p && p.selectable) {
             p.selected = !p.selected;
           }
         }
@@ -750,8 +846,8 @@ async function createProject(args) {
   }
   const allPlatforms = getPlatformsFromConfig(platformsConfig);
 
-  let selectedPlatforms = allPlatforms.filter(p => p.default);
-  
+  let selectedPlatforms = allPlatforms.filter(p => p.default && p.hostSupported !== false);
+
   if (interactive) {
     console.log(`\n${t('enter-interactive')}`);
     selectedPlatforms = await selectPlatforms(allPlatforms);
@@ -759,6 +855,10 @@ async function createProject(args) {
     selectedPlatforms.forEach(p => console.log(`   - ${p.label}`));
   } else {
     console.log(`\n${t('using-default')}`);
+    if (selectedPlatforms.length === 0 && allPlatforms.some(p => p.default)) {
+      console.log(`\n${t('host-none-selected', { host: hostLabel([getCurrentHost()]) })}`);
+      process.exit(1);
+    }
     console.log(`   ${t('selected-count', { count: selectedPlatforms.length, list: selectedPlatforms.map(p => p.label).join(', ') })}`);
     console.log(`   ${t('skip-interactive')}`);
   }
@@ -1048,7 +1148,7 @@ function devCommand(args) {
   const useDocker = args.includes('--docker');
 
   const config = loadPlatformsConfig(rootDir);
-  const enabledPlatforms = getEnabledPlatforms(config);
+  const enabledPlatforms = filterPlatformsByHost(getEnabledPlatforms(config), platform);
   const workspacePlatforms = enabledPlatforms.filter(p => !['android', 'ios', 'windows', 'linux', 'macos'].includes(p.name));
   const nativePlatforms = enabledPlatforms.filter(p => ['android', 'ios', 'windows', 'linux', 'macos'].includes(p.name));
 
@@ -1121,7 +1221,7 @@ function buildCommand(args) {
   const useDocker = args.includes('--docker');
 
   const config = loadPlatformsConfig(rootDir);
-  const enabledPlatforms = getEnabledPlatforms(config);
+  const enabledPlatforms = filterPlatformsByHost(getEnabledPlatforms(config), platform);
 
   if (useDocker) {
     runDocker(rootDir, platform, 'build');
