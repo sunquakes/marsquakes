@@ -12,4 +12,5 @@ dist/
 .turbo/
 .docusaurus/
 /docs/build
+/docs/static/skills/
 .env

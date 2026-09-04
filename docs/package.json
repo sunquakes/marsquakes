@@ -6,9 +6,10 @@
   "author": "Shing Rui <sunquakes@outlook.com>",
   "license": "Apache-2.0",
   "scripts": {
-    "dev": "docusaurus start",
-    "start": "docusaurus start",
-    "build": "docusaurus build",
+    "pack-skill": "node ../scripts/pack-skill.js",
+    "dev": "pnpm run pack-skill && docusaurus start",
+    "start": "pnpm run pack-skill && docusaurus start",
+    "build": "pnpm run pack-skill && docusaurus build",
     "serve": "docusaurus serve",
     "clean": "docusaurus clear",
     "write-translations": "docusaurus write-translations",

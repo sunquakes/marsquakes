@@ -1,0 +1,100 @@
+/**
+ * Styles for the skill download button. Scoped through CSS modules, and built
+ * entirely on Infima variables so the brand colour set in `custom.css` and the
+ * light/dark themes both apply without a single hard-coded colour here.
+ *
+ * That is also why there is no `[data-theme='dark']` block: every colour below
+ * resolves through a variable that Infima already re-points per theme.
+ */
+
+.card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.25rem;
+  margin: 1.5rem 0 2rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-radius: var(--ifm-global-radius);
+  background-color: var(--ifm-color-emphasis-100);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.35rem;
+  border-radius: var(--ifm-global-radius);
+  background-color: var(--ifm-color-primary);
+  /* Not `#fff`: on the light theme the brand red needs white text, but the dark
+     theme's primary is a pale red that needs dark text. Infima keeps both in
+     `--ifm-font-color-base-inverse`, which flips with the theme. */
+  color: var(--ifm-font-color-base-inverse);
+  font-weight: var(--ifm-font-weight-semibold);
+  line-height: 1.2;
+  text-decoration: none;
+  transition:
+    background-color var(--ifm-transition-fast) var(--ifm-transition-timing-default),
+    transform var(--ifm-transition-fast) var(--ifm-transition-timing-default);
+}
+
+/* `:focus-visible` alongside `:hover` so keyboard users get the same feedback.
+   The theme is reset by Infima's link styles, hence repeating `color` here. */
+.button:hover,
+.button:focus-visible {
+  background-color: var(--ifm-color-primary-dark);
+  color: var(--ifm-font-color-base-inverse);
+  text-decoration: none;
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.label {
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  /* Both values are written by `scripts/pack-skill.js`; see `archive.ts`. */
+  font-size: 0.9rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.filename {
+  /* The surrounding card already provides contrast, so drop the default code
+     background and keep only the monospace face. */
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: inherit;
+}
+
+.size {
+  white-space: nowrap;
+}
+
+/* Below this width the button and the metadata no longer fit side by side, and
+   the flex wrap alone leaves the metadata awkwardly indented. Stack instead. */
+@media screen and (max-width: 480px) {
+  .card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .button {
+    justify-content: center;
+  }
+
+  .meta {
+    justify-content: center;
+  }
+}
