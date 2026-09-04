@@ -21,7 +21,7 @@ The package is named `@marsquakes/cli`, but the command it installs is `mars`.
 Prefer not to install globally? `pnpm dlx @marsquakes/cli create my-app` works
 too.
 
-📖 **[Full documentation](https://sunquakes.github.io/marsquakes/)**
+📖 **[Full documentation](https://marsquakes.cc)**
 
 ## What you get
 

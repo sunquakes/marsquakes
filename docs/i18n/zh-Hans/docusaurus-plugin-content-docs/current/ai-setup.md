@@ -23,11 +23,11 @@ import SkillDownload from '@site/src/components/SkillDownload';
 或者用命令行下载：
 
 ```bash
-curl -LO https://sunquakes.github.io/skills/marsquakes-setup.zip
+curl -LO https://marsquakes.cc/skills/marsquakes-setup.zip
 ```
 
 ```powershell
-Invoke-WebRequest -Uri https://sunquakes.github.io/skills/marsquakes-setup.zip -OutFile marsquakes-setup.zip
+Invoke-WebRequest -Uri https://marsquakes.cc/skills/marsquakes-setup.zip -OutFile marsquakes-setup.zip
 ```
 
 **你应该看到：** 下载完成后，文件 `marsquakes-setup.zip` 出现在你的下载目录里。

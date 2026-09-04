@@ -164,10 +164,38 @@ pnpm type-check               # tsc --noEmit
 
 ## Deployment
 
-`url` and `baseUrl` in `docusaurus.config.ts` are placeholders
-(`https://sunquakes.github.io` + `/marsquakes/`) because no git remote is
-configured yet. Update both, plus `organizationName` / `projectName`, once the
-hosting target is decided.
+The site is published to **GitHub Pages** on the custom domain
+**`marsquakes.cc`**. The repository itself stays under the `sunquakes`
+organisation, so `organizationName` / `projectName` and every GitHub link
+(`editUrl`, the navbar item) point at `sunquakes/marsquakes` while `url` points
+at the domain. Those two are independent — do not "fix" one to match the other.
+
+The domain is declared in **two** places, and both are required:
+
+| Place | Consumed by | If it is wrong |
+|-------|-------------|----------------|
+| `url` in `docusaurus.config.ts` | Docusaurus, for absolute URLs in the sitemap, canonical tags and social metadata | The site still serves, but crawlers and shared links point at the old host |
+| `docs/static/CNAME` | GitHub Pages, on every deploy | The deploy resets the custom domain and the site falls back to the `github.io` host |
+
+`static/CNAME` is copied verbatim into the build output, which is exactly how
+GitHub Pages expects the domain to be committed. It must contain the bare
+hostname, no scheme and no trailing path, and be **LF-terminated with no BOM** —
+a BOM makes Pages read three invisible bytes as part of the hostname and the
+domain silently stops resolving.
+
+`baseUrl` is `/`, so routes are served from the domain root (`/docs/cli`). That
+is correct for a custom domain or a `<org>.github.io` **user** site. A GitHub
+Pages **project** site serves from `/<repo>/` instead, so publishing there
+requires setting `baseUrl` back to `/marsquakes/` — otherwise every asset and
+link resolves one directory too high and the site loads without CSS. Never
+hard-code the prefix into a link to work around this: use relative `.md` links
+in content and `to:` (not `href:`) in the config, both of which Docusaurus
+rewrites with whatever `baseUrl` is in effect.
+
+The one place the domain is unavoidably hard-coded is the skill download command
+on the `ai-setup` pages (both locales): the reader runs `curl` before they have
+a checkout, so it cannot be a relative link. Update those two pages whenever the
+domain changes — `pnpm -C docs build` cannot catch a stale absolute URL.
 
 Build output goes to `docs/build`, which is gitignored by exact path — a bare
 `build/` rule is deliberately avoided because `apps/web-admin/build/` is tracked

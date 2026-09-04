@@ -24,11 +24,11 @@ You do not need a project yet. This works on a brand-new computer.
 Or, if you prefer to paste a line:
 
 ```bash
-curl -LO https://sunquakes.github.io/skills/marsquakes-setup.zip
+curl -LO https://marsquakes.cc/skills/marsquakes-setup.zip
 ```
 
 ```powershell
-Invoke-WebRequest -Uri https://sunquakes.github.io/skills/marsquakes-setup.zip -OutFile marsquakes-setup.zip
+Invoke-WebRequest -Uri https://marsquakes.cc/skills/marsquakes-setup.zip -OutFile marsquakes-setup.zip
 ```
 
 **What you should see:** a file called `marsquakes-setup.zip`. Inside it is a single

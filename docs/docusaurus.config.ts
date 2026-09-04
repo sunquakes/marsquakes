@@ -13,10 +13,25 @@ const config: Config = {
   tagline: 'A multi-platform monorepo driven by a single platforms.json',
   favicon: 'img/favicon.svg',
 
-  // Update these two when the site gets its final hosting location.
-  url: 'https://sunquakes.github.io',
-  baseUrl: '/marsquakes/',
+  // Served from the custom domain `marsquakes.cc` on GitHub Pages.
+  //
+  // `baseUrl` is `/` because a custom domain serves the site from the domain
+  // root (`/docs/cli`, not `/marsquakes/docs/cli`). The same is true of a
+  // `<org>.github.io` user site. If this is ever published as a GitHub Pages
+  // *project* site instead, the pages live under the repository name and
+  // `baseUrl` must become `/marsquakes/` again — otherwise every asset and
+  // link resolves one level too high and the site renders unstyled.
+  //
+  // The domain is also declared in `static/CNAME`, which GitHub Pages reads on
+  // every deploy. Changing `url` here without changing that file only fixes the
+  // absolute URLs in sitemap and metadata, while the deploy itself drops the
+  // custom domain.
+  url: 'https://marsquakes.cc',
+  baseUrl: '/',
 
+  // The repository stays under the `sunquakes` organisation; only the public
+  // domain differs. `editUrl` and the GitHub links therefore keep pointing
+  // there.
   organizationName: 'sunquakes',
   projectName: 'marsquakes',
 
