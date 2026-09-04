@@ -1,183 +1,132 @@
 ---
 id: ai-setup
-title: 配置 Agent
-sidebar_position: 8
+title: 安装 Skill
+sidebar_position: 2
 ---
 
-# 配置 Agent —— DeepSeek Harness
+import SkillDownload from '@site/src/components/SkillDownload';
 
-[配合 AI Agent 使用](./ai-agents.md)讲的是**为什么**用 shell 而不是 MCP server
-驱动 Marsquakes。本页负责把那个"驱动者"装起来。
+# 安装环境准备 Skill
 
-:::note 中英文各用一套工具
-中文文档使用 **DeepSeek Harness（命令 `dsh`）**，英文文档使用
-**OpenAI Codex CLI**。两条线不是互译关系，你实际用哪个就看哪个。再往后的内容
-（`mars`、`AGENTS.md`、各种校验命令）两边完全一致 —— 因为 Agent 自始至终都只
-通过 shell 和 Marsquakes 打交道。
+**Skill** 就是一份说明书，你交给 Agent 一次之后，它就知道怎么做好一件事，而不是自己瞎猜。
+
+这个 Skill 教会你的 Agent 安装并检查这个项目需要的所有程序——Node.js、pnpm、git、
+`mars` CLI、Docker、JDK/Maven、Rust 以及 Tauri 的系统依赖库——Windows、macOS、Linux
+三个平台都支持。
+
+它不需要 Marsquakes 的代码仓库，所以可以装在一台全新的机器上。
+
+## 1. 下载压缩包
+
+<SkillDownload />
+
+或者用命令行下载：
+
+```bash
+curl -LO https://sunquakes.github.io/skills/marsquakes-setup.zip
+```
+
+```powershell
+Invoke-WebRequest -Uri https://sunquakes.github.io/skills/marsquakes-setup.zip -OutFile marsquakes-setup.zip
+```
+
+**你应该看到：** 下载完成后，文件 `marsquakes-setup.zip` 出现在你的下载目录里。
+
+## 2. 解压到 Agent 能读到的地方
+
+把它解压到当前用户目录下的 `.agents/skills/` 里。
+
+<details>
+<summary>macOS / Linux</summary>
+
+```bash
+mkdir -p ~/.agents/skills
+unzip -o ~/Downloads/marsquakes-setup.zip -d ~/.agents/skills
+```
+
+</details>
+
+<details>
+<summary>Windows（PowerShell）</summary>
+
+```powershell
+$dest = "$HOME\.agents\skills"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Expand-Archive -Path "$HOME\Downloads\marsquakes-setup.zip" -DestinationPath $dest -Force
+```
+
+</details>
+
+:::caution 装到用户目录，不要装到项目目录里
+Agent 也会扫描项目文件夹里的 `.agents/skills/`。别装那儿——项目级的 Skill 一换到别的
+文件夹就消失了，包括你**接下来才要创建**的那个项目。
 :::
 
-:::warning 开发者预览版
-DeepSeek Harness 目前处于 developer preview，命令和配置随时可能发生破坏性变更。
-遇到和本文不符的行为，以 `dsh --help` 和
-[官方仓库](https://github.com/deepseek-ai/deepseek-harness)（默认分支是
-`master`，不是 `main`）为准。
-:::
+**你应该看到：** 解压后 `~/.agents/skills/marsquakes-setup/` 目录下有五个小文件。
 
-## 先确认 Node 版本
-
-这是最容易踩的一个坑。dsh 的 `engines` 声明是
-**`^22.19.0 || >=24.0.0`** —— Node 20 装不上，而 Node 20 恰恰是很多人手头的
-长期支持版本。
+验证一下解压是否正确：
 
 ```bash
-node -v
+head -4 ~/.agents/skills/marsquakes-setup/SKILL.md
 ```
 
-版本不够就先升级，或者用版本管理器切一个：
+**你应该看到：** 第一行是 `---`，然后 `name:`，然后 `description:`。
 
-```bash
-nvm use 22
+如果第一行不是 `---`，这个 Skill 会被**静默忽略**——没有任何报错，就像它不存在一样。
+所以如果你发现 Agent 不认这个 Skill，先检查第一行是不是 `---`。
+
+## 3. 确认 Agent 看见了它
+
+启动 Agent，直接问：
+
+```text
+你有没有用来准备 Marsquakes 环境的 skill？
 ```
 
-:::caution 文档站自己要 Node ≥ 20
-Marsquakes 文档站的要求是 Node ≥ 20，dsh 要求 ≥ 22.19。取交集，直接用 22 或 24
-就都满足了。
-:::
+**你应该看到：** Agent 报出 `marsquakes-setup` 这个名字，并说明它负责安装程序。
 
-## 安装
+如果没出现，先重启 dsh——只有 `SKILL.md` 变化才会让缓存刷新。重启后还是看不到，
+就让它检查一下扫描路径是不是指向了你解压的那个目录。
 
-试用一次，不落盘：
+## 4. 使用它
 
-```bash
-npx @deepseek-ai/dsh web
+用日常语言描述你要的环境。这个 Skill 靠**描述**触发，不需要点它的名字：
+
+```text
+把这台机器准备成能跑 Marsquakes 后台管理系统的环境，api 加 web-admin。
+先告诉我缺什么，别急着装。
 ```
 
-长期使用建议全局安装：
+你应该看到这样的执行顺序：
 
-```bash
-npm install -g @deepseek-ai/dsh
-dsh --version
-```
+| 步骤 | 你应该看到 |
+| ---- | ---------- |
+| 1 | 一份检测报告，每个工具标为 `OK`、`OLD` 或 `MISS` |
+| 2 | 反问你要做哪个场景 |
+| 3 | 给出方案，并在动手之前停下来等你确认 |
+| 4 | 安装后重新检测，被修好的工具变成 `OK` |
 
-dsh 的插件管理会调用 **pnpm**，所以 pnpm 必须在 PATH 上。Marsquakes 本身也只
-支持 pnpm，这一条通常已经满足了。
+第 4 步才是关键：安装程序退出码为 `0` 什么也证明不了——有些装完了就是不往系统路径里
+放东西。只有某个工具从 `MISS` 变成 `OK` 才算数。
 
-从源码跑（想改插件时用）：
+## 它检查什么，以及为什么是这些数字
 
-```bash
-git clone https://github.com/deepseek-ai/deepseek-harness
-cd deepseek-harness
-pnpm install
-pnpm run build
-pnpm dsh web
-```
+| 工具 | 必须不低于 | 为什么是这个数字 |
+| ---- | ---------- | ---------------- |
+| Node.js | 22.12.0 | 22.0 到 22.11 直接被拒绝，所以光说"22 版本"不够 |
+| pnpm | 9.0.0 | 由项目根目录 `package.json` 固定 |
+| git | 2.20.0 | — |
+| Docker | 20.10.0 | — |
+| Docker Compose | 2.0.0 | 版本 1 读不了这个项目用的文件格式 |
+| JDK | 17 | 21 也可以，11 不行 |
+| Maven | 3.9.0 | — |
+| Rust | 1.77.0 | 桌面应用需要的最低版本 |
 
-## 配置 API Key
+只有你这个场景需要的东西才会被安装——只做桌面端就完全不碰 JDK。
 
-Web UI 和命令行读的是两个地方，这一点必须分清楚，否则会出现"网页里能用、
-脚本里报没有 key"的情况。
+## 下一步
 
-**Web UI：** 打开后进 Settings → Models 填入即可，它自己会持久化。
+选一个场景——[后台管理系统](./ai-admin-env.md)或[桌面应用](./ai-desktop-env.md)
+——然后用提示词驱动它。
 
-**命令行 / headless：** 写在 `$DSH_HOME/.credentials.yaml`，`$DSH_HOME` 默认是
-`~/.dsh`：
-
-```yaml
-# ~/.dsh/.credentials.yaml
-DEEPSEEK_API_KEY: sk-xxxxxxxxxxxxxxxx
-```
-
-macOS / Linux 上必须收紧权限，dsh 会拒绝加载所有人可读的凭据文件：
-
-```bash
-chmod 600 ~/.dsh/.credentials.yaml
-```
-
-也可以走环境变量，**优先级高于文件**，适合 CI：
-
-```bash
-export DEEPSEEK_API_KEY=sk-xxxxxxxxxxxxxxxx
-```
-
-## 启动方式
-
-`dsh` 通过 profile 区分运行形态：
-
-| 命令 | 用途 |
-| ---- | ---- |
-| `dsh web` | 启动 Web UI，等价于 `--profile web` |
-| `dsh --profile headless "任务"` | 跑完一次性任务、打印结果、退出 |
-| `dsh --profile acp` | 以 ACP stdio 协议对接自动化客户端 |
-| `dsh --profile sdk` | 以 JSON-RPC stdio 对接 SDK 客户端 |
-| `dsh --profile sdk-minimal` | 独立的最小 Agent 树 |
-| `dsh plugin --profile <名字> <pnpm 参数>` | 管理某个 profile 的插件，参数透传给 pnpm |
-
-日常开发用 `dsh web`：
-
-```bash
-dsh web
-```
-
-默认监听 `http://127.0.0.1:3080` 并自动打开浏览器。端口冲突就换一个：
-
-```bash
-dsh web --port 8080
-```
-
-不想让它抢焦点：
-
-```bash
-dsh web --no-open
-```
-
-想在不启动的前提下看看插件树被组装成了什么样：
-
-```bash
-dsh --dump-config
-dsh --dump-default-config
-```
-
-`web`、`headless`、`sdk`、`sdk-minimal`、`acp` 这几个 profile 会自动初始化，
-其他名字得先用 `dsh plugin` 创建。
-
-## 从哪个目录启动
-
-**`dsh` 把启动时所在的目录当作工作区根目录。** 这条比看起来重要：
-
-```bash
-cd ~/projects          # 要新建项目，就站在新项目的「父目录」
-dsh web
-```
-
-```bash
-cd ~/projects/admin-platform    # 维护已有项目，站在项目里
-dsh web
-```
-
-站错目录的典型症状是：Agent 声称创建成功，但你在预期位置找不到那个目录 ——
-它建在别处了。
-
-## 为什么 `AGENTS.md` 在这里很关键
-
-Marsquakes 在根目录和每个平台目录下都放了 `AGENTS.md`，这正是"不需要额外集成"
-的全部原因：
-
-| 文件 | 管辖范围 |
-| ---- | -------- |
-| `AGENTS.md`（根目录） | 目录规则、Docker 布局、基础镜像约束、提交格式 |
-| `apps/api/AGENTS.md` | 后端约定 |
-| `apps/web-admin/AGENTS.md` | 管理后台前端约定 |
-| `docs/AGENTS.md` | 文档站 |
-
-生成出来的项目会继承这些文件。如果你用的 Agent 不会自动读取它们，在提示词里
-点名即可 —— 指向文件永远比在提示词里复述规则可靠，因为文件不会和仓库脱节。
-
-## 验证一下
-
-先要一件只读的事情。这一步能过，说明 shell、凭据、工作区目录都是对的：
-
-> **提示词**
->
-> 执行 `mars --version`，然后告诉我 `platforms.json` 里启用了哪些平台。
-
-接下来看[用 AI 构建项目](./ai-workflow.md)。
+想全部手动装，[快速开始](./getting-started.md)用命令清单覆盖了同样的内容。

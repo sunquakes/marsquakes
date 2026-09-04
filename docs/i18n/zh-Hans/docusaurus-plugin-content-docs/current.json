@@ -1,6 +1,14 @@
 {
-  "sidebar.guideSidebar.category.Guide": {
-    "message": "指南",
-    "description": "The label for category Guide in sidebar guideSidebar"
+  "sidebar.aiSidebar.category.Environment Setup": {
+    "message": "环境准备",
+    "description": "The label for category Environment Setup in sidebar aiSidebar"
+  },
+  "sidebar.aiSidebar.category.Admin System": {
+    "message": "后台管理功能",
+    "description": "The label for category Admin System in sidebar aiSidebar"
+  },
+  "sidebar.aiSidebar.category.Desktop App": {
+    "message": "桌面应用",
+    "description": "The label for category Desktop App in sidebar aiSidebar"
   }
 }

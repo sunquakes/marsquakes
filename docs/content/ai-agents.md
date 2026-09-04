@@ -1,49 +1,48 @@
 ---
 id: ai-agents
-title: Using with AI Agents
-sidebar_position: 7
+title: How Vibe Coding Works Here
+sidebar_position: 1
 ---
 
-# Using Marsquakes with an AI Agent
+# How Vibe Coding Works Here
 
-Marsquakes is usable as a tool by an AI coding agent without any extra server.
-The agent needs three things, all of which already exist: a shell, the `mars`
-executable, and the `AGENTS.md` files that describe the conventions.
+You describe what you want in ordinary sentences. The agent writes the code, runs
+the tools and reports back. You never have to learn a command.
 
-:::info Why no MCP server
-An MCP server would add a second implementation of every command, and its tool
-schemas are injected into *every* session whether or not you scaffold anything.
-`mars dev` also stays resident, which does not fit a request/response protocol.
-A shell plus `AGENTS.md` costs nothing when unused and never drifts from the
-CLI, so that is the supported path.
+That is the whole deal, and this track is written for it. Every page gives you
+something to say and tells you what you should see afterwards. If what you see
+does not match, the page gives you the next thing to say.
+
+:::tip You do not need to understand the output
+Agents print a lot of text. Almost none of it is for you. The only parts that
+matter are the ones this guide asks you to look for — usually a web address, a
+file path, or a window opening on your screen.
 :::
 
-## Prompt example: "I want a new admin platform"
+## The one habit worth learning
 
-This is the canonical example. The user describes an outcome; the agent picks
-the commands.
+Ask for a **result you can see**, not for an action.
 
-> **Prompt**
+| Instead of saying | Say |
+| ----------------- | --- |
+| "Set up the project" | "Set up the project, then tell me the web address I can open" |
+| "Add a products page" | "Add a products page, then list every file you changed" |
+| "Build the app" | "Build the app, then tell me exactly where the installer file is" |
+| "Fix it" | "It shows an error. Read the error, tell me the cause, then fix it" |
+
+Asking for the address, the path or the file list is what lets you check the work
+without reading any code. An agent that says "done" and nothing else has given
+you nothing to check.
+
+## Your first project, start to finish
+
+> **Say this**
 >
-> I want to create a new admin platform called `admin-platform`. I only need the
-> backend API and the admin frontend — no desktop, mobile or public web client.
-> Scaffold it and get it ready to run.
+> I want to create a new project called `admin-platform`. I only need the backend
+> and the admin website — no phone app, no desktop app. Set it up and tell me
+> what you created.
 
-### What the agent should do
-
-**1. Create the project.**
-
-`api` + `web-admin` is exactly the default selection, so this prompt needs no
-platform juggling at all:
-
-```bash
-mars create admin-platform --non-interactive
-```
-
-`--non-interactive` accepts the defaults and skips the prompt. If the agent runs
-`mars create admin-platform` instead, it can reach the same result by sending an
-empty line — see [Answering the selection prompt](#answering-the-selection-prompt)
-below.
+**What you should see:** a short confirmation of the two pieces it is building.
 
 ```
 ✅ Selected 2 modules:
@@ -51,129 +50,97 @@ below.
    - API Service
 ```
 
-**2. Configure and start.**
+Those two are the default combination, so nothing had to be chosen by hand. Ask
+one follow-up question — "which pieces did you actually create?" — and the answer
+should be exactly those two and nothing else. Anything extra means it built the
+wrong thing, and it is much cheaper to start over now than later.
 
-```bash
-cd admin-platform
-cp .env.example .env        # .env.example.cn on a mainland-China network
-pnpm install
-mars dev
+> **Say this**
+>
+> Now install everything this project needs and start it running. Tell me the web
+> address to open in my browser.
+
+**What you should see:** a web address, usually starting `http://localhost:`.
+Open it. That is your project running on your own machine.
+
+Your project also already has its history saved once, automatically, before you
+changed anything. So if a later experiment goes wrong you can always ask the
+agent to put things back the way they were.
+
+## Asking for a different combination
+
+The default pair is the backend plus the admin website. Anything else — a desktop
+app, for example — means the tool stops and asks which pieces you want, and the
+agent has to answer that question rather than skip it.
+
+You do not have to know how that question looks. You only have to say which
+pieces you want and to name them by name:
+
+> **Say this**
+>
+> I only want the desktop app — nothing else. The tool will ask you which pieces
+> to include. Read its list and pick the line labelled `Desktop` by its label,
+> not by guessing a number.
+
+**What you should see:** a confirmation naming only the piece you asked for.
+
+```
+✅ Selected 1 modules:
+   - Desktop
 ```
 
-### How to know it worked
-
-Two checks, both cheap:
-
-```bash
-ls apps                     # api  web-admin
-```
-
-```bash
-node -e "const p=require('./platforms.json').platforms;for(const c in p)for(const k in p[c])if(p[c][k].enabled)console.log(k)"
-# web-admin
-# api
-```
-
-Unselected platforms are never copied, so `apps/` containing anything else means
-the selection did not apply.
-
-`mars create` also runs `git init` and commits `init: create project from
-template`, so the project is already a clean repository.
-
-## Answering the selection prompt
-
-Any combination other than the default has to go through the prompt — `create`
-has no `--platform` option. An agent that pipes input has no TTY, so the CLI
-falls back to the numbered list:
-
-```
-  🖥️ Desktop:
-   3. [ ] Windows [developing]
-   4. [ ] Linux [developing]
-   5. [ ] macOS [developing]
-   6. [ ] Desktop
-         Tauri (Win / macOS / Linux)
-
-  🌐 Web:
-   7. [ ] Web Client [developing]
-   8. [✓] Web Admin
-         Backend administration system
-
-  ⚙️ API:
-   9. [✓] API Service
-         RESTful API service
-
-  Please enter selection (space-separated numbers):
-```
-
-| Input | Effect |
-| ----- | ------ |
-| empty line | accept the checked defaults — `web-admin` + `api` |
-| `6` | **toggle** item 6, i.e. add `Desktop` for a 3-module project |
-| `a` | select every selectable platform |
-| `n` | select nothing |
-
-:::caution Match the label, not the number
-The numbers are a running index over the categories in `platforms.json`, so they
-shift whenever a platform is added. An agent must read the printed list and pick
-the number sitting next to the label it wants — never hard-code `6`. Items
-marked `[developing]` are ignored silently if you toggle them.
+:::caution Say the name, never a number
+The tool prints a numbered list, and those numbers move around between versions.
+If you tell the agent "pick 6", it will eventually pick the wrong thing. Always
+name the label you want. Some entries are marked `[developing]` — those are
+unfinished and get quietly ignored if chosen.
 :::
 
-## Non-interactive runs
+## Things you can ask for
 
-`--non-interactive` is the right choice **only** when the default set is what
-you want:
+| Say this | What you get |
+| -------- | ------------ |
+| "Start just the admin website" | the website opens, but every page errors until the backend runs too |
+| "Start the backend" | the backend answers at `http://localhost:8080/jeecg-boot` |
+| "Build everything for release" | finished files you could hand to someone else to install |
+| "Update my project to the latest template" | the shared template files refresh; your own work is left alone |
+| "Check what my computer is missing, then install it" | a plain list of what is missing, then the installs |
+| "Start the database" | the database and cache running in the background |
 
-| Goal | Command |
-| ---- | ------- |
-| Default platforms (`web-admin` + `api`) | `mars create my-app --non-interactive` |
-| Any other combination | interactive prompt, toggle by number |
+## Two rules to repeat in your prompts
 
-## More prompt examples
+Agents get these two wrong more than anything else, so it is worth saying them
+out loud. You do not need to know why — just paste this whenever the agent is
+about to write documents or save its work:
 
-| Prompt | Commands the agent should run |
-| ------ | ----------------------------- |
-| "Start only the admin frontend" | `mars dev --platform web-admin` |
-| "Run the API, I have no JDK installed" | `mars dev --platform api --docker` |
-| "Build everything for release" | `mars build` |
-| "Bring this project up to date with the template" | `mars update` |
-| "Check my toolchain and install dependencies" | `mars init` |
-| "Bring up MySQL and Redis" | `docker compose -f docker-compose.infra.yml up -d` |
-| "Build the images on a clean checkout" | `docker compose -f docker-compose.build.yml up -d` |
+```text
+Before you start: read the AGENTS.md file nearest to whatever you are changing
+and follow it. Notes and plans for me go in .docs/. Pages for the public website
+go in docs/content/ and must also be added to docs/sidebars.ts. Commit messages
+are in English.
+```
 
-## What the agent should read first
+## When something looks wrong
 
-Conventions live next to the code they govern, so an agent should read the
-`AGENTS.md` closest to whatever it is about to change:
+You will not always be able to tell what went wrong, and you do not need to. Hand
+the problem back:
 
-| File | Governs |
-| ---- | ------- |
-| `AGENTS.md` (root) | Directory rules, Docker layout, base-image constraints, commit format |
-| `apps/api/AGENTS.md` | Backend conventions |
-| `apps/web-admin/AGENTS.md` | Admin frontend conventions |
-| `docs/AGENTS.md` | The documentation site |
+| What you notice | Say this |
+| --------------- | -------- |
+| It says "done" but you have nothing to open | "Tell me the exact web address, and the file paths you created" |
+| It seems frozen with no new output | "Are you waiting on something that never finishes? Run it in the background and tell me when it is up" |
+| An error you cannot read | "Read that error, explain the cause in plain language, then fix it" |
+| It changed more than you expected | "List every file you changed and why. Undo anything I did not ask for" |
+| You are not sure it did the right thing | "Show me your plan before you change anything else" |
 
-Two rules from the root file are worth repeating, because they are the ones an
-agent most often gets wrong:
-
-- Design documents, PRDs and task notes go in `.docs/`. Published pages go in
-  `docs/content/` **and** must be registered in `docs/sidebars.ts`.
-- Commit messages are English, `<type>(<scope>): <subject>`.
-
-## Known rough edges
-
-The CLI is built for humans first. When wiring it into automation, expect:
-
-- **Human-readable output only.** There is no `--json` flag; results have to be
-  parsed from prose, or inferred from `platforms.json` and `apps/` as shown
-  above.
-- **Coarse exit codes.** Failures exit `1` regardless of cause, so a usage error
-  and a missing toolchain look identical to a caller.
-- **`mars dev` does not return.** It spawns child processes and stays in the
-  foreground. Run it in a background job, never as a blocking step.
+:::tip Ask for the plan first
+A wrong plan takes one sentence to correct. A wrong pile of code takes an
+afternoon. For anything bigger than a small tweak, say "show me your plan first"
+and read it before agreeing.
+:::
 
 ## Next
 
-[Set Up the Agent](./ai-setup.md) — install and configure OpenAI Codex CLI,
-then walk through [Build a Project with AI](./ai-workflow.md).
+Pick what you are building: [Admin System Setup](./ai-admin-env.md) — a website
+with a login and data behind it — or [Desktop App Setup](./ai-desktop-env.md) —
+an app that installs on a computer.

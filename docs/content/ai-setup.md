@@ -1,160 +1,144 @@
 ---
 id: ai-setup
-title: Set Up the Agent
-sidebar_position: 8
+title: Install the Skill
+sidebar_position: 2
 ---
 
-# Set Up the Agent — OpenAI Codex CLI
+import SkillDownload from '@site/src/components/SkillDownload';
 
-[Using with AI Agents](./ai-agents.md) explains *why* Marsquakes is driven
-through a shell instead of an MCP server. This page installs the agent that
-does the driving.
+# Install the Setup Skill
 
-:::note One tool per language
-The English documentation uses **OpenAI Codex CLI**. The Chinese documentation
-covers **DeepSeek Harness (`dsh`)** instead. The two tracks are deliberately not
-translations of each other — pick whichever agent you actually run. Everything
-downstream (`mars`, `AGENTS.md`, the verification commands) is identical either
-way, because the agent only ever talks to Marsquakes through a shell.
+A **skill** is a set of instructions you hand to your agent once. After that, it
+knows how to do a job properly instead of guessing.
+
+This one teaches your agent to install and check every program this project needs —
+and to know which version of each one actually works. Without it, an agent will
+happily install a version that is too old and report success.
+
+You do not need a project yet. This works on a brand-new computer.
+
+## 1. Download it
+
+<SkillDownload />
+
+Or, if you prefer to paste a line:
+
+```bash
+curl -LO https://sunquakes.github.io/skills/marsquakes-setup.zip
+```
+
+```powershell
+Invoke-WebRequest -Uri https://sunquakes.github.io/skills/marsquakes-setup.zip -OutFile marsquakes-setup.zip
+```
+
+**What you should see:** a file called `marsquakes-setup.zip`. Inside it is a single
+folder with five small text files — the instructions the agent reads, plus notes on
+which versions are required and which errors lie about their own cause.
+
+The folder name is already inside the zip, so you unpack it *into* a location rather
+than creating a folder for it first.
+
+## 2. Unpack it where the agent looks
+
+Copy the block for your computer.
+
+<details>
+<summary>macOS / Linux</summary>
+
+```bash
+mkdir -p ~/.agents/skills
+unzip -o ~/Downloads/marsquakes-setup.zip -d ~/.agents/skills
+```
+
+</details>
+
+<details>
+<summary>Windows (PowerShell)</summary>
+
+```powershell
+$dest = "$HOME\.agents\skills"
+New-Item -ItemType Directory -Force -Path $dest | Out-Null
+Expand-Archive -Path "$HOME\Downloads\marsquakes-setup.zip" -DestinationPath $dest -Force
+```
+
+</details>
+
+That location is in your personal home folder, so installing it once covers every
+project you ever make on this computer.
+
+:::caution Do not put it inside a project folder
+The agent also looks for skills inside individual projects, and putting it there
+feels tidier. It is not: a project-level skill vanishes the moment you move to
+another folder — including the project you are about to create, which does not exist
+yet.
 :::
 
-## Install
+## 3. Check the agent can see it
 
-```bash
-npm i -g @openai/codex
+Start your agent and ask it:
+
+```text
+Do you have a skill for setting up a Marsquakes environment?
 ```
 
-Homebrew works too:
+**What you should see:** it names `marsquakes-setup` and describes installing
+programs on your computer.
 
-```bash
-brew install codex
+If it says no, close the agent completely and start it again — it only looks for new
+skills at startup. If it still says no, ask: "read
+`~/.agents/skills/marsquakes-setup/SKILL.md` and tell me if the first line is
+exactly `---`." A skill whose first lines are wrong is ignored **without any error
+message**, which is why it can look like the download failed when it did not.
+
+## 4. Use it
+
+Now just say what you want in plain language. You do not need to name the skill —
+the agent works out that it applies.
+
+```text
+Set up this machine for a Marsquakes admin system — the backend plus the admin
+website. Tell me what is missing before you install anything.
 ```
 
-Then authenticate and confirm the install:
+**What you should see,** in this order:
 
-```bash
-codex login
-codex doctor
-```
+| Step | What you should see |
+| ---- | ------------------- |
+| 1 | a list of every program, each marked working, too old, or missing |
+| 2 | a question about which kind of project you are building |
+| 3 | a plan, and a pause to let you say yes before anything is installed |
+| 4 | the same list again afterwards, with the missing ones now marked working |
 
-`codex doctor` prints the resolved version, config path and sandbox support. Run
-it before filing any bug report — most "Codex is broken" reports are a config
-file that never loaded.
-
-## Configure
-
-Codex reads TOML from two places:
-
-| File | Scope |
-| ---- | ----- |
-| `~/.codex/config.toml` | your user-wide defaults |
-| `.codex/config.toml` | per-project override, honoured only in trusted projects |
-
-Settings resolve in this order, first match wins:
-
-1. CLI flags (`-c key=value`, `-m`, `-s`, `-a`, …)
-2. project config
-3. the active profile (`-p`/`--profile`)
-4. user config
-5. system config
-6. built-in defaults
-
-A reasonable user-wide starting point for Marsquakes work:
-
-```toml
-# ~/.codex/config.toml
-approval_policy = "on-request"
-sandbox_mode = "workspace-write"
-
-[sandbox_workspace_write]
-network_access = true
-```
-
-Why those three:
-
-- `approval_policy = "on-request"` lets the agent run read-only commands freely
-  and ask before anything that writes. `untrusted` asks about nearly everything
-  and makes scaffolding tedious; `never` removes the safety net entirely.
-- `sandbox_mode = "workspace-write"` confines writes to the working directory.
-  `mars create my-app` writes inside the current directory, so this is enough.
-- `network_access = true` is **required** here. `mars create` runs `git init`,
-  and the very next step is `pnpm install`, which cannot work offline. Without
-  it the agent will report a mysterious registry timeout.
-
-:::warning `--yolo` disables the sandbox
-`--yolo` is shorthand for full access with no approvals. It is convenient in a
-throwaway container and a bad idea on your own machine, where `mars` is about to
-run `git init` and a package manager.
+:::tip Step 4 is the only one that counts
+An installer that finishes without complaining is not proof of anything — plenty of
+them succeed at installing the wrong version. The only real proof is a program
+moving from "missing" to "working" on that second list. If the agent skips
+straight to "all done", say: "run the check again and show me the list."
 :::
 
-### Profiles
+## What it checks, and why the numbers matter
 
-Named profiles avoid editing the file every time you switch between scaffolding
-and code review:
+These are not preferences. Each one is a version below which something actually
+breaks, usually with an error that points somewhere else entirely.
 
-```toml
-[profiles.scaffold]
-approval_policy = "on-request"
-sandbox_mode = "workspace-write"
+| Program | Needs to be | Why that number |
+| ------- | ----------- | --------------- |
+| Node.js | 22.12.0 or newer | anything from 22.0 to 22.11 is rejected outright, so "version 22" is not enough |
+| pnpm | 9.0.0 or newer | the project pins this itself |
+| git | 2.20.0 or newer | — |
+| Docker | 20.10.0 or newer | — |
+| Docker Compose | 2.0.0 or newer | anything starting with `1.` cannot read this project's files at all |
+| Java (JDK) | 17 | 21 also works, 11 does not |
+| Maven | 3.9.0 or newer | — |
+| Rust | 1.77.0 or newer | required by the desktop app |
 
-[profiles.review]
-approval_policy = "untrusted"
-sandbox_mode = "read-only"
-```
+Only the ones your kind of project needs get installed — a desktop-only setup never
+touches Java.
 
-```bash
-codex -p scaffold
-```
+## Next
 
-## Why `AGENTS.md` matters here
+Pick what you are building — [Admin System](./ai-admin-env.md) or
+[Desktop App](./ai-desktop-env.md).
 
-Codex reads `AGENTS.md` from the repository automatically. Marsquakes already
-ships that file at the root and next to each platform, which is the entire
-reason no extra integration is needed:
-
-| File | Governs |
-| ---- | ------- |
-| `AGENTS.md` (root) | Directory rules, Docker layout, base-image constraints, commit format |
-| `apps/api/AGENTS.md` | Backend conventions |
-| `apps/web-admin/AGENTS.md` | Admin frontend conventions |
-| `docs/AGENTS.md` | The documentation site |
-
-A generated project inherits all of them, so the agent knows — without being
-told in the prompt — that design notes belong in `.docs/`, that published pages
-must be registered in `docs/sidebars.ts`, and that commit messages are English
-`<type>(<scope>): <subject>`.
-
-## Start in the right directory
-
-Codex treats the directory it was launched from as the workspace root, and
-`sandbox_mode = "workspace-write"` is scoped to that root. Two consequences:
-
-```bash
-cd ~/projects          # scaffolding: start in the PARENT of the new project
-codex
-```
-
-```bash
-cd ~/projects/admin-platform    # working on an existing project
-codex
-```
-
-If you are already elsewhere, move the root instead of restarting:
-
-```bash
-codex -C ~/projects/admin-platform
-```
-
-`--add-dir` grants access to an extra directory without changing the root —
-useful when a shared template lives outside the project.
-
-## Verify the setup
-
-Ask for something read-only first. If this works, the shell, the sandbox and the
-`AGENTS.md` pickup are all fine:
-
-> **Prompt**
->
-> Run `mars --version` and tell me which platforms `platforms.json` enables.
-
-Now continue to [Build a Project with AI](./ai-workflow.md).
+If you would rather install everything by hand,
+[Getting Started](./getting-started.md) covers the same ground as command lists.
