@@ -122,6 +122,92 @@ pnpm -C docs write-translations --locale zh-Hans
   overrides — **an omitted key falls back to the source value**, which is exactly
   what the dynamic `new Date().getFullYear()` copyright needs.
 
+## Two Documentation Tracks
+
+`sidebars.ts` declares two sidebars, and they address **different readers**. A
+page belongs to exactly one of them, and which one it is decides how the page is
+written:
+
+| Sidebar | Reader | Written as |
+|---------|--------|------------|
+| `guideSidebar` | someone typing commands into their own shell | commands, with expected output |
+| `aiSidebar` | someone with **no programming experience**, describing what they want to an AI agent (vibe coding) | sentences to say, with the observable outcome to look for |
+
+### The AI track is written for non-programmers
+
+`aiSidebar` assumes the reader has never written code and does not intend to
+start. That assumption is load-bearing, not decorative:
+
+- **Never explain a cause the reader cannot act on.** Troubleshooting tables are
+  `| What you see | Say this |` — a symptom the reader can recognise, paired with
+  a sentence they can paste. `| Symptom | Likely cause |` belongs on the guide
+  track.
+- **Name the consequence, not the mechanism.** `clone3`/glibc becomes "one
+  reports a memory problem, the other reports a corrupted database — so you would
+  never guess the real cause". A stale shell `PATH` becomes "the terminal window
+  was opened before the install finished, so it has stale information". The fact
+  survives; the vocabulary does not.
+- **Define every term the first time**, in one clause: a skill, an admin system,
+  a backend. If a term cannot be defined that briefly, it probably should not
+  appear.
+- **Prefer pointing at a rules file over teaching the rule.** "Read
+  `apps/desktop/AGENTS.md` and follow the workflow in it" needs no architecture
+  knowledge; a three-layer file table does.
+- **Drop anything that only serves automation.** CI usage, exit codes,
+  machine-readable output and unattended-run advice have no reader here.
+
+### Prompt-and-result structure
+
+Every page in `aiSidebar` **except** `ai-setup-agent` and `ai-setup` must contain
+no shell commands. Those two are the exception because installing the agent and
+its toolchain is the one thing the reader has to do before an agent exists to do
+it for them — everything after that point is expressed as a prompt.
+
+Fence language carries meaning on these pages, so it is not interchangeable:
+
+| Fence | Means | On an AI page |
+|-------|-------|---------------|
+| ` ```text ` | a prompt the reader hands to the agent | keep, and expand |
+| bare ` ``` ` | output captured from a real run | keep — this is the "result" half |
+| ` ```bash `, ` ```powershell `, ` ```sh `, ` ```shell ` | a command the reader runs | **not allowed** outside the two exempt pages |
+
+Conventions that follow from this:
+
+- Use `**What you should see:**` / `**你应该看到：**`. Not `**Verify:**` (the
+  reader runs no verification command) and not `**Result:**` (which reads as a
+  report rather than as something to go and look at).
+- The outcome must be **observable without reading code**: a web address to open,
+  a window appearing, a file path to look at, a list of changed files. "The build
+  succeeded" is not an outcome; a path is.
+- Follow every outcome with the sentence to say when it does not match. A page
+  that states an expectation without a fallback leaves a non-programmer stuck.
+- Put tool and version requirements in a table whose last column is the
+  user-visible failure (`| Program | Needs to be | If it is older |`), never in a
+  `# expected output` comment attached to a command.
+- Turn a verification command into the observable outcome it produces: "each one
+  reports a version number", not the `pkg-config` call.
+- Step headings are `## Step N — <plain-language intent>`, phrased as the outcome
+  the reader wants ("Package it up for other people"), not as the tool's verb
+  ("Build"). Numbering the six-step scenario pages is deliberate — the reader
+  follows them in order.
+- Do not name CLI flags that the reader is not going to type. "The CLI has no
+  platform flag" survives a rename; "`mars create` has no `--platform` flag" does
+  not.
+
+Removing a command must never remove a fact. Every constraint the command
+carried — a version floor, a profile that must stay off, a service that is not a
+workspace member — has to land somewhere on the page, usually in an admonition
+or a table.
+
+### Renaming headings breaks anchors silently
+
+`onBrokenLinks` is `throw`, but **`onBrokenAnchors` only warns**. A heading that
+other pages link to by anchor (for example
+`## Step 6 — Package it up for other people` and its `## 阶段 6 —— 打包`
+counterpart, both targeted from `ai-admin-env.md`) must keep its exact text, in
+both locales, or the link 404s inside a build that still passes. Grep for the
+anchor before renaming a heading.
+
 ## Build Commands
 
 Run from this directory. It is a standalone package — it is not a pnpm workspace

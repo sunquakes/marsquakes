@@ -65,6 +65,11 @@ two ways:
 
 ## Where to go next
 
+The documentation is split into two tracks, matching the two entries in the top
+navigation bar. Read the one that describes how you work.
+
+**Guide** — you are running the commands yourself:
+
 | Page | What it covers |
 | ---- | -------------- |
 | [Getting Started](./getting-started.md) | Install the CLI and create your first project |
@@ -72,16 +77,26 @@ two ways:
 | [Platforms](./platforms.md) | What each platform contains and how `platforms.json` works |
 | [Docker](./docker.md) | Building and running without a local JDK or Node toolchain |
 | [Conventions](./conventions.md) | Directory rules, commits, branches |
-| [AI Agents](./ai-agents.md) | Prompt examples for driving `mars` from an AI coding agent |
-| [Set Up the Agent](./ai-setup.md) | Installing and configuring OpenAI Codex CLI |
-| [Build a Project with AI](./ai-workflow.md) | End-to-end walkthrough, from scaffold to release |
-| [Automate with AI](./ai-automation.md) | Unattended runs, exit codes, CI |
+
+**AI Guide** — an AI coding agent is running the commands for you. It is grouped
+by scenario, and each scenario group carries its own setup page, because an
+admin system and a desktop app need different things installed:
+
+| Group | Page | What it covers |
+| ----- | ---- | -------------- |
+| Environment Setup | [Install the Agent](./ai-setup-agent.md) | Installing and configuring OpenAI Codex CLI |
+| | [Install the Skill](./ai-setup.md) | Downloading the setup skill so the agent installs the toolchain for you |
+| | [Using with AI Agents](./ai-agents.md) | Prompt examples for driving `mars` from an AI coding agent |
+| Admin System | [Admin System Setup](./ai-admin-env.md) | Docker, MySQL, and Redis |
+| | [Admin System Prompts](./ai-admin-prompts.md) | Six stages, from scaffold to a running `api` + `web-admin` |
+| Desktop App | [Desktop App Setup](./ai-desktop-env.md) | Rust and the Tauri system dependencies |
+| | [Desktop App Prompts](./ai-desktop-prompts.md) | Six stages, from scaffold to an installer |
 
 ## Requirements
 
 | Tool | Version | Needed for |
 | ---- | ------- | ---------- |
-| Node | >= 18 | running the `mars` CLI itself |
+| Node | >= 22.12.0 | running the `mars` CLI itself |
 | pnpm | 9.15.x | installing dependencies in the generated project |
 
 Everything else — JDK, Maven, Rust, Android SDK — is only needed for the

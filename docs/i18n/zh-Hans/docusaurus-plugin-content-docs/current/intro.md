@@ -59,6 +59,10 @@ my-app/
 
 ## 下一步读什么
 
+文档分成两条线，对应顶部导航栏的两个菜单。按你的工作方式挑一条读就行。
+
+**使用指南** —— 命令由你自己敲：
+
 | 页面 | 内容 |
 | ---- | ---- |
 | [快速开始](./getting-started.md) | 安装 CLI 并创建第一个项目 |
@@ -66,16 +70,25 @@ my-app/
 | [平台](./platforms.md) | 每个端包含什么，以及 `platforms.json` 的作用 |
 | [Docker](./docker.md) | 不装本地 JDK / Node 工具链也能构建运行 |
 | [约定](./conventions.md) | 目录规则、提交信息、分支 |
-| [AI Agent](./ai-agents.md) | 让 AI 编程助手驱动 `mars` 的提示词示例 |
-| [配置 Agent](./ai-setup.md) | 安装并配置 DeepSeek Harness |
-| [用 AI 构建项目](./ai-workflow.md) | 从创建到打包的完整流程 |
-| [用 AI 做自动化](./ai-automation.md) | 无人值守运行、退出码、CI |
+
+**AI 开发指南** —— 命令由 AI 编程助手替你敲。这部分按应用场景分组，每个场景
+分组里都带着自己那份环境安装说明，因为后台管理系统和桌面应用要装的东西并不一样：
+
+| 分组 | 页面 | 内容 |
+| ---- | ---- | ---- |
+| 环境准备 | [安装 Agent](./ai-setup-agent.md) | 安装并配置 DeepSeek Harness |
+| | [安装 Skill](./ai-setup.md) | 下载环境准备 Skill，让 Agent 替你装好整条工具链 |
+| | [配合 AI Agent 使用](./ai-agents.md) | 让 AI 编程助手驱动 `mars` 的提示词示例 |
+| 后台管理功能 | [后台管理环境](./ai-admin-env.md) | Docker、MySQL 和 Redis |
+| | [后台管理提示词](./ai-admin-prompts.md) | 六个阶段，从创建项目到 `api` + `web-admin` 跑起来 |
+| 桌面应用 | [桌面应用环境](./ai-desktop-env.md) | Rust 和 Tauri 的系统依赖 |
+| | [桌面应用提示词](./ai-desktop-prompts.md) | 六个阶段，从创建项目到打出安装包 |
 
 ## 环境要求
 
 | 工具 | 版本 | 用途 |
 | ---- | ---- | ---- |
-| Node | >= 18 | 运行 `mars` CLI 本身 |
+| Node | >= 22.12.0 | 运行 `mars` CLI 本身 |
 | pnpm | 9.15.x | 在生成的项目中安装依赖 |
 
 其余的 JDK、Maven、Rust、Android SDK，只有在你启用了对应的端时才需要，而且

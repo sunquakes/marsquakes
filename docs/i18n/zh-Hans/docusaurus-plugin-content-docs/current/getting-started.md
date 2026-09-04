@@ -89,7 +89,19 @@ mars dev
 
 ```bash
 mars dev --platform web-admin
-mars dev --platform api --docker    # 无需本地 JDK 或 Maven
+```
+
+跑 API 需要本机装 Maven。`api` 是一个 Maven 模块，不是 pnpm workspace 成员，
+所以 `mars dev` 覆盖不到它：
+
+```bash
+cd apps/api && mvn -pl jeecg-module-system/jeecg-system-start -am spring-boot:run
+```
+
+MySQL 和 Redis 默认连 `127.0.0.1:3306` / `127.0.0.1:6379`，用下面命令启动：
+
+```bash
+docker compose -f docker-compose.infra.yml up -d
 ```
 
 ## 构建
@@ -103,11 +115,11 @@ mars build --platform api --docker
 ## 各端的工具链
 
 CLI 本身只需要 Node 和 pnpm。你每启用一个端，就会多一项要求 —— 但仅限于在**本机**
-构建该端时。[Docker 工作流](./docker.md)可以免掉其中大部分。
+构建该端时。[Docker 工作流](./docker.md)可以在 CI 和打包时免掉其中大部分。
 
 | 端 | 本机需要 | 可用 Docker 规避 |
 | -- | -------- | ---------------- |
-| `api` | JDK 17 + Maven 3.9+ | 可以 |
+| `api` | JDK 17 + Maven 3.9+ | 可以（CI / 打包） |
 | `web-admin`、`web` | Node >= 22.12.0、pnpm 9.15.x | 可以 |
 | `desktop` | Rust stable + Tauri 依赖 | 不可以 |
 | `android` | JDK 17 + Android SDK | 不可以 |

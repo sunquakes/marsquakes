@@ -136,13 +136,19 @@ Replaced files are backed up to `.mars-update-backup` first.
 ```bash
 mars dev                            # all enabled platforms, in parallel
 mars dev --platform web-admin
-mars dev --platform api --docker
 ```
 
 Web workspaces are started through Turborepo. Native platforms are started
 through their own toolchain — currently only `android` has a wired script
-(`gradlew installDebug`); `ios`, `api`, `windows`, `linux` and `macos` print a
-"pending" notice when started natively, so use `--docker` for `api`.
+(`gradlew installDebug`); `ios`, `windows`, `linux` and `macos` print a
+"pending" notice when started natively.
+
+`api` has no wired `dev` script and is **not** a pnpm workspace member, so it is
+not covered by `mars dev`. Run it with Maven on the host instead:
+
+```bash
+cd apps/api && mvn -pl jeecg-module-system/jeecg-system-start -am spring-boot:run
+```
 
 ## `mars build`
 
@@ -163,6 +169,10 @@ mars clean     # remove build artifacts across the workspace
 ```
 
 ## Docker mode
+
+`--docker` exists for CI and packaging. Day-to-day development runs your own code
+on the host and keeps only MySQL and Redis in containers — see
+[Set up the environment](./ai-admin-env.md).
 
 Adding `--docker` to `dev` or `build` makes the CLI:
 

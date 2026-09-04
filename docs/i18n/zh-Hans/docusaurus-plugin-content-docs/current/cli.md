@@ -129,12 +129,18 @@ mars update
 ```bash
 mars dev                            # 并行启动所有已启用的端
 mars dev --platform web-admin
-mars dev --platform api --docker
 ```
 
 Web 相关的 workspace 通过 Turborepo 启动。原生端则走各自的工具链 —— 目前只有
-`android` 接好了脚本（`gradlew installDebug`）；`ios`、`api`、`windows`、
-`linux`、`macos` 在原生方式下会提示“待完善”，因此 `api` 请使用 `--docker`。
+`android` 接好了脚本（`gradlew installDebug`）；`ios`、`windows`、`linux`、
+`macos` 在原生方式下会提示“待完善”。
+
+`api` 没有接 `dev` 脚本，而且**不是** pnpm workspace 成员，所以不在 `mars dev`
+的覆盖范围里。请用 Maven 直接跑在宿主机上：
+
+```bash
+cd apps/api && mvn -pl jeecg-module-system/jeecg-system-start -am spring-boot:run
+```
 
 ## `mars build`
 
@@ -155,6 +161,9 @@ mars clean     # 清理整个 workspace 的构建产物
 ```
 
 ## Docker 模式
+
+`--docker` 是为 CI 和打包准备的。日常开发是自己的代码跑在宿主机上，容器里只留
+MySQL 和 Redis —— 见[搭好环境](./ai-admin-env.md)。
 
 给 `dev` 或 `build` 加上 `--docker`，CLI 会：
 

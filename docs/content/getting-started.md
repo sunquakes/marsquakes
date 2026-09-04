@@ -92,8 +92,17 @@ parallel. To focus on one:
 
 ```bash
 mars dev --platform web-admin
-mars dev --platform api --docker    # no local JDK or Maven needed
 ```
+
+To run the API you need Maven on the host — the `api` is a Maven module, not a
+pnpm workspace member, so it is not covered by `mars dev`:
+
+```bash
+cd apps/api && mvn -pl jeecg-module-system/jeecg-system-start -am spring-boot:run
+```
+
+MySQL and Redis are expected on `127.0.0.1:3306` / `127.0.0.1:6379` — start them
+with `docker compose -f docker-compose.infra.yml up -d`.
 
 ## Build
 
@@ -107,11 +116,11 @@ mars build --platform api --docker
 
 The CLI itself only needs Node and pnpm. Each platform you enable adds its own
 requirement — but only when you build it **on the host**. The
-[Docker workflow](./docker.md) removes most of these.
+[Docker workflow](./docker.md) removes most of these for CI and packaging.
 
 | Platform | Needs on the host | Avoidable with Docker |
 | -------- | ----------------- | --------------------- |
-| `api` | JDK 17 + Maven 3.9+ | yes |
+| `api` | JDK 17 + Maven 3.9+ | yes (CI / packaging) |
 | `web-admin`, `web` | Node >= 22.12.0, pnpm 9.15.x | yes |
 | `desktop` | Rust stable + Tauri prerequisites | no |
 | `android` | JDK 17 + Android SDK | no |
