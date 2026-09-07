@@ -53,6 +53,26 @@
   margin-top: 2.25rem;
 }
 
+/* Tabbed command demo. Infima styles its tabs for a light surface, so the four
+   variables it reads are re-pointed at the banner's palette instead of
+   overriding `.tabs__item` — the class names are theme internals, the variables
+   are the documented seam. */
+.heroDemo {
+  --ifm-tabs-color: rgba(255, 255, 255, 0.72);
+  --ifm-tabs-color-active: #fff;
+  --ifm-tabs-color-active-border: #fff;
+  --ifm-hover-overlay: rgba(255, 255, 255, 0.12);
+
+  max-width: 46rem;
+  margin-top: 2.75rem;
+}
+
+/* The code block carries the last margin in the banner, and `.hero` already
+   supplies the bottom padding. */
+.heroDemo :last-child {
+  margin-bottom: 0;
+}
+
 /* --- Banner artwork: Mars crossed by a beating seismograph trace ---------- */
 
 .heroArt {
@@ -355,6 +375,13 @@
 
   .heroActions {
     justify-content: center;
+  }
+
+  /* The banner text is centred at this width, so the demo is centred with it
+     rather than left-aligned under centred copy. */
+  .heroDemo {
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .heroArt {

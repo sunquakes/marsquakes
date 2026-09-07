@@ -3,6 +3,8 @@ import Translate, { translate } from '@docusaurus/Translate';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
 import Layout from '@theme/Layout';
+import TabItem from '@theme/TabItem';
+import Tabs from '@theme/Tabs';
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
@@ -83,6 +85,24 @@ mars create my-app
 cd my-app
 pnpm install
 mars dev`;
+
+// Banner demo. The five commands above are byte-identical in bash and in
+// PowerShell, so an OS switcher is only worth showing if it starts one step
+// earlier — at the Node toolchain, which is where the two platforms genuinely
+// diverge. Both sequences mirror `install-matrix.md`; the PowerShell profile
+// hook is not decoration there, without it nothing mise installs reaches PATH.
+const bootstrapUnix = `curl https://mise.run | sh
+mise use --global node@22
+corepack enable pnpm
+pnpm add -g @marsquakes/cli
+mars create my-app`;
+
+const bootstrapWindows = `winget install jdx.mise
+Add-Content $PROFILE '(& mise activate pwsh) | Out-String | Invoke-Expression'
+mise use --global node@22
+corepack enable pnpm
+pnpm add -g @marsquakes/cli
+mars create my-app`;
 
 // The seismograph trace, shared by the static stroke and the travelling pulse
 // drawn on top of it. Kept in one constant so the two can never drift apart.
@@ -165,15 +185,43 @@ function Hero(): ReactNode {
             </Translate>
           </p>
           <div className={styles.heroActions}>
-            <Link className="button button--primary button--lg" to="/docs/getting-started">
-              <Translate id="home.hero.primaryCta">Get started</Translate>
+            <Link className="button button--primary button--lg" to="/docs/ai-setup-agent">
+              <Translate id="home.hero.primaryCta">Start with the AI Guide</Translate>
             </Link>
-            <Link className="button button--secondary button--lg" to="/docs">
-              <Translate id="home.hero.secondaryCta">Read the docs</Translate>
+            <Link className="button button--secondary button--lg" to="/docs/getting-started">
+              <Translate id="home.hero.secondaryCta">Start with the Guide</Translate>
             </Link>
           </div>
         </div>
         <HeroArt />
+      </div>
+
+      {/* Sits below the two-column grid rather than inside it: the artwork owns
+          the right-hand track, and a code block squeezed into the left one
+          would wrap its longest line. */}
+      <div className="container">
+        <div className={styles.heroDemo}>
+          <Tabs groupId="os">
+            <TabItem
+              value="unix"
+              label={translate({
+                id: 'home.hero.demo.unix',
+                message: 'macOS / Linux',
+              })}
+            >
+              <CodeBlock language="bash">{bootstrapUnix}</CodeBlock>
+            </TabItem>
+            <TabItem
+              value="windows"
+              label={translate({
+                id: 'home.hero.demo.windows',
+                message: 'Windows (PowerShell)',
+              })}
+            >
+              <CodeBlock language="powershell">{bootstrapWindows}</CodeBlock>
+            </TabItem>
+          </Tabs>
+        </div>
       </div>
     </header>
   );

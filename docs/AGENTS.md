@@ -208,6 +208,74 @@ counterpart, both targeted from `ai-admin-env.md`) must keep its exact text, in
 both locales, or the link 404s inside a build that still passes. Grep for the
 anchor before renaming a heading.
 
+## Platform-specific examples use Tabs
+
+Any example whose commands differ per operating system is written as a
+`<Tabs>` group rather than as consecutive fenced blocks. `Tabs` ships with
+`@docusaurus/preset-classic`, so this adds no dependency:
+
+```md
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+```
+
+In `.md` pages the imports go directly after the front matter (`.md` is parsed as
+MDX, so this works); on a page that already imports a component, they follow it.
+
+The vocabulary is fixed, because it is what makes the groups interchangeable:
+
+| Attribute | Value | Why it is not free-form |
+|-----------|-------|-------------------------|
+| `groupId` | `"os"` | Docusaurus syncs and persists every group sharing an id, so the reader picks their OS **once** and every later group on every page — including the landing page — is already switched |
+| `value` | `unix` / `windows` | The persisted choice is stored by value, so a page using different values silently opts out of the sync |
+| `label` | `macOS / Linux` / `Windows (PowerShell)` | Half-width parentheses in both locales. Naming the shell is the point: the Windows commands are PowerShell, not `cmd` |
+
+Rules that decide what goes *inside* a tab:
+
+- **One axis per group.** A `Tabs` group switches on OS and nothing else. When a
+  second dimension exists (new project vs. existing project), express it as
+  prose or headings inside each tab — nesting a second `Tabs` makes the reader
+  hunt for which control changed what.
+- **Alternatives stay inside their platform's tab.** `brew install --cask codex`
+  is a macOS alternative, not a third platform, so it lives in the Unix tab
+  under a sentence. A tab per package manager multiplies tabs without adding a
+  decision the reader can make.
+- **A tab may hold prose instead of a command.** Where a step has no equivalent
+  — `chmod 600` on Windows — the tab says so. Never invent a command to keep the
+  two halves symmetrical, and never delete the tab: a missing tab reads as an
+  unfinished page.
+- **De-platform the lead-in sentence.** The text above the group describes the
+  goal; the commands below it describe the platform. A lead-in that says "run
+  this in bash" contradicts one of its own tabs.
+- **Keep shared steps outside the group.** `corepack enable pnpm` is identical
+  everywhere, so it follows the group as a plain block rather than being
+  duplicated into both tabs where the two copies can drift.
+
+### On the landing page
+
+`src/pages/index.tsx` uses the same `groupId="os"`, so the reader's choice in
+the banner carries into the docs. Three extra constraints apply there:
+
+- Code is rendered with `@theme/CodeBlock` (JSX has no fences), and the `label`
+  prop is a string, so it goes through `translate({id, message})` while JSX
+  children use `<Translate>`. Both land in `code.json`.
+- **A switcher is only worth showing where the platforms actually differ.** The
+  five `mars` quick-start commands are byte-identical in bash and PowerShell, so
+  tabbing them would render two identical panels. The banner demo therefore
+  starts one step earlier, at the Node toolchain, where the install method and
+  the PowerShell `$PROFILE` hook genuinely diverge.
+- Infima styles tabs for a light surface, so on the dark banner `.heroDemo`
+  re-points `--ifm-tabs-color`, `--ifm-tabs-color-active`,
+  `--ifm-tabs-color-active-border` and `--ifm-hover-overlay`. Override those
+  variables, not `.tabs__item` — the class names are theme internals, the
+  variables are the documented seam.
+
+Every platform-specific command must match
+`.agents/skills/marsquakes-setup/references/install-matrix.md`, which is the
+single source of truth for per-OS install commands and version floors. That file
+also records which lines are mandatory rather than cosmetic — the `mise` shell
+hook being the one that costs an hour when it is dropped.
+
 ## Build Commands
 
 Run from this directory. It is a standalone package — it is not a pnpm workspace
