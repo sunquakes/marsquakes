@@ -286,3 +286,57 @@ domain changes — `pnpm -C docs build` cannot catch a stale absolute URL.
 Build output goes to `docs/build`, which is gitignored by exact path — a bare
 `build/` rule is deliberately avoided because `apps/web-admin/build/` is tracked
 source.
+
+### The deploy workflow
+
+`.github/workflows/deploy-docs.yml` builds the site and publishes it with the
+`actions/deploy-pages` flow (no `gh-pages` branch — the artifact is uploaded and
+served directly). It is the only workflow that touches the docs site, which is
+consistent with `docs/` not being a platform: `mars dev` / `mars build` / `turbo`
+never see it either.
+
+Two properties of this repository dictate the shape of the job, and both are easy
+to "simplify" into a broken workflow:
+
+- **Check out the whole repository.** `pnpm run build` is
+  `pnpm run pack-skill && docusaurus build`, and `pack-skill` is
+  `node ../scripts/pack-skill.js`, which reads `.agents/skills/marsquakes-setup/`.
+  A sparse checkout of `docs/` cannot build. Submodules stay off: `.gitmodules`
+  points `apps/desktop` at an SSH URL that would need a deploy key, and the docs
+  build never reads it.
+- **Install inside `docs/`.** `docs` is not a pnpm workspace member and carries
+  its own `docs/pnpm-lock.yaml`, so `cache-dependency-path` and the
+  `--frozen-lockfile` install both target that file. A root install resolves a
+  completely different dependency set.
+
+The remaining choices:
+
+| Choice | Reason |
+|--------|--------|
+| `pnpm/action-setup` with no `version:` | It reads `packageManager` from the root `package.json`, so the pnpm version has one source of truth |
+| `node-version-file: '.nvmrc'` | Same reason — the Node version is not duplicated into the workflow |
+| `pnpm/action-setup` before `setup-node` | `cache: pnpm` resolves the store path by *executing* pnpm, so pnpm must already exist |
+| `permissions: contents: read` at the top, widened only in the deploy job | The build job never needs a writable token |
+| `cancel-in-progress` only for pull requests | An interrupted Pages deployment can leave the site serving a half-published artifact; superseded PR builds are disposable |
+
+The build job also asserts that `docs/build/CNAME` exists and matches
+`docs/static/CNAME`. Docusaurus knows nothing about the custom domain, so without
+this check a lost `CNAME` would deploy successfully and take the domain down —
+the failure mode described in the table above, which reports no error anywhere.
+
+`paths:` filters restrict the workflow to the build's real inputs, which include
+`scripts/pack-skill.js` and `.agents/skills/**` even though they sit outside
+`docs/`. **When the build starts consuming a new path, add it to both filters** —
+a missing entry does not fail the run, it skips the deploy and lets the published
+site go stale silently. `workflow_dispatch` exists so a skipped deploy can always
+be forced by hand.
+
+Pull requests run the same build (including `pnpm run type-check`) but neither
+upload nor deploy. That matters because `onBrokenLinks` is `'throw'`: a bad link
+turns into a hard build failure, and it is much cheaper to see that on the pull
+request than as a deploy that stopped updating the site.
+
+One thing the workflow cannot do for you: the repository's
+**Settings → Pages → Source must be set to "GitHub Actions"**. While it is still
+on "Deploy from a branch", `deploy-pages` fails outright.
+

@@ -1,0 +1,114 @@
+name: Deploy docs
+
+# The documentation site is the only thing this workflow touches. It is not a
+# platform in `platforms.json`, is not a pnpm workspace member, and is not built
+# by `turbo` — so it gets its own workflow rather than a job inside a monorepo
+# pipeline.
+on:
+  push:
+    branches: [main]
+    # Scoped to the inputs of the docs build. `pack-skill` reads
+    # `.agents/skills/**` and lives in `scripts/`, so those are build inputs even
+    # though they sit outside `docs/`. Whenever the build starts consuming a new
+    # path, add it here — a missing entry does not fail, it silently skips the
+    # deploy and the site quietly goes stale. `workflow_dispatch` below is the
+    # escape hatch for exactly that case.
+    paths:
+      - 'docs/**'
+      - 'scripts/pack-skill.js'
+      - '.agents/skills/**'
+      - '.nvmrc'
+      - 'package.json'
+      - '.github/workflows/deploy-docs.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'scripts/pack-skill.js'
+      - '.agents/skills/**'
+      - '.nvmrc'
+      - 'package.json'
+      - '.github/workflows/deploy-docs.yml'
+  workflow_dispatch:
+
+# Read-only by default; the deploy job widens this for itself. Declaring it here
+# also pins the token down on repositories whose default is still read-write.
+permissions:
+  contents: read
+
+# Never cancel a deploy in flight: an interrupted Pages deployment can leave the
+# site serving a half-published artifact. Superseded pull-request builds are
+# disposable, so those do get cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        # The whole repository, deliberately. `docs/package.json` runs
+        # `node ../scripts/pack-skill.js` before `docusaurus build`, so a sparse
+        # checkout of `docs/` alone cannot build.
+        #
+        # Submodules stay off: `.gitmodules` points `apps/desktop` at an SSH URL,
+        # which would need a deploy key, and the docs build never reads it.
+
+      # Must run before `setup-node`, because the `cache: pnpm` option below
+      # resolves the pnpm store path by executing pnpm.
+      - uses: pnpm/action-setup@v4
+        # No `version:` on purpose — the action reads `packageManager` from the
+        # root `package.json`, keeping one source of truth for the pnpm version.
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+          # `docs` has its own lockfile because it is outside the pnpm workspace.
+          # Pointing at the root lockfile would cache the wrong dependency set.
+          cache-dependency-path: docs/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: docs
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        working-directory: docs
+        run: pnpm run type-check
+
+      - name: Build
+        working-directory: docs
+        run: pnpm run build
+
+      # `onBrokenLinks: 'throw'` makes the build catch bad links, but nothing in
+      # Docusaurus knows about the custom domain. A missing `CNAME` in the output
+      # makes the deploy reset the domain without reporting an error, so check it
+      # here instead of discovering it from a dead site.
+      - name: Verify the custom domain reached the build output
+        run: |
+          test -f docs/build/CNAME || {
+            echo "::error::docs/build/CNAME is missing - deploying would reset the custom domain"
+            exit 1
+          }
+          diff docs/static/CNAME docs/build/CNAME
+
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: docs/build
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    # Scoped to this job so the build job keeps read-only credentials.
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
