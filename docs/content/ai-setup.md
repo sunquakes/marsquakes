@@ -5,6 +5,8 @@ sidebar_position: 2
 ---
 
 import SkillDownload from '@site/src/components/SkillDownload';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 # Install the Setup Skill
 
@@ -23,13 +25,22 @@ You do not need a project yet. This works on a brand-new computer.
 
 Or, if you prefer to paste a line:
 
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
+
 ```bash
 curl -LO https://marsquakes.cc/skills/marsquakes-setup.zip
 ```
 
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
+
 ```powershell
 Invoke-WebRequest -Uri https://marsquakes.cc/skills/marsquakes-setup.zip -OutFile marsquakes-setup.zip
 ```
+
+</TabItem>
+</Tabs>
 
 **What you should see:** a file called `marsquakes-setup.zip`. Inside it is a single
 folder with five small text files — the instructions the agent reads, plus notes on
@@ -42,18 +53,16 @@ than creating a folder for it first.
 
 Copy the block for your computer.
 
-<details>
-<summary>macOS / Linux</summary>
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
 
 ```bash
 mkdir -p ~/.agents/skills
 unzip -o ~/Downloads/marsquakes-setup.zip -d ~/.agents/skills
 ```
 
-</details>
-
-<details>
-<summary>Windows (PowerShell)</summary>
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
 
 ```powershell
 $dest = "$HOME\.agents\skills"
@@ -61,7 +70,8 @@ New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Expand-Archive -Path "$HOME\Downloads\marsquakes-setup.zip" -DestinationPath $dest -Force
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
 That location is in your personal home folder, so installing it once covers every
 project you ever make on this computer.

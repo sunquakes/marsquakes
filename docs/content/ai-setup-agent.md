@@ -4,6 +4,9 @@ title: Install the Agent
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Install the Agent
 
 The agent is the program you talk to. It does the typing for you — including
@@ -24,27 +27,32 @@ That is the whole skill.
 
 ## 1. Install it
 
-Pick the line for your computer. Each one downloads a ready-made program and needs
+Pick the tab for your computer. Each line downloads a ready-made program and needs
 nothing installed beforehand — which is deliberate, because the things it *would*
 otherwise need are the very things it is about to install for you.
 
-macOS or Linux:
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
 
 ```bash
 curl -fsSL https://chatgpt.com/codex/install.sh | sh
 ```
 
-Windows, in PowerShell:
+If you already use Homebrew on macOS, this does the same job:
+
+```bash
+brew install --cask codex
+```
+
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
 
 ```powershell
 irm https://chatgpt.com/codex/install.ps1 | iex
 ```
 
-macOS, if you already use Homebrew:
-
-```bash
-brew install --cask codex
-```
+</TabItem>
+</Tabs>
 
 Now check it arrived:
 
@@ -84,6 +92,9 @@ change. It is also where it looks for a project's own instruction files.
 about to be created *inside* — not the project itself. If you have nowhere to keep
 projects yet, make somewhere:
 
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
+
 ```bash
 mkdir ~/projects
 codex -C ~/projects
@@ -94,6 +105,23 @@ If you are joining a project that already exists, start inside it instead:
 ```bash
 codex -C ~/projects/admin-platform
 ```
+
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
+
+```powershell
+mkdir $HOME\projects
+codex -C $HOME\projects
+```
+
+If you are joining a project that already exists, start inside it instead:
+
+```powershell
+codex -C $HOME\projects\admin-platform
+```
+
+</TabItem>
+</Tabs>
 
 **What you should see:** ask the agent to run `pwd`. The folder it prints has to be
 the one you meant. Getting this wrong shows up much later as an agent that reports
