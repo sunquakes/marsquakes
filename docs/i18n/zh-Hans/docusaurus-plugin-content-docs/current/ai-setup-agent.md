@@ -4,6 +4,9 @@ title: 安装 Agent
 sidebar_position: 1
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # 安装 Agent
 
 Agent 就是跟你对话的那个程序。它负责替你打字——包括安装后面所有页面要用到的工具。
@@ -19,11 +22,47 @@ Windows 上叫 **PowerShell**，macOS 上叫 **终端**，Linux 上就是你系�
 
 ## 1. 安装 Agent
 
-本系列用 DeepSeek Harness，简称 dsh。它需要 Node.js 和 pnpm 才能运行，所以先装这两个：
+本系列用 DeepSeek Harness，简称 dsh。它需要 Node.js 和 pnpm 才能运行，所以先装这两个。
+下面用 mise 来装 Node——切到你自己的系统那个页签：
+
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
+
+还没有 mise 的话，先装它：
+
+```bash
+curl https://mise.run | sh
+```
 
 ```bash
 mise use --global node@22
 ```
+
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
+
+还没有 mise 的话，先装它（用 Scoop 的话是 `scoop install mise`）：
+
+```powershell
+winget install jdx.mise
+```
+
+装完要让 PowerShell 每次启动都加载 mise，否则下一条命令装好的 Node 在终端里看不见：
+
+```powershell
+Add-Content $PROFILE '(& mise activate pwsh) | Out-String | Invoke-Expression'
+```
+
+关掉终端重新开一个，然后：
+
+```powershell
+mise use --global node@22
+```
+
+</TabItem>
+</Tabs>
+
+Node 就位后，下面这条命令两个系统完全一样：
 
 ```bash
 corepack enable pnpm
@@ -71,11 +110,23 @@ Agent 需要一把钥匙才能工作。命令行和网页版读的是两个不�
 DEEPSEEK_API_KEY: sk-xxxxxxxxxxxxxxxx
 ```
 
-macOS / Linux 上需要收紧权限，否则 dsh 拒绝加载：
+接下来要收紧这个文件的权限，否则 dsh 拒绝加载：
+
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
 
 ```bash
 chmod 600 ~/.dsh/.credentials.yaml
 ```
+
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
+
+这一步 Windows 上不需要做——`C:\Users\你的用户名` 下的文件默认就只有你自己能读，
+dsh 也不在 Windows 上检查这个权限位。直接跳到下面的验证。
+
+</TabItem>
+</Tabs>
 
 验证钥匙是否生效：
 
@@ -99,15 +150,42 @@ dsh web
 
 **dsh 把启动时所在的那个目录当作工作区根目录**——它只能看到和改动这个目录里的东西。
 
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
+
+要新建项目：站在新项目的「父目录」
+
 ```bash
-cd ~/projects                   # 要新建项目：站在新项目的「父目录」
+cd ~/projects
 dsh web
 ```
 
+维护已有项目：站在项目里
+
 ```bash
-cd ~/projects/admin-platform    # 维护已有项目：站在项目里
+cd ~/projects/admin-platform
 dsh web
 ```
+
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
+
+要新建项目：站在新项目的「父目录」
+
+```powershell
+cd $HOME\projects
+dsh web
+```
+
+维护已有项目：站在项目里
+
+```powershell
+cd $HOME\projects\admin-platform
+dsh web
+```
+
+</TabItem>
+</Tabs>
 
 **你应该看到：** 让 Agent 执行 `pwd`，输出必须是你以为的那个目录。站错目录的典型症状是
 Agent 声称创建成功了，但你在预期位置找不到目录——它建在别处了。

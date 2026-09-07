@@ -5,6 +5,8 @@ sidebar_position: 2
 ---
 
 import SkillDownload from '@site/src/components/SkillDownload';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 # 安装环境准备 Skill
 
@@ -22,13 +24,22 @@ import SkillDownload from '@site/src/components/SkillDownload';
 
 或者用命令行下载：
 
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
+
 ```bash
 curl -LO https://marsquakes.cc/skills/marsquakes-setup.zip
 ```
 
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
+
 ```powershell
 Invoke-WebRequest -Uri https://marsquakes.cc/skills/marsquakes-setup.zip -OutFile marsquakes-setup.zip
 ```
+
+</TabItem>
+</Tabs>
 
 **你应该看到：** 下载完成后，文件 `marsquakes-setup.zip` 出现在你的下载目录里。
 
@@ -36,18 +47,16 @@ Invoke-WebRequest -Uri https://marsquakes.cc/skills/marsquakes-setup.zip -OutFil
 
 把它解压到当前用户目录下的 `.agents/skills/` 里。
 
-<details>
-<summary>macOS / Linux</summary>
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
 
 ```bash
 mkdir -p ~/.agents/skills
 unzip -o ~/Downloads/marsquakes-setup.zip -d ~/.agents/skills
 ```
 
-</details>
-
-<details>
-<summary>Windows（PowerShell）</summary>
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
 
 ```powershell
 $dest = "$HOME\.agents\skills"
@@ -55,7 +64,8 @@ New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Expand-Archive -Path "$HOME\Downloads\marsquakes-setup.zip" -DestinationPath $dest -Force
 ```
 
-</details>
+</TabItem>
+</Tabs>
 
 :::caution 装到用户目录，不要装到项目目录里
 Agent 也会扫描项目文件夹里的 `.agents/skills/`。别装那儿——项目级的 Skill 一换到别的
@@ -66,9 +76,22 @@ Agent 也会扫描项目文件夹里的 `.agents/skills/`。别装那儿——�
 
 验证一下解压是否正确：
 
+<Tabs groupId="os">
+<TabItem value="unix" label="macOS / Linux">
+
 ```bash
 head -4 ~/.agents/skills/marsquakes-setup/SKILL.md
 ```
+
+</TabItem>
+<TabItem value="windows" label="Windows (PowerShell)">
+
+```powershell
+Get-Content "$HOME\.agents\skills\marsquakes-setup\SKILL.md" -TotalCount 4
+```
+
+</TabItem>
+</Tabs>
 
 **你应该看到：** 第一行是 `---`，然后 `name:`，然后 `description:`。
 
