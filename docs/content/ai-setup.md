@@ -131,19 +131,28 @@ straight to "all done", say: "run the check again and show me the list."
 These are not preferences. Each one is a version below which something actually
 breaks, usually with an error that points somewhere else entirely.
 
-| Program | Needs to be | Why that number |
-| ------- | ----------- | --------------- |
-| Node.js | 22.12.0 or newer | anything from 22.0 to 22.11 is rejected outright, so "version 22" is not enough |
-| pnpm | 9.0.0 or newer | the project pins this itself |
-| git | 2.20.0 or newer | — |
-| Docker | 20.10.0 or newer | — |
-| Docker Compose | 2.0.0 or newer | anything starting with `1.` cannot read this project's files at all |
-| Java (JDK) | 17 | 21 also works, 11 does not |
-| Maven | 3.9.0 or newer | — |
-| Rust | 1.77.0 or newer | required by the desktop app |
+| Program | Needs to be | Installed | Why that number |
+| ------- | ----------- | --------- | --------------- |
+| Node.js | 22.12.0 or newer | up front | anything from 22.0 to 22.11 is rejected outright, so "version 22" is not enough |
+| pnpm | 9.0.0 or newer | up front | the project pins this itself |
+| git | 2.20.0 or newer | up front | — |
+| Docker | 20.10.0 or newer | up front, if you asked for it | — |
+| Docker Compose | 2.0.0 or newer | with Docker | anything starting with `1.` cannot read this project's files at all |
+| Java (JDK) | 17 | when a project has a backend or an Android app | 21 also works, 11 does not |
+| Maven | 3.9.0 or newer | when a project has a backend | — |
+| Rust | 1.77.0 or newer | when a project has a desktop app | required by the desktop app |
 
-Only the ones your kind of project needs get installed — a desktop-only setup never
-touches Java.
+Read the "Installed" column as a *when*, not an *if*. The first three are the
+agent's own tools, so they have to exist before anything else can happen. The last
+three depend on what you are building, and nothing knows that until a project
+exists — so they are installed while the project is being initialised. A
+desktop-only machine never gets a JDK, and a backend-only machine never gets Rust.
+
+:::tip If an agent wants to install all of them now
+Say: "install only the basics — the rest can wait until the project exists." An
+agent that installs the whole table up front has not done anything harmful, just
+slow: it will have downloaded a JDK and a Rust toolchain you may never use.
+:::
 
 ## Next
 

@@ -61,6 +61,11 @@ your country, and picking the wrong one turns a short install into a very long o
 **What you should see:** a settings file at the top of your project, and an install
 that finishes without errors.
 
+This is also where Rust arrives, if it was not already on your computer. It was
+skipped during [setup](./ai-desktop-env.md#what-ready-should-look-like) on purpose
+— nothing knew you wanted a desktop app until Step 1 created one. The project now
+says so, so the tool works it out and installs it without being asked.
+
 Then ask: "is the desktop app's own code folder there?" If the agent says it is
 missing, the app was never created and you need to go back to step 1.
 
@@ -157,6 +162,26 @@ built on a real computer, and on the same kind of computer as the people you are
 sending it to. If an agent starts looking for a Docker way to do it, say: "there
 is no Docker path for the desktop app, build it directly."
 :::
+
+## If you add another piece later
+
+Say you come back in a month and want a backend as well, so the app can store
+things somewhere other than the one computer it runs on. Enabling it is a change
+to the project, and the project is what decides which programs are needed — so
+after enabling it, ask for the install step again:
+
+> **Say this**
+>
+> Turn on the backend for this project, then install whatever it now needs.
+
+**What you should see:** Java and Maven being installed this time, and Rust being
+left alone because it is already there.
+
+This is why nothing was installed up front. Back at [setup](./ai-desktop-env.md)
+nobody could have known you would eventually want a backend, so guessing would
+have meant installing everything on the chance you might. Asking the project
+instead means the answer stays right even when you change your mind — you just
+ask for the install step again.
 
 ## Saying it well
 

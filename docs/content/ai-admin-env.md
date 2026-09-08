@@ -35,9 +35,10 @@ the very last step, when you package everything up for other people. See
 ## Say this to get set up
 
 ```text
-Set me up to build a Marsquakes admin system on this computer. Run the database
-in Docker, and run the project itself directly on my machine. Tell me what was
-missing before you install anything.
+Set me up to build a Marsquakes admin system on this computer. Install only the
+basics for now — the backend's own tools can wait until the project exists. Run
+the database in Docker, and run the project itself directly on my machine. Tell
+me what was missing before you install anything.
 ```
 
 That is the whole setup step. The agent already knows what to install, in what
@@ -54,25 +55,30 @@ If the agent skips that, ask for it: "check again and show me the results".
 
 ## What "ready" should look like
 
-You do not need to know what any of these are. You only need the agent to confirm
-all five are present, and to flag it if a version is too old:
+Nothing gets installed "just in case" here. This step only puts the few programs
+on your computer that every Marsquakes project needs, whatever you are building:
 
 | Program | Needs to be | If it is older |
 | ------- | ----------- | -------------- |
+| Node.js | 22.12.0 or newer | the Marsquakes tool itself will not run |
+| pnpm | 9.0.0 or newer | installing the project's pieces fails |
+| git | 2.20.0 or newer | the project cannot be created |
 | Docker | 20.10.0 or newer | the database will not start at all |
 | Docker Compose | 2.0.0 or newer | this is a hard failure, not a warning — anything starting with `1.` cannot read this project's files |
-| Java (JDK) | version 17 | the backend cannot run. Version 21 is also fine; 11 is not |
-| Maven | 3.9 or newer | the backend cannot be built |
-| Node.js and pnpm | installed earlier | not specific to this page |
+
+The backend's own tools — Java and Maven — are **deliberately not in that list**.
+They only make sense once a project exists and says it has a backend, so they get
+installed in [Step 2](./ai-admin-prompts.md#step-2--install-what-the-project-needs)
+instead. If an agent offers to install them now, say: "not yet — install those
+when you initialise the project."
 
 If any row is old rather than missing, say: "that version is too old — replace it
 with a supported one, do not work around it."
 
-:::caution "Java works but something says JAVA_HOME is not set"
-This looks broken and is not. The terminal window it is running in was opened
-before Java finished installing, so it has stale information. Say: "open a fresh
-terminal and check again before you reinstall anything." Reinstalling Java will
-not help.
+:::note Why Docker is on the list but Java is not
+Docker is here because *this page* has already decided to run the database in a
+box — that is a choice you made, not something derived from the project. Java and
+Maven depend on what the project turns out to contain, which nothing knows yet.
 :::
 
 ## Starting the database

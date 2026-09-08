@@ -49,9 +49,9 @@ to answer instead of skipping.
 
 > **Say this**
 >
-> Set up the environment file and install everything this project needs. I am in
-> mainland China. Put the database passwords in place before anything starts up
-> for the first time.
+> Set up the environment file and install everything this project needs,
+> including the tools the backend itself needs. I am in mainland China. Put the
+> database passwords in place before anything starts up for the first time.
 
 Mentioning where you are matters. Downloads come from different places depending
 on your country, and picking the wrong one turns a two-minute install into a
@@ -59,6 +59,19 @@ twenty-minute crawl.
 
 **What you should see:** a settings file at the top of your project with the
 passwords filled in, and an install that finishes without errors.
+
+This is also the step where Java and Maven arrive, if they were not already on
+your computer. They were skipped during
+[setup](./ai-admin-env.md#what-ready-should-look-like) on purpose — nothing knew
+you wanted a backend until Step 1 created one. The project now says so, so the
+tool works it out and installs them without being asked.
+
+:::caution "Java works but something says JAVA_HOME is not set"
+This looks broken and is not. The terminal window it is running in was opened
+before Java finished installing, so it has stale information. Say: "open a fresh
+terminal and check again before you reinstall anything." Reinstalling Java will
+not help.
+:::
 
 :::note An install that crawls is not an install that failed
 If it seems to be inching along forever, it is almost always downloading from the
@@ -166,6 +179,25 @@ This is the one moment where Docker legitimately builds your code, because the
 person doing the packaging might have nothing installed at all. It is a shipping
 step, not a shortcut for building — using it while you are still making changes
 makes everything slower and errors harder to read.
+
+## If you add another piece later
+
+Say you come back in a month and want a desktop app alongside the website.
+Enabling it is a change to the project, and the project is what decides which
+programs are needed — so after enabling it, ask for the install step again:
+
+> **Say this**
+>
+> Turn on the desktop app for this project, then install whatever it now needs.
+
+**What you should see:** Rust being installed this time, and Java being left alone
+because it is already there.
+
+This is why nothing was installed up front. Back at [setup](./ai-admin-env.md)
+nobody could have known you would eventually want a desktop app, so guessing would
+have meant installing everything on the chance you might. Asking the project
+instead means the answer stays right even when you change your mind — you just
+ask for the install step again.
 
 ## Saying it well
 

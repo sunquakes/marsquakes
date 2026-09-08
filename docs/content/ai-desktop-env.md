@@ -23,9 +23,9 @@ setup, that will not work — say no and let it install the tools properly.
 ## Say this to get set up
 
 ```text
-Set me up to build a Marsquakes desktop app on this computer. Install the Rust
-toolchain and whatever build tools my operating system needs. Tell me what was
-missing before you install anything.
+Set me up to build a Marsquakes desktop app on this computer. Install the basics
+and whatever build tools my operating system needs — Rust can wait until the
+project exists. Tell me what was missing before you install anything.
 ```
 
 The agent already knows the right list for your operating system, so you do not
@@ -41,14 +41,20 @@ results." Something moving from missing to found is the only thing that counts.
 
 ## What "ready" should look like
 
-You do not need to know what these are. You need the agent to confirm all four:
+Only two of these are installed now. The rest of the list is here so you know what
+"finished" eventually means:
 
-| Program | Needs to be |
-| ------- | ----------- |
-| Rust | 1.77.0 or newer |
-| Cargo | present, with a version number |
-| Node.js | 22.12.0 or newer |
-| Your system's build tools | present — see the table below |
+| Program | Needs to be | Installed |
+| ------- | ----------- | --------- |
+| Node.js | 22.12.0 or newer | now — the Marsquakes tool is itself a Node program |
+| Your system's build tools | present — see the table below | now — no tool can install these for you |
+| Rust | 1.77.0 or newer | in [Step 2](./ai-desktop-prompts.md#step-2--install-what-the-project-needs), once the project says it is a desktop app |
+| Cargo | present, with a version number | arrives with Rust |
+
+The two halves split that way for a reason. Your operating system's build tools
+have to be installed by hand whatever you end up building, so there is no point
+waiting. Rust is only needed because you chose a desktop app — so it waits until a
+project exists that actually says so.
 
 :::note If Rust comes out too old
 The version bundled with some operating systems is too old for this project. If
