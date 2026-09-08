@@ -253,22 +253,19 @@ Rules that decide what goes *inside* a tab:
 
 ### On the landing page
 
-`src/pages/index.tsx` uses the same `groupId="os"`, so the reader's choice in
-the banner carries into the docs. Three extra constraints apply there:
+`src/pages/index.tsx` is React, not Markdown, so a `Tabs` group there is written
+with `@theme/Tabs` and `@theme/TabItem` and the code goes inside
+`@theme/CodeBlock` (JSX has no fences). Because `label` is a prop rather than
+JSX children, it goes through `translate({id, message})` instead of
+`<Translate>`; both land in `code.json`. Reuse `groupId="os"` so a choice made
+on the landing page carries into the docs.
 
-- Code is rendered with `@theme/CodeBlock` (JSX has no fences), and the `label`
-  prop is a string, so it goes through `translate({id, message})` while JSX
-  children use `<Translate>`. Both land in `code.json`.
-- **A switcher is only worth showing where the platforms actually differ.** The
-  five `mars` quick-start commands are byte-identical in bash and PowerShell, so
-  tabbing them would render two identical panels. The banner demo therefore
-  starts one step earlier, at the Node toolchain, where the install method and
-  the PowerShell `$PROFILE` hook genuinely diverge.
-- Infima styles tabs for a light surface, so on the dark banner `.heroDemo`
-  re-points `--ifm-tabs-color`, `--ifm-tabs-color-active`,
-  `--ifm-tabs-color-active-border` and `--ifm-hover-overlay`. Override those
-  variables, not `.tabs__item` — the class names are theme internals, the
-  variables are the documented seam.
+**The banner carries no code example.** It states what the project is and points
+at the two tracks — the `Quick start` section further down owns the commands,
+and the AI and manual guides own the per-platform detail. A command block in the
+banner had to duplicate one of them, and the copy that is not the source of
+truth is the one that goes stale. Keep prose, buttons and artwork above the
+fold; if a visitor needs commands, the CTA is one click away.
 
 Every platform-specific command must match
 `.agents/skills/marsquakes-setup/references/install-matrix.md`, which is the

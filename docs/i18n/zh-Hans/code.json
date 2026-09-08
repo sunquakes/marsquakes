@@ -29,12 +29,7 @@
   "home.hero.secondaryCta": {
     "message": "从使用指南开始"
   },
-  "home.hero.demo.unix": {
-    "message": "macOS / Linux"
-  },
-  "home.hero.demo.windows": {
-    "message": "Windows (PowerShell)"
-  },
+
   "home.paths.title": {
     "message": "两种使用方式"
   },

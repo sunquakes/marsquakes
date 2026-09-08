@@ -53,24 +53,96 @@
   margin-top: 2.25rem;
 }
 
-/* Tabbed command demo. Infima styles its tabs for a light surface, so the four
-   variables it reads are re-pointed at the banner's palette instead of
-   overriding `.tabs__item` — the class names are theme internals, the variables
-   are the documented seam. */
-.heroDemo {
-  --ifm-tabs-color: rgba(255, 255, 255, 0.72);
-  --ifm-tabs-color-active: #fff;
-  --ifm-tabs-color-active-border: #fff;
-  --ifm-hover-overlay: rgba(255, 255, 255, 0.12);
+/* Neither call to action can keep Infima's defaults here. `.button--primary`
+   fills with `--ifm-color-primary`, which is the exact colour the banner
+   gradient ends on, so the button dissolves into its own background; and
+   `.button--secondary` is a light grey that belongs to no part of this palette.
+   The primary CTA is repainted from the artwork's own two tones — the pale
+   `#fff1ef` of the trace and the shockwave rings, over the deep red of the
+   planet's terminator — so it reads as part of the banner rather than as a
+   control dropped onto it; the secondary one is outlined in the hero's own
+   white text colour.
 
-  max-width: 46rem;
-  margin-top: 2.75rem;
+   These rules set Infima's button variables rather than `background-color`
+   directly, so the border and the label colour stay derived from one value.
+   Overriding the variables also outranks Infima's own `:hover` rule, hence the
+   explicit hover blocks below.
+
+   `button--primary` and `button--secondary` are Infima's *global* classes, so
+   they must be wrapped in `:global(...)`. Without it CSS Modules renames them
+   the way it renames `.heroActions`, and the rules silently match nothing. */
+.heroActions :global(.button--primary) {
+  --ifm-button-background-color: #fff1ef;
+  --ifm-button-border-color: #fff1ef;
+  --ifm-button-color: #8a2621;
 }
 
-/* The code block carries the last margin in the banner, and `.hero` already
-   supplies the bottom padding. */
-.heroDemo :last-child {
-  margin-bottom: 0;
+.heroActions :global(.button--primary):hover,
+.heroActions :global(.button--primary):active,
+.heroActions :global(.button--primary.button--active) {
+  --ifm-button-background-color: #fff;
+  --ifm-button-border-color: #fff;
+  --ifm-button-color: #71201b;
+}
+
+/* The secondary action sits one step back: white label outlined in white over a
+   barely-there wash. A second solid fill would compete with the primary CTA
+   instead of ranking below it. White rather than the artwork's `#fff1ef` so it
+   matches `.hero`'s own `color: #fff`, making the label read as banner text
+   that happens to be clickable. Since the label is already at maximum
+   lightness, hover has to be expressed through the wash and the border.
+
+   Note the two departures from the primary CTA's rules above. The label is set
+   with a plain `color`, not `--ifm-button-color`, because Infima singles this
+   modifier out with `.button.button--secondary { color: var(--ifm-color-gray-900) }`
+   — a real declaration that overrides whatever the variable holds, so setting the
+   variable alone changes nothing. That rule is also why the selector repeats
+   `.button`: two classes are needed to outweigh Infima's own two. */
+.heroActions :global(.button.button--secondary) {
+  --ifm-button-background-color: rgb(255 255 255 / 0.1);
+  --ifm-button-border-color: rgb(255 255 255 / 0.55);
+  color: #fff;
+}
+
+.heroActions :global(.button.button--secondary):hover,
+.heroActions :global(.button.button--secondary):active,
+.heroActions :global(.button.button--secondary.button--active) {
+  --ifm-button-background-color: rgb(255 255 255 / 0.22);
+  --ifm-button-border-color: #fff;
+  color: #fff;
+}
+
+/* The dark theme inverts the brand ramp, so the gradient turns pale salmon and
+   the light fills above would blend into it just as badly. Both buttons flip to
+   the deep end of the same palette, keeping the primary/secondary ranking. The
+   secondary label stays dark here because white on `#ff8a80` measures only 2.28
+   — it fails WCAG AA. The dark `#5c1a16` is deliberate, not an oversight. */
+[data-theme='dark'] .heroActions :global(.button--primary) {
+  --ifm-button-background-color: #5c1a16;
+  --ifm-button-border-color: #5c1a16;
+  --ifm-button-color: #fff1ef;
+}
+
+[data-theme='dark'] .heroActions :global(.button--primary):hover,
+[data-theme='dark'] .heroActions :global(.button--primary):active,
+[data-theme='dark'] .heroActions :global(.button--primary.button--active) {
+  --ifm-button-background-color: #40100d;
+  --ifm-button-border-color: #40100d;
+  --ifm-button-color: #fff;
+}
+
+[data-theme='dark'] .heroActions :global(.button.button--secondary) {
+  --ifm-button-background-color: rgb(92 26 22 / 0.12);
+  --ifm-button-border-color: rgb(92 26 22 / 0.6);
+  color: #5c1a16;
+}
+
+[data-theme='dark'] .heroActions :global(.button.button--secondary):hover,
+[data-theme='dark'] .heroActions :global(.button.button--secondary):active,
+[data-theme='dark'] .heroActions :global(.button.button--secondary.button--active) {
+  --ifm-button-background-color: rgb(92 26 22 / 0.24);
+  --ifm-button-border-color: #40100d;
+  color: #40100d;
 }
 
 /* --- Banner artwork: Mars crossed by a beating seismograph trace ---------- */
@@ -375,13 +447,6 @@
 
   .heroActions {
     justify-content: center;
-  }
-
-  /* The banner text is centred at this width, so the demo is centred with it
-     rather than left-aligned under centred copy. */
-  .heroDemo {
-    margin-left: auto;
-    margin-right: auto;
   }
 
   .heroArt {
