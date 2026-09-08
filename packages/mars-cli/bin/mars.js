@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const readline = require('readline');
 const { execSync, spawn } = require('child_process');
@@ -41,6 +42,10 @@ const LOCALES = {
     'select-platforms': '📋 Select platforms to create',
     'select-hint': 'Use arrow keys to navigate | Space to toggle | Enter to confirm',
     'disabled-hint': '⚠️ Grayed out modules are not available (developing)',
+    'select-toolchain-hint': '🧰 Ticking a platform also opts into its toolchain: `mars init` checks it and installs what is missing. Tick nothing extra and nothing extra is downloaded.',
+    'platform-toolchain': '↳ toolchain: {{list}}',
+    'selection-toolchain': '🧰 `mars init` will check/install: {{list}}',
+    'selection-toolchain-none': '🧰 This selection needs no extra toolchain',
     'current-selection': 'Currently selected: {{count}} modules',
     'cancelled': '🛑 Project creation cancelled.',
     'cancelled-cleanup': '🛑 Cancelled project creation, cleaning up...',
@@ -81,6 +86,29 @@ const LOCALES = {
     'platform-pending': '⏳ {{name}}: {{desc}} (pending)',
     'platform-not-ready': '⏳ {{name}}: {{desc}} (directory not ready)',
     'platform-not-supported': '⏳ {{name}}: {{desc}} (not supported yet)',
+    'toolchain-none': '🧰 No extra toolchain needed for the enabled platforms.',
+    'toolchain-scope': '🧰 Toolchain required by this project: {{list}}',
+    'toolchain-derived': '   (derived from: {{list}})',
+    'toolchain-ok': '✅ {{label}} {{version}}',
+    'toolchain-old': '⚠️ {{label}} {{version}} is older than {{floor}}',
+    'toolchain-miss': '❌ {{label}} not found',
+    'toolchain-api-docker': 'ℹ️ --docker given, so the API runs in a container. Skipping {{list}}, which nothing else on this host needs.',
+    'toolchain-ready': '✅ Toolchain is ready. Nothing to install.',
+    'toolchain-manual': 'ℹ️ {{label}} must be installed by hand — see .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'toolchain-mise-missing': '⚠️ mise is not installed, so {{list}} cannot be installed automatically. See .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'toolchain-installing': '📥 Installing {{label}} via mise ({{pin}})...',
+    'toolchain-installing-official': '📥 Installing {{label}} with its official installer (user-scoped, no admin rights)...',
+    'toolchain-install-failed': '❌ Failed to install {{label}}. Install it by hand — see .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'toolchain-installed': '✅ Toolchain installed. Open a new shell so it lands on PATH.',
+    'android-cli-unsupported': 'ℹ️ Google publishes no Android CLI binary for {{host}}. Skipping — see .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'android-cli-download-failed': '❌ Could not download the Android CLI installer from {{url}}',
+    'android-cli-windows-emulator': 'ℹ️ Note: `android emulator` is disabled on Windows by Google. Use Android Studio\'s Device Manager for emulators.',
+    'android-sdk-installing': '📥 Installing Android SDK packages: {{list}}...',
+    'android-sdk-install-failed': '❌ Failed to install the SDK packages. Run `android sdk install` by hand — see .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'android-sdk-ready': '✅ Android SDK is at {{dir}}',
+    'android-sdk-local-properties': '✅ Wrote sdk.dir into {{file}}',
+    'android-sdk-cli-missing': 'ℹ️ Android CLI is not available yet, so the SDK packages were skipped. Run `mars init` again once it is installed.',
+    'android-sdk-no-compilesdk': 'ℹ️ No compileSdk found in {{file}}, so no SDK package could be derived. Skipping.',
   },
   zh: {
     'web-label': 'Web 用户端',
@@ -115,6 +143,10 @@ const LOCALES = {
     'select-platforms': '📋 请选择需要创建的平台模块',
     'select-hint': '操作提示: 上下键移动 | 空格键切换选择 | 回车确认',
     'disabled-hint': '⚠️ 灰色显示的模块当前不可选（开发中）',
+    'select-toolchain-hint': '🧰 勾选一个平台就等于勾选了它的工具链：mars init 会校验并安装缺失的部分。不多勾，就不会多下载。',
+    'platform-toolchain': '↳ 工具链: {{list}}',
+    'selection-toolchain': '🧰 mars init 将校验/安装: {{list}}',
+    'selection-toolchain-none': '🧰 当前选择不需要额外工具链',
     'current-selection': '当前已选择 {{count}} 个模块',
     'cancelled': '🛑 已取消创建项目。',
     'cancelled-cleanup': '🛑 已取消创建项目，正在清理...',
@@ -155,6 +187,29 @@ const LOCALES = {
     'platform-pending': '⏳ {{name}}: {{desc}} (待初始化)',
     'platform-not-ready': '⏳ {{name}}: {{desc}} (目录未就绪)',
     'platform-not-supported': '⏳ {{name}}: {{desc}} (待支持)',
+    'toolchain-none': '🧰 已启用的平台不需要额外工具链。',
+    'toolchain-scope': '🧰 本项目需要的工具链: {{list}}',
+    'toolchain-derived': '   （来自: {{list}}）',
+    'toolchain-ok': '✅ {{label}} {{version}}',
+    'toolchain-old': '⚠️ {{label}} {{version}} 低于要求的 {{floor}}',
+    'toolchain-miss': '❌ 未检测到 {{label}}',
+    'toolchain-api-docker': 'ℹ️ 已指定 --docker，API 跑在容器里，已跳过 {{list}}（本机其他平台也不需要）。',
+    'toolchain-ready': '✅ 工具链已就绪，无需安装。',
+    'toolchain-manual': 'ℹ️ {{label}} 需要手动安装，参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'toolchain-mise-missing': '⚠️ 未安装 mise，无法自动安装 {{list}}。请参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'toolchain-installing': '📥 正在通过 mise 安装 {{label}} ({{pin}})...',
+    'toolchain-installing-official': '📥 正在用官方安装器安装 {{label}}（用户级，无需管理员权限）...',
+    'toolchain-install-failed': '❌ {{label}} 安装失败，请手动安装，参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'toolchain-installed': '✅ 工具链安装完成。请打开一个新终端，让它进入 PATH。',
+    'android-cli-unsupported': 'ℹ️ Google 未为 {{host}} 提供 Android CLI 二进制，已跳过。参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'android-cli-download-failed': '❌ 无法从 {{url}} 下载 Android CLI 安装脚本',
+    'android-cli-windows-emulator': 'ℹ️ 注意：Google 已在 Windows 上停用 `android emulator`，模拟器请用 Android Studio 的 Device Manager。',
+    'android-sdk-installing': '📥 正在安装 Android SDK 包: {{list}}...',
+    'android-sdk-install-failed': '❌ SDK 包安装失败，请手动执行 `android sdk install`，参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
+    'android-sdk-ready': '✅ Android SDK 位于 {{dir}}',
+    'android-sdk-local-properties': '✅ 已把 sdk.dir 写入 {{file}}',
+    'android-sdk-cli-missing': 'ℹ️ 尚无可用的 Android CLI，已跳过 SDK 包安装。装好后再执行一次 `mars init` 即可。',
+    'android-sdk-no-compilesdk': 'ℹ️ 未能从 {{file}} 中读到 compileSdk，无法推导要安装的 SDK 包，已跳过。',
   },
 };
 
@@ -274,6 +329,7 @@ Options:
   -n, --non-interactive    (create) Non-interactive mode (use default platforms)
   --platform <platform>    (dev/build) Run only for specific platform
   --docker                 (dev/build) Run in Docker container
+                           (init) The API runs in a container, so skip the host JDK/Maven
   --lang <en|zh>           Set language (default: en)
   --help                   Show this help message
 
@@ -286,6 +342,7 @@ Examples:
   mars dev --platform web
   mars build --platform android
   mars init
+  mars init --docker                  # API runs in a container: no host JDK/Maven
   mars clean
 `);
 }
@@ -537,6 +594,34 @@ function platformSuffix(p) {
   return '';
 }
 
+// The selector is the only place where the user still gets to decide what lands
+// on their machine, so it is where the consequence has to be visible. Ticking a
+// row is not just "copy this directory": `mars init` later derives the toolchain
+// set from exactly these ticks, so a row that costs a JDK download must say so
+// before the tick, not after.
+//
+// Labels come from TOOL_SPECS rather than PLATFORM_TOOLCHAIN's raw keys so the
+// selector and `mars init`'s own report name the same things ("JDK", not "java").
+function toolLabels(names) {
+  return names.map(name => (TOOL_SPECS[name] ? TOOL_SPECS[name].label : name));
+}
+
+function platformToolchainLine(p) {
+  const tools = PLATFORM_TOOLCHAIN[p.name] || [];
+  if (tools.length === 0) return null;
+  return t('platform-toolchain', { list: toolLabels(tools).join(', ') });
+}
+
+// Summarises the whole selection, deduplicated the same way requiredTools does,
+// because api and android both want a JDK and listing it twice would suggest two
+// downloads. Takes the already-ticked list, so the live selector and the
+// post-confirmation summary in createProject can share it.
+function selectionToolchainLine(tickedPlatforms) {
+  const tools = requiredTools(tickedPlatforms);
+  if (tools.length === 0) return t('selection-toolchain-none');
+  return t('selection-toolchain', { list: toolLabels(tools).join(', ') });
+}
+
 async function selectPlatformsInteractive(selected) {
   let cursor = 0;
   let resolveFn = null;
@@ -557,6 +642,7 @@ async function selectPlatformsInteractive(selected) {
     if (selected.some(p => p.enabled && p.hostSupported === false)) {
       console.log(`   ${t('host-hint')}`);
     }
+    console.log(`   ${t('select-toolchain-hint')}`);
     console.log('');
     
     const categoryGroups = {};
@@ -589,15 +675,20 @@ async function selectPlatformsInteractive(selected) {
         }
         
         console.log(line);
+        const descPrefix = isCursor && !isDisabled ? '      ' : '         ';
         if (p.description) {
-          const descPrefix = isCursor && !isDisabled ? '      ' : '         ';
           console.log(`${descPrefix}${p.description}`);
+        }
+        const toolLine = platformToolchainLine(p);
+        if (toolLine) {
+          console.log(`\x1B[90m${descPrefix}${toolLine}\x1B[0m`);
         }
       });
     }
     
     const selectedCount = selected.filter(p => p.selected).length;
     console.log(`\n  ${t('current-selection', { count: selectedCount })}`);
+    console.log(`  ${selectionToolchainLine(selected.filter(p => p.selected))}`);
   };
   
   const cleanup = () => {
@@ -662,6 +753,7 @@ async function selectPlatformsSimple(selected) {
   if (selected.some(p => p.enabled && p.hostSupported === false)) {
     console.log(`   ${t('host-hint')}`);
   }
+  console.log(`   ${t('select-toolchain-hint')}`);
   console.log('');
   
   const categoryGroups = {};
@@ -693,6 +785,10 @@ async function selectPlatformsSimple(selected) {
       console.log(line);
       if (p.description) {
         console.log(`         ${p.description}`);
+      }
+      const toolLine = platformToolchainLine(p);
+      if (toolLine) {
+        console.log(`\x1B[90m         ${toolLine}\x1B[0m`);
       }
       indexMap.push({ index, platform: p });
       index++;
@@ -863,6 +959,13 @@ async function createProject(args) {
     console.log(`   ${t('skip-interactive')}`);
   }
 
+  // Printed after both branches, because `-n` skips the selector entirely and
+  // would otherwise be the one path that never says what `mars init` is about to
+  // install. The set is derived from the same selection that is written into
+  // platforms.json below, so this line and `mars init`'s later report cannot
+  // disagree.
+  console.log(`   ${selectionToolchainLine(selectedPlatforms)}`);
+
   console.log(`\n${t('creating-directory')}`);
   fs.mkdirSync(targetDir, { recursive: true });
 
@@ -918,7 +1021,7 @@ async function createProject(args) {
   console.log('');
   console.log(t('next-steps'));
   console.log(`  cd ${projectName}`);
-  console.log('  pnpm install');
+  console.log('  mars init');
   console.log('  mars dev');
   console.log('');
 }
@@ -1266,12 +1369,399 @@ function buildCommand(args) {
   console.log('\n✅ Build complete!\n');
 }
 
-function initCommand() {
+// Which extra toolchain each platform needs, beyond the base Node/pnpm/git that
+// every project needs. Keep this table in sync with `add_scenario()` in *both*
+// .agents/skills/marsquakes-setup/scripts/detect-env.sh and its .ps1 twin --
+// those scripts accept these same platform names so the two never need separate
+// mappings, and a change made to only one of the pair goes unnoticed until a
+// user on the other OS hits it.
+//
+// The empty entries are deliberate, not unfinished: web and web-admin build with
+// the base tools alone, and ios / windows / linux / macos build with their own OS
+// toolchain (Xcode, MSVC, gcc), which is not something mise installs.
+const PLATFORM_TOOLCHAIN = {
+  api: ['docker', 'java', 'maven'],
+  // android-cli is additive, not a replacement for the JDK: Gradle still runs on
+  // the host, so a project that has the CLI but no JDK cannot build.
+  android: ['java', 'android-cli'],
+  desktop: ['rust'],
+  web: [],
+  'web-admin': [],
+  ios: [],
+  windows: [],
+  linux: [],
+  macos: [],
+};
+
+// Floors are the same ones documented in references/install-matrix.md.
+//
+// `probe` runs with 2>&1 because `java -version` prints to stderr while still
+// exiting 0, so capturing stdout alone reports a working JDK as missing.
+//
+// `pin` is the mise argument. Docker has none: it is a system service, not a
+// language runtime, so mise cannot install it and this command must not pretend
+// otherwise -- it reports and points at the matrix instead.
+//
+// `install` is the third path, for tools that mise cannot manage but that ship
+// an official user-scoped installer. Only the Android CLI uses it today, and it
+// is what makes `pin: null` mean "report only" rather than "cannot install":
+// the two fields are read separately in ensureToolchain.
+//
+// The Android CLI's floor is null on purpose. It has no published version
+// contract to hold a project to, and `android -V` may print a build string with
+// no dotted number in it -- with a floor set, a working install would be
+// reported as missing and reinstalled on every `mars init`.
+const TOOL_SPECS = {
+  java: { label: 'JDK', probe: 'java -version 2>&1', floor: '17', pin: 'java@temurin-17' },
+  maven: { label: 'Maven', probe: 'mvn -v 2>&1', floor: '3.9.0', pin: 'maven@3.9' },
+  rust: { label: 'Rust', probe: 'rustc --version 2>&1', floor: '1.77.0', pin: 'rust' },
+  docker: { label: 'Docker', probe: 'docker --version 2>&1', floor: '20.10.0', pin: null },
+  'android-cli': {
+    label: 'Android CLI',
+    probe: 'android -V 2>&1',
+    floor: null,
+    pin: null,
+    install: installAndroidCli,
+  },
+};
+
+// Google publishes one binary per OS/arch triple under a fixed URL layout. These
+// four keys were verified to exist with HTTP HEAD; `linux_arm64`, `mac_arm64`
+// and `linux_aarch64` all return 404, so an unsupported host must say so rather
+// than download a 404 page and call it a binary.
+function androidCliTarget() {
+  if (process.platform === 'win32') return 'windows_x86_64';
+  if (process.platform === 'darwin') return process.arch === 'arm64' ? 'darwin_arm64' : 'darwin_x86_64';
+  if (process.platform === 'linux' && process.arch === 'x64') return 'linux_x86_64';
+  return null;
+}
+
+// Runs Google's own installer rather than reimplementing it. That is the point:
+// the installer picks the right shell profile out of six candidates on POSIX and
+// writes HKCU\Environment on Windows, and a local copy of that logic would be a
+// second source of truth that drifts. It is downloaded to a file first instead
+// of piped into a shell, so the script is on disk and auditable if it fails.
+//
+// No administrator rights are needed -- the installer is user-scoped
+// ($HOME/.local/bin, or %USERPROFILE%\AppData\AndroidCLI).
+function installAndroidCli() {
+  const target = androidCliTarget();
+  if (!target) {
+    console.log(`   ${t('android-cli-unsupported', { host: `${process.platform}/${process.arch}` })}`);
+    return false;
+  }
+
+  const isWindows = process.platform === 'win32';
+  const script = isWindows ? 'install.cmd' : 'install.sh';
+  const url = `https://dl.google.com/android/cli/latest/${target}/${script}`;
+  const local = path.join(os.tmpdir(), `android-cli-${script}`);
+
+  try {
+    // curl is a hard dependency of the POSIX installer itself, and ships with
+    // Windows 10+ as curl.exe, so requiring it adds no new constraint.
+    execSync(`curl -fsSL "${url}" -o "${local}"`, { stdio: 'pipe', shell: true });
+  } catch {
+    console.log(`   ${t('android-cli-download-failed', { url })}`);
+    return false;
+  }
+
+  const ok = run(isWindows ? `"${local}"` : `bash "${local}"`, process.cwd());
+  try {
+    fs.unlinkSync(local);
+  } catch {
+    // A leftover file in the temp dir is not worth failing the install over.
+  }
+  return ok;
+}
+
+// The installer writes PATH into HKCU\Environment (Windows) or a shell profile
+// (POSIX), and neither reaches a process that is already running. So the CLI is
+// invocable by name only in some *later* shell, which is exactly the shell that
+// `mars init` is not. Hence: try PATH first, because a host that already had the
+// CLI is the common case, then fall back to the user-scoped install locations.
+//
+// Several file names are probed rather than one guessed, so an upstream change of
+// extension surfaces as "not found" instead of as a silent no-op.
+function androidCliBinary() {
+  try {
+    execSync(process.platform === 'win32' ? 'where android' : 'command -v android', { stdio: 'pipe', shell: true });
+    return 'android';
+  } catch {
+    // Not on this process's PATH; fall through to the known install locations.
+  }
+
+  const home = os.homedir();
+  const candidates = process.platform === 'win32'
+    ? ['android.exe', 'android.cmd', 'android.bat'].map(n => path.join(home, 'AppData', 'AndroidCLI', n))
+    : [path.join(home, '.local', 'bin', 'android')];
+  return candidates.find(p => fs.existsSync(p)) || null;
+}
+
+// Where the SDK goes. An existing ANDROID_HOME wins, because a machine that
+// already has an SDK must not get a second one. Otherwise the conventional
+// per-OS location is used -- the same path Android Studio picks, so the two
+// agree instead of maintaining one SDK each.
+function androidSdkHome() {
+  const fromEnv = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT;
+  if (fromEnv) return fromEnv;
+
+  const home = os.homedir();
+  if (process.platform === 'win32') {
+    return path.join(process.env.LOCALAPPDATA || path.join(home, 'AppData', 'Local'), 'Android', 'Sdk');
+  }
+  if (process.platform === 'darwin') return path.join(home, 'Library', 'Android', 'sdk');
+  return path.join(home, 'Android', 'Sdk');
+}
+
+// Which API level to install is a property of the project, not of the machine, so
+// it is read from the build file rather than pinned here. Two syntaxes are
+// accepted because AGP changed it: the block form `compileSdk { version =
+// release(36) }` is what this project uses, and the classic scalar `compileSdk =
+// 36` is what most others still use. Matching only one of them fails silently --
+// it yields no packages rather than an error -- which is why both are handled.
+function androidCompileSdk(rootDir) {
+  const androidDir = path.join(rootDir, getPlatformDir(rootDir, 'android'));
+  for (const name of ['build.gradle.kts', 'build.gradle']) {
+    const file = path.join(androidDir, 'app', name);
+    if (!fs.existsSync(file)) continue;
+    const text = fs.readFileSync(file, 'utf-8');
+    const match = text.match(/compileSdk\s*\{[^}]*release\((\d+)\)/) || text.match(/compileSdk(?:Version)?\s*=?\s*(\d+)/);
+    if (match) return { level: parseInt(match[1], 10), file };
+    return { level: null, file };
+  }
+  return { level: null, file: path.join(androidDir, 'app', 'build.gradle.kts') };
+}
+
+// Java .properties treats a backslash as an escape, so a raw Windows path would
+// be read with its separators eaten.
+function toPropertiesPath(value) {
+  return value.replace(/\\/g, '\\\\');
+}
+
+// Gradle finds the SDK through ANDROID_HOME or through sdk.dir here. The env var
+// is not ours to set -- a child process cannot alter the parent shell -- so the
+// file is the only channel that works within this run. An existing sdk.dir is
+// never rewritten: it is per-machine, gitignored, and the user may well be
+// pointing it somewhere deliberately.
+function writeLocalProperties(androidDir, sdkHome) {
+  const file = path.join(androidDir, 'local.properties');
+  const line = `sdk.dir=${toPropertiesPath(sdkHome)}`;
+
+  if (!fs.existsSync(file)) {
+    fs.writeFileSync(file, `${line}${os.EOL}`);
+    return file;
+  }
+
+  const text = fs.readFileSync(file, 'utf-8');
+  if (/^\s*sdk\.dir\s*=/m.test(text)) return null;
+  fs.appendFileSync(file, `${text.endsWith('\n') ? '' : os.EOL}${line}${os.EOL}`);
+  return file;
+}
+
+// Deliberately *not* a TOOL_SPECS entry, and deliberately not called from
+// ensureToolchain. Everything in there is a host-global tool probed by version;
+// SDK packages are project-scoped, their versions come out of build.gradle.kts,
+// and the result is written into the project's own local.properties. Folding them
+// in would also put them behind ensureToolchain's early return, which fires
+// precisely when the host already has the CLI -- i.e. for the users most likely
+// to be missing SDK packages.
+function ensureAndroidSdk(rootDir) {
+  const { level, file } = androidCompileSdk(rootDir);
+  if (!level) {
+    console.log(`\n${t('android-sdk-no-compilesdk', { file: path.relative(rootDir, file) })}`);
+    return;
+  }
+
+  const bin = androidCliBinary();
+  if (!bin) {
+    console.log(`\n${t('android-sdk-cli-missing')}`);
+    return;
+  }
+
+  // Paired with compileSdk because the project declares no buildToolsVersion, so
+  // AGP's default is the only other candidate and it is not readable from here.
+  const packages = [`platforms/android-${level}`, `build-tools/${level}.0.0`, 'platform-tools'];
+  const sdkHome = androidSdkHome();
+
+  console.log(`\n${t('android-sdk-installing', { list: packages.join(' ') })}`);
+
+  // The path is passed explicitly instead of reading it back out of `android
+  // info`, so the value written to local.properties is known rather than parsed
+  // out of human-readable output whose shape is not a contract. `--sdk` is a
+  // global flag and must precede the subcommand.
+  fs.mkdirSync(sdkHome, { recursive: true });
+  if (!run(`"${bin}" --sdk="${sdkHome}" sdk install ${packages.join(' ')}`, rootDir)) {
+    console.log(`   ${t('android-sdk-install-failed')}`);
+    return;
+  }
+
+  console.log(`   ${t('android-sdk-ready', { dir: sdkHome })}`);
+
+  const androidDir = path.join(rootDir, getPlatformDir(rootDir, 'android'));
+  const written = writeLocalProperties(androidDir, sdkHome);
+  if (written) console.log(`   ${t('android-sdk-local-properties', { file: path.relative(rootDir, written) })}`);
+}
+
+// First dotted number in the output, e.g. `Apache Maven 3.9.6 (abc)` -> `3.9.6`.
+function extractVersion(output) {
+  const match = String(output).match(/\d+(?:\.\d+)*/);
+  return match ? match[0] : null;
+}
+
+// Component-wise so that 1.10.0 sorts above 1.9.0, which a string compare gets
+// wrong. Returns true when `version` is below `floor`.
+function isOlder(version, floor) {
+  const a = version.split('.').map(n => parseInt(n, 10) || 0);
+  const b = floor.split('.').map(n => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const ai = a[i] || 0;
+    const bi = b[i] || 0;
+    if (ai < bi) return true;
+    if (ai > bi) return false;
+  }
+  return false;
+}
+
+function probeTool(name) {
+  const spec = TOOL_SPECS[name];
+  let output = '';
+  try {
+    output = execSync(spec.probe, { stdio: 'pipe', shell: true, encoding: 'utf-8' });
+  } catch (e) {
+    // A non-zero exit still often carries a usable version string, so salvage it
+    // rather than treating every failure as "missing".
+    output = `${(e && e.stdout) || ''}${(e && e.stderr) || ''}`;
+  }
+  const version = extractVersion(output);
+  if (!version) return { name, spec, status: 'miss' };
+  if (spec.floor && isOlder(version, spec.floor)) return { name, spec, status: 'old', version };
+  return { name, spec, status: 'ok', version };
+}
+
+// Union of the toolchains the given platforms need, deduplicated because api and
+// android both want a JDK. Callers pass an already host-filtered list, so a
+// Windows checkout with ios enabled never reports findings it cannot act on.
+function requiredTools(platforms) {
+  const tools = new Set();
+  for (const p of platforms) {
+    for (const tool of PLATFORM_TOOLCHAIN[p.name] || []) {
+      tools.add(tool);
+    }
+  }
+  return [...tools];
+}
+
+function hasMise() {
+  try {
+    execSync('mise --version', { stdio: 'pipe', shell: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Installs only what the probes actually found missing or outdated. This is the
+// whole point of doing it here rather than up front: a web-only project never
+// triggers a JDK download, which is the largest install in the matrix.
+function ensureToolchain(platforms, apiInDocker) {
+  const tools = requiredTools(platforms);
+  if (tools.length === 0) {
+    console.log(`\n${t('toolchain-none')}`);
+    return;
+  }
+
+  console.log(`\n${t('toolchain-scope', { list: toolLabels(tools).join(', ') })}`);
+  console.log(`   ${t('toolchain-derived', { list: platforms.map(p => p.label).join(', ') })}`);
+
+  const results = tools.map(probeTool);
+  for (const r of results) {
+    if (r.status === 'ok') console.log(`   ${t('toolchain-ok', { label: r.spec.label, version: r.version })}`);
+    else if (r.status === 'old') console.log(`   ${t('toolchain-old', { label: r.spec.label, version: r.version, floor: r.spec.floor })}`);
+    else console.log(`   ${t('toolchain-miss', { label: r.spec.label })}`);
+  }
+
+  let pending = results.filter(r => r.status !== 'ok');
+
+  // An API that runs in a container needs no JDK or Maven on the host. But a
+  // reachable Docker does not prove that is the arrangement: the documented
+  // default runs only MySQL and Redis in Docker and the API itself on the host,
+  // so installing Docker for the database must not cost the host its JDK. The
+  // user therefore has to say so with `--docker`.
+  //
+  // Scoped to tools the API is the *only* claimant of, because Android drives
+  // Gradle on the host: in an api+android project even an explicit --docker says
+  // nothing about whether Gradle can find a JDK.
+  const claimedElsewhere = new Set(requiredTools(platforms.filter(p => p.name !== 'api')));
+  const dockerCovers = r => (r.name === 'java' || r.name === 'maven') && !claimedElsewhere.has(r.name);
+  if (apiInDocker && pending.some(dockerCovers)) {
+    // Name what was actually skipped: in an api+android project this is Maven
+    // only, and claiming the JDK was skipped too would contradict the install
+    // that follows.
+    const skipped = pending.filter(dockerCovers).map(r => r.spec.label).join(', ');
+    console.log(`\n${t('toolchain-api-docker', { list: skipped })}`);
+    pending = pending.filter(r => !dockerCovers(r));
+  }
+
+  if (pending.length === 0) {
+    console.log(`\n${t('toolchain-ready')}`);
+    return;
+  }
+
+  // Docker is reported but never installed here, so split it out before deciding
+  // whether mise is needed at all.
+  // Three outcomes, not two. `pin` and `install` are separate fields precisely so
+  // that a missing `pin` no longer implies "cannot be installed": Docker still
+  // falls through to `manual`, but a tool carrying its own installer does not.
+  const selfInstall = pending.filter(r => r.spec.install);
+  const viaMise = pending.filter(r => r.spec.pin);
+  const manual = pending.filter(r => !r.spec.pin && !r.spec.install);
+
+  for (const r of manual) {
+    console.log(`\n${t('toolchain-manual', { label: r.spec.label })}`);
+  }
+
+  let installedAny = false;
+
+  for (const r of selfInstall) {
+    console.log(`\n${t('toolchain-installing-official', { label: r.spec.label })}`);
+    if (r.spec.install()) installedAny = true;
+    else console.log(`   ${t('toolchain-install-failed', { label: r.spec.label })}`);
+  }
+
+  // Attached to the install, not to the probe: a host that already has the CLI
+  // has already been told. But an install that finishes without this line would
+  // report a capability Windows does not actually have.
+  if (process.platform === 'win32' && selfInstall.some(r => r.name === 'android-cli')) {
+    console.log(`   ${t('android-cli-windows-emulator')}`);
+  }
+
+  if (viaMise.length > 0) {
+    if (!hasMise()) {
+      console.log(`\n${t('toolchain-mise-missing', { list: viaMise.map(r => r.spec.label).join(', ') })}`);
+    } else {
+      for (const r of viaMise) {
+        console.log(`\n${t('toolchain-installing', { label: r.spec.label, pin: r.spec.pin })}`);
+        if (run(`mise use --global ${r.spec.pin}`, process.cwd())) installedAny = true;
+        else console.log(`   ${t('toolchain-install-failed', { label: r.spec.label })}`);
+      }
+    }
+  }
+
+  if (installedAny) console.log(`\n${t('toolchain-installed')}`);
+}
+
+function initCommand(args = []) {
   const rootDir = findProjectRoot();
   if (!rootDir) {
     console.error('\n❌ Error: Not in a Marsquakes project.');
     process.exit(1);
   }
+
+  // Opt-in, not detected: see the note in ensureToolchain about why a working
+  // Docker is not evidence that the API runs inside it.
+  const apiInDocker = args.includes('--docker');
+  const config = loadPlatformsConfig(rootDir);
+  const enabledPlatforms = filterPlatformsByHost(getEnabledPlatforms(config), 'all');
 
   console.log(`\n📦 Initializing Marsquakes project...\n`);
 
@@ -1286,10 +1776,23 @@ function initCommand() {
   console.log('\n📦 Installing workspace dependencies...');
   run('pnpm install', rootDir);
 
-  const androidDir = path.join(rootDir, 'apps', 'android');
-  if (fs.existsSync(path.join(androidDir, 'gradlew'))) {
-    console.log('\n📱 Checking Android Gradle...');
-    run('.\\gradlew --version', androidDir);
+  if (enabledPlatforms.some(p => p.name === 'android')) {
+    const androidDir = path.join(rootDir, 'apps', 'android');
+    if (fs.existsSync(path.join(androidDir, 'gradlew'))) {
+      console.log('\n📱 Checking Android Gradle wrapper...');
+      // Neither form is portable: a bare `gradlew` is not on PATH for a POSIX
+      // shell, and `./gradlew` runs the extension-less script that cmd.exe
+      // cannot execute.
+      run(process.platform === 'win32' ? 'gradlew.bat --version' : './gradlew --version', androidDir);
+    }
+  }
+
+  ensureToolchain(enabledPlatforms, apiInDocker);
+
+  // After ensureToolchain, not inside it: the SDK is installed *by* the Android
+  // CLI, so it can only be attempted once that install has had its chance.
+  if (enabledPlatforms.some(p => p.name === 'android')) {
+    ensureAndroidSdk(rootDir);
   }
 
   console.log('\n✅ Initialization complete!\n');
@@ -1490,7 +1993,7 @@ function main() {
       buildCommand(commandArgs);
       break;
     case 'init':
-      initCommand();
+      initCommand(commandArgs);
       break;
     case 'clean':
       cleanCommand();
