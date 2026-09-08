@@ -7,7 +7,7 @@
 export const archive = {
   name: 'marsquakes-setup.zip',
   path: '/skills/marsquakes-setup.zip',
-  size: '21.2 KiB',
-  bytes: 21679,
+  size: '30.9 KiB',
+  bytes: 31597,
   fileCount: 5,
 } as const;
