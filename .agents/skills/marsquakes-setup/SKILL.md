@@ -8,9 +8,13 @@ description: Installs and verifies the host programs a Marsquakes project needs 
 Install the **host programs** a Marsquakes project needs, on whatever OS the user
 is on. This skill replaces the manual "go download Docker first" detour.
 
-It installs programs, not project dependencies. `pnpm install` and `mars init`
-resolve project dependencies and are not this skill's job — though `mars init` is
-a reasonable thing to run once this skill reports green.
+Its job is the **machine baseline** — the programs needed before any project
+exists. The per-platform language toolchains are *not* installed here: `mars init`
+derives them from the project's own `platforms.json` and installs the missing ones
+itself. Splitting it that way is what keeps a desktop-only machine free of a JDK.
+
+It does not resolve project dependencies either; `pnpm install` does that, and
+`mars init` runs it.
 
 **This skill is self-contained.** It must work on a bare machine with no
 Marsquakes checkout, because preparing the machine is what comes *before* the
@@ -40,35 +44,68 @@ sh scripts/detect-env.sh
 powershell -ExecutionPolicy Bypass -File scripts/detect-env.ps1
 ```
 
-It prints the OS, the available system package manager, and one line per tool in
-the form `OK|MISS|OLD <tool> <version>`. Parse that instead of probing tools one
-at a time — it already handles the cases where a tool exists but is too old.
+It prints the OS, the available system package manager, the scope it probed, and
+one line per tool in the form `OK|MISS|OLD <tool> <version>`. Parse that instead
+of probing tools one at a time — it already handles the cases where a tool exists
+but is too old.
 
-### 2. Decide the tool set, then ask before installing
+**By default it reports the base tools only.** That is the right scope here: a
+`MISS java` line on a machine that will only ever build a desktop app invites
+installing the largest item in the matrix for nothing. Pass `--scenario` (see
+`--help`) only when the user has explicitly asked to prepare for a platform whose
+toolchain they want up front.
 
-Only install what the user's scenario needs. Installing everything is a bad
-default: it puts Docker on machines that will only ever build a desktop app.
+### 2. Install the baseline only, and ask first
 
-| Scenario                           | Tools                                              |
-| ---------------------------------- | -------------------------------------------------- |
-| Always                             | Node.js >= 22.12.0, pnpm, git, `@marsquakes/cli`   |
-| Admin system (`api` + `web-admin`) | Docker Desktop / Engine **or** JDK 17 + Maven 3.9+ |
-| Desktop app (`desktop`)            | Rust stable via rustup + Tauri system libraries    |
-| Android                            | JDK 17 + Android SDK                               |
+Install the **Always** row and stop. Everything below it belongs to a project, and
+a project can install it for itself:
 
-Ask the user which scenario they are setting up. Do not try to infer it from the
-filesystem: on a bare machine there is nothing to infer from, and if a checkout
-*does* happen to exist, its `platforms.json` describes that one project rather
-than what the user is about to build.
+| Scenario | Tools                                            | Installed by                              |
+| -------- | ------------------------------------------------ | ----------------------------------------- |
+| Always   | Node.js >= 22.12.0, pnpm, git, `@marsquakes/cli` | **this skill**                            |
+| `api`    | JDK 17 + Maven 3.9+ — or just Docker             | `mars init` (Docker stays manual)         |
+| `desktop`| Rust stable                                      | `mars init` (Tauri system libs stay here) |
+| `android`| JDK 17 + Google's `android` CLI + the Android SDK | `mars init` (all three)                 |
 
-If a `platforms.json` is present and the user is setting up for that specific
-project, its entries with `"enabled": true` are a useful cross-check — but treat
-it as a hint, not as the answer.
+`mars init` reads `platforms.json`, works out which of those a project actually
+needs, and installs the missing ones — with `mise` for the language toolchains,
+and with Google's own installer for the `android` CLI, which has no mise plugin.
+So there is nothing to ask the user about and nothing to infer from the
+filesystem — installing a JDK now would at best duplicate that, and at worst put
+one on a machine no project here needs it on.
 
-**Then state the plan and get confirmation.** List what will be installed, with
-what command, and whether it needs administrator/sudo rights. These are
-machine-wide changes; a user who wanted only Node should not silently get Docker
-Desktop. Never pass an unattended-approval flag to work around a prompt.
+The reason this split exists at all is that **right now you do not have the
+information to decide.** No project exists yet, so nothing on this machine says
+whether the user is heading for a desktop app or a REST API. Installing the union
+of everything is not a shortcut, it is a guess — the only move available to
+someone deciding too early. `mars init` runs after `mars create`, where the
+project states its own platform set, so it derives the answer instead of guessing
+it. Do not "save the user a step" by pulling those installs forward; that trades a
+derived answer for a guess.
+
+The same reasoning says what to do when the user comes back later having enabled
+another platform: tell them to run `mars init` again. It is idempotent and
+re-derives from the current `platforms.json`. An up-front install would instead be
+a snapshot that quietly became wrong the moment the platform set changed.
+
+Two items in that table stay manual because nothing available here can install
+them: Docker (a system service) and the Tauri system libraries (OS packages).
+`mars init` reports them and points at the matrix rather than pretending to
+install them. Handle those here **only when the user asks for that platform**.
+
+"`mise` cannot install it" and "stays manual" are not the same test, and Android
+is where they come apart: mise has no plugin for either the `android` CLI or the
+SDK, yet `mars init` installs both — the CLI by running Google's installer, then
+the SDK by running `android sdk install` with the package set derived from
+`compileSdk` in the project's own build file. So do not install either here on the
+grounds that it is outside mise, and do not fall back to Android Studio for the
+SDK: the question is whether `mars init` handles it, and it does.
+
+**State the plan and get confirmation before installing.** List what will be
+installed, with what command, and whether it needs administrator/sudo rights.
+These are machine-wide changes; a user who wanted only Node should not silently
+get Docker Desktop. Never pass an unattended-approval flag to work around a
+prompt.
 
 ### 3. Install
 
@@ -82,12 +119,15 @@ Three rules that matter more than the commands themselves:
   A wrong ID fails loudly, but a *renamed* one can install something adjacent.
 
 - **Install the language toolchains with** **`mise`**, not with the system package
-  manager. Node, the JDK, Maven and Rust all come from `mise` — one tool, one file
-  of pins. Distro packages for these are routinely too old for this project while
+  manager. Node comes from `mise` here, and the JDK, Maven and Rust come from
+  `mise` inside `mars init` — one tool, one file of pins, whichever end installs
+  them. Distro packages for these are routinely too old for this project while
   still satisfying `command -v`, and upgrading them later fights the package
   manager. pnpm is the exception: `packageManager` pins it exactly, so it comes
-  from Corepack. Everything else — git, Docker, Android Studio, the C libraries
-  Tauri links against — is a system install by nature.
+  from Corepack. Everything else — git, Docker, the C libraries Tauri links
+  against — is a system install by nature. Android Studio is no longer on that
+  list: `mars init` installs the SDK itself, so the IDE is only worth installing
+  when the user wants the IDE.
 
 - **Never** **`sudo`** **a user-scoped install.** `pnpm add -g`, `rustup` and `mise`
   install into the user's home directory. Running them as root creates
@@ -120,16 +160,16 @@ whole deliverable, and the natural next step is the user's own:
 mars create my-app
 ```
 
-Only if a generated project already exists, and the user asks, run its own check
-from inside that directory:
+Inside a generated project, `mars init` finishes the job:
 
 ```bash
 mars init
 ```
 
-That reports which per-platform toolchains are still missing from the
-repository's point of view — a narrower question than this skill answers, and one
-that needs the checkout to exist.
+It installs the workspace dependencies, then reads `platforms.json` and installs
+the toolchains those platforms need — so the Rust or JDK this skill deliberately
+skipped arrives exactly when a project asks for it. Tell the user to run it; do
+not pre-empt it by installing those toolchains here.
 
 ## Traps that produce misleading errors
 
@@ -142,6 +182,27 @@ limit and sends you tuning heap sizes for nothing.
 
 Do trigger for: installing or repairing Node, pnpm, git, the `mars` CLI, Docker,
 JDK, Maven, Rust, Tauri system libraries; diagnosing "command not found".
+
+Inside an existing project, prefer `mars init` for the JDK, Maven and Rust — it
+knows from `platforms.json` which of them are actually needed. Install them here
+only when there is no project to derive that from, or when `mars init` has
+reported one it cannot install.
+
+There are three situations where installing everything up front **is** the right
+call, and they share one trait: the platform set is already known, so nothing is
+being guessed.
+
+- **A CI runner or a Docker image.** Its purpose fixes what it builds, and baking
+  the toolchains into a layer buys build-cache reuse and a run with no network.
+  The Dockerfiles in this repository do exactly that.
+- **An offline, air-gapped or intranet-only machine.** On-demand install assumes
+  it can reach the network at `mars init` time. Here it cannot, so install while
+  connectivity exists and say so explicitly.
+- **Uniform fleet or classroom machines.** Per-machine variation is the thing
+  being eliminated, so a fixed, identical set is the goal rather than waste.
+
+Outside these, ask the user before pre-installing a toolchain; wanting it up
+front is a legitimate answer, but it should be their answer, not your assumption.
 
 Do not trigger for: `pnpm install` and lockfile work, writing or reviewing
 feature code, running dev servers, CI pipeline configuration, or installing the

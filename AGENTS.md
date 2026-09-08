@@ -101,9 +101,87 @@ mars dev --platform api --docker   # Start API in Docker (automatically builds i
 mars build --platform web          # Build Web only
 mars build --platform android      # Build Android only
 mars build --platform api --docker # Build API in Docker
-mars init                          # Initialize dependencies + check environment
+mars init                          # Install workspace deps + the toolchains platforms.json asks for
+mars init --docker                 # Same, but the API runs in a container (skips the host JDK/Maven)
 mars clean                         # Clean build artifacts
 ```
+
+### Toolchain installation is derived, not pre-provisioned
+
+`mars init` reads `platforms.json` and installs **only** the language toolchains
+the enabled platforms actually need. A web-only project downloads no JDK, no
+Maven and no Rust. This is deliberate, and the reasoning below is recorded here
+because the opposite design — install everything once, up front — looks tidier
+and will otherwise be reintroduced as a "simplification".
+
+**Whoever holds the information makes the decision.** Installing every toolchain
+up front is not really a choice; it is what you are forced into when the
+information does not exist yet. Before `mars create` has run there is no
+`platforms.json`, so nothing on the machine can know whether the user is about to
+build a desktop app or a REST API — an up-front installer can only guess, and it
+guesses by installing the union of everything. After `mars create`, the project
+states its own platform set, so `requiredTools(platforms)` **derives** the answer
+instead. That is the whole difference: derivation versus guessing.
+
+**An up-front install is a snapshot that is only correct on the day it ran.**
+Enable `desktop` three months later and the original install decision becomes
+retroactively wrong, with no mechanism anywhere to notice. `mars init` is
+idempotent and re-derives from the current `platforms.json`, so the fix is to run
+it again. Prefer this shape for anything environment-related: describe what
+should be true now, do not replay what was done once.
+
+**The trigger point is not "as late as possible".** Installing a JDK from inside
+`gradle build` would be more on-demand still, and it would be wrong: the user
+believes they are compiling code, so a download stall or a network failure
+surfaces as a mysterious compile error. `mars init` is the trigger because it is
+the first moment where **the information suffices** (`platforms.json` exists) and
+**the user still considers themselves to be preparing**. Both conditions matter;
+either one alone picks the wrong moment.
+
+Consequences that are costs, not bugs, and must not be "fixed" by moving the
+install earlier:
+
+- **Failures surface later.** A missing toolchain now fails during `mars init`
+  rather than during environment setup. Keep `mars init`'s output explicit about
+  what it is installing, so the delay is legible.
+- **More points that need the network.** On-demand install assumes connectivity
+  at project-init time. See the exceptions below for when that assumption breaks.
+- **`PATH` needs a new shell.** A child process cannot mutate its parent shell's
+  environment — the inherited block is a snapshot — so after `mise` installs a
+  toolchain, `mars init` tells the user to open a new terminal. The `JAVA_HOME`
+  caution in the docs is a downstream symptom of this, not a defect.
+
+**Where up-front installation is the correct answer.** Three cases, unified by
+the fact that the information already exists beforehand, so nothing is being
+guessed:
+
+| Case | Why up front wins |
+|------|-------------------|
+| CI runners and Docker base images | The platform set is fixed by the image's purpose, and baking toolchains into a layer makes the build cache work and needs zero network at run time |
+| Offline / air-gapped or intranet-only machines | On-demand install assumes it can reach the network at init time; here it cannot |
+| Uniform fleet or teaching machines | Per-machine variation is the thing being eliminated, not a property worth preserving |
+
+Note that this is the same principle, not an exception to it: in all three the
+decision is made where the information lives. The Dockerfiles in this repository
+therefore install their toolchains in the image, and are right to.
+
+**Ownership split.** Five categories, decided by who knows what:
+
+| Tools | Decided by | Installed at |
+|-------|-----------|--------------|
+| Node.js, pnpm, git, `@marsquakes/cli`, `mise` | Bootstrap necessity — a Node program cannot install Node | Environment setup, before any project exists |
+| Docker, Tauri system libraries | Nothing can automate them here — `mise` installs neither | Environment setup, manually, reported by `mars init` |
+| Android CLI + SDK | Outside mise, but Google ships an installer — `mars init` drives both | `mars init`, the SDK packages derived from `compileSdk` |
+| Docker **as a runtime choice** | **The user**, via `mars init --docker` | Never inferred: Docker being installed does not mean the API runs in a container |
+| JDK, Maven, Rust | **`platforms.json`** | `mars init` |
+
+The **Docker as a runtime choice** row is the one most often got wrong. Detecting
+a working Docker and concluding the API is containerised breaks the documented
+workflow where MySQL
+and Redis run in containers while the API stays on the host. And `--docker` skips
+a host toolchain only when no other enabled platform claims it: in an
+`api` + `android` project Maven is skipped but the JDK is still installed,
+because Gradle runs on the host.
 
 ### Docker Support
 
@@ -475,3 +553,72 @@ see [docs/AGENTS.md](docs/AGENTS.md).
   - `chore:` for build/tooling changes
 - **Git Branches**: Main branch is `main`, feature branches named `feature/xxx`, fix branches `fix/xxx`
 - **Ignored Files**: `.idea/`, `.gradle/`, `local.properties`, build artifacts, `node_modules`, `.turbo/`, etc. are already added to `.gitignore`
+- **Platform-specific commands**: whenever an example differs per operating
+  system, offer **every** supported platform side by side — never only the one
+  the author happens to use. See the rules below.
+
+### Platform-specific commands must be switchable
+
+A code or command example whose content depends on the operating system **MUST**
+present all supported platforms together. Writing only the macOS form leaves
+every Windows reader guessing, and the guess usually fails silently — `mise`
+without its PowerShell hook installs successfully and then puts nothing on
+`PATH`.
+
+This applies whenever any part of the example changes with the platform:
+
+| Trigger | Example |
+|---------|---------|
+| Different package manager | `brew install` / `winget install` / `apt install` |
+| Different wrapper or launcher | `./gradlew` / `gradlew.bat` |
+| Different path separator or variable | `$HOME/.agents` / `$HOME\.agents`, `$PROFILE` |
+| Different shell built-in | `chmod 600` has no PowerShell equivalent |
+| Different archive or file tooling | `unzip` / `Expand-Archive` |
+
+**In the documentation site** (`docs/content/`, `docs/i18n/**`,
+`docs/src/pages/`), use a Docusaurus `<Tabs>` group so the reader switches
+platform instead of scrolling past commands that do not apply to them. The
+attribute vocabulary is fixed — `groupId="os"`, `value="unix"|"windows"`, labels
+`macOS / Linux` and `Windows (PowerShell)` — because Docusaurus persists the
+choice **by group id and value**, so a group that invents its own values
+silently drops out of the sync and forces the reader to choose again.
+[docs/AGENTS.md](docs/AGENTS.md) holds the full convention, including what may go
+inside a tab and how the landing page differs.
+
+**Everywhere else** — `README*.md`, every `AGENTS.md`, `.docs/`, and any comment
+or help text — `<Tabs>` is unavailable, since it is a component of the docs site
+rather than Markdown syntax. Use consecutive fenced blocks, each introduced by a
+bold platform label and tagged with the matching language so the shell is
+unambiguous:
+
+````md
+**macOS / Linux**
+
+```bash
+./gradlew assembleRelease
+```
+
+**Windows (PowerShell)**
+
+```powershell
+.\gradlew.bat assembleRelease
+```
+````
+
+Rules that hold in both forms:
+
+- **Identical commands do not get a switcher.** The five `mars` quick-start
+  commands are byte-identical in bash and PowerShell, so splitting them would
+  render two indistinguishable panels — a control that visibly does nothing,
+  which is worse than no control. Split at the first line that actually differs
+  and keep the shared tail outside the group, where two copies cannot drift.
+- **Never omit a platform to keep things symmetrical.** When a step has no
+  equivalent, say so in that platform's block. A silently missing platform reads
+  as an unfinished page; "not needed on Windows, because …" reads as a decision.
+- **Never invent a command.** Every platform-specific command must be traceable
+  to [.agents/skills/marsquakes-setup/references/install-matrix.md](.agents/skills/marsquakes-setup/references/install-matrix.md),
+  which is the single source of truth for per-OS install commands and version
+  floors. If a command is not there and you cannot verify it, write prose.
+- **Keep the lead-in platform-neutral.** The sentence above the example states
+  the goal; the blocks state the platform. A lead-in that says "run this in
+  bash" contradicts its own Windows block.

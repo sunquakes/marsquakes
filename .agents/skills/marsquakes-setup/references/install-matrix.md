@@ -14,10 +14,77 @@ Two conventions apply throughout:
   break the next non-root invocation, and the error at that point names the
   wrong command.
 
+## Who runs which of these
+
+Inside a project, **`mars init` already installs the language toolchains**: it
+reads `platforms.json`, maps the enabled platforms to the JDK, Maven and Rust,
+and runs the same `mise use --global` lines documented below for the ones that are
+missing or too old. So most of this file is a reference for *what* it does rather
+than a list of commands to run by hand.
+
+| Program                             | Installed by                                    |
+| ----------------------------------- | ----------------------------------------------- |
+| Node.js, pnpm, git, `@marsquakes/cli` | the skill — needed before a project exists    |
+| mise itself                         | the skill — `mars init` uses it but cannot install it |
+| JDK, Maven, Rust                    | **`mars init`**, per `platforms.json`           |
+| Android CLI + SDK                   | **`mars init`** — outside mise, via Google's installer |
+| Docker, Tauri system libs           | the skill — nothing here can install these     |
+
+Note the last two rows: `mise` installs none of those, but "outside mise" and
+"manual" are different tests. The Android CLI and SDK have their own installers,
+so `mars init` drives them. Docker and the Tauri system libraries have no such
+route and stay with the skill.
+
+Two consequences:
+
+- **Install mise before handing over to `mars init`.** Without it, `mars init`
+  reports the missing toolchains and points back at this file instead of
+  installing anything. That is the one gap that turns an automatic install into a
+  manual one.
+
+- **Run the toolchain rows by hand only when there is no project to derive them
+  from**, or when `mars init` has reported something it cannot install. Doing it
+  pre-emptively puts a JDK on machines that will only ever build a desktop app.
+
+## When installing everything up front is correct
+
+The split above is not a rule about frugality; it is a rule about *when the
+information exists*. Before `mars create` there is no `platforms.json`, so an
+up-front installer cannot know what the machine is for and can only install the
+union of everything. That is a guess. `mars init` runs after the project has
+declared its platforms, so it derives the answer.
+
+Read that in the other direction and the exceptions fall out. Wherever the
+platform set is already fixed, up-front installation is not a guess and is the
+better choice:
+
+| Situation | Install up front, because |
+| --------- | ------------------------- |
+| CI runners and Docker images | The image's purpose fixes what it builds. Baking toolchains into a layer gets cache reuse and a run that needs no network. See the Dockerfiles in this repository |
+| Offline, air-gapped or intranet-only machines | On-demand install assumes the network is reachable at `mars init` time. Install while it is |
+| Uniform fleet or classroom machines | Identical machines are the goal; per-machine variation is what is being removed |
+
+So do not read this file as "never install a toolchain by hand". Read it as
+"install it where the decision can be made from facts rather than from a guess" —
+which on a developer's own laptop means `mars init`, and in an image means the
+Dockerfile.
+
+Two costs come with the on-demand path. Both are inherent, so do not treat them
+as defects to be fixed by installing earlier:
+
+- The failure moves later. A missing toolchain now shows up during `mars init`,
+  when the user thinks they are creating a project rather than setting up an
+  environment.
+- `PATH` needs a new shell, because a child process cannot change its parent's
+  environment. This is why `mars init` ends by telling the user to open a new
+  terminal, and why `JAVA_HOME` may look unset until they do.
+
 ## Version floors
 
-Keep these in sync with `scripts/detect-env.sh` and `scripts/detect-env.ps1`, which
-enforce them.
+Keep these in sync with `scripts/detect-env.sh`, `scripts/detect-env.ps1` and
+`TOOL_SPECS` in `packages/mars-cli/bin/mars.js`, all three of which enforce them.
+The CLI carries its own copy because the published package ships only `bin/`, so
+it cannot shell out to these scripts.
 
 | Tool           | Floor   | Why this number                                                        |
 | -------------- | ------- | ---------------------------------------------------------------------- |
@@ -29,6 +96,7 @@ enforce them.
 | JDK            | 17      | The `api` platform targets 17; 21 works, 11 does not                   |
 | Maven          | 3.9.0   | Older versions resolve the repository's dependency ranges differently  |
 | Rust           | 1.77.0  | Tauri 2's minimum supported toolchain                                  |
+| Android CLI    | *none*  | Checked for presence only — see the `## Android` section for why       |
 
 ## mise first
 
@@ -52,11 +120,15 @@ line — there is no separate Node section — and the other three lines replace
 per-OS tables in the JDK/Maven and Rust sections below:
 
 ```bash
-mise use --global node@22           # always
-mise use --global java@temurin-17   # admin scenario, unless the API runs in Docker
-mise use --global maven@3.9         # admin scenario, unless the API runs in Docker
-mise use --global rust              # desktop scenario
+mise use --global node@22           # always — install this one by hand
+mise use --global java@temurin-17   # api or android platform; mars init runs this
+mise use --global maven@3.9         # api platform; mars init runs this
+mise use --global rust              # desktop platform; mars init runs this
 ```
+
+The last three are exactly what `mars init` issues, for the platforms its
+`platforms.json` enables. Node is the exception: `mars init` is a Node program, so
+it cannot be what installs Node.
 
 Two of those version strings are deliberate:
 
@@ -138,12 +210,20 @@ because mise was not considered:
 | pnpm                       | Pinned exactly by `packageManager`; Corepack is what reads that field                                                             |
 | git                        | Needed before and outside an activated shell — IDEs and GUI clients shell out to it, and a `PATH`-scoped git is invisible to them |
 | Docker                     | A system daemon plus a GUI application, with post-install steps mise cannot perform: starting the service, group membership       |
-| Android Studio             | A GUI IDE that manages its own SDK                                                                                               |
+| Android Studio             | A GUI IDE that manages its own SDK. Optional now — `mars init` installs the SDK without it                                        |
+| Android CLI + SDK          | No mise plugin exists. Google ships an installer, and the CLI then installs the SDK, so `mars init` runs both — the automated installs not routed through mise |
 | MSVC, WebView2, webkit2gtk | System libraries and compilers that Tauri links against; mise installs tools, not shared libraries                               |
 
 The dividing line is worth stating once: mise manages **language toolchains that
 a project pins to a version**. It does not manage system services, GUI
 applications or the C libraries a native build links against.
+
+The Android CLI row is the exception that does not follow from that line: it *is*
+a single user-scoped binary, exactly the shape mise handles, and it stays outside
+only because no plugin has been written yet. So it forms a third category rather
+than joining the manual ones — mise cannot install it, but `mars init` still can,
+by calling Google's installer directly. If a plugin appears, move the row up into
+the mise block; nothing else about the tool would need to change.
 
 ## pnpm — Corepack, not mise
 
@@ -195,8 +275,9 @@ pnpm dlx @marsquakes/cli create my-app
 
 ## Docker
 
-Only needed for the admin scenario, and even there it is one of two options — see
-"JDK and Maven" below.
+Only needed for the `api` platform, and even there it is one of two options — see
+"JDK and Maven" below. It is a system service, so `mars init` reports it as
+missing rather than installing it; this section is what it points at.
 
 | OS / pkg         | Command                                                                                                              |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------- |
@@ -230,11 +311,17 @@ a mirror may not carry those exact tags. See `troubleshooting.md`.
 
 ## JDK and Maven
 
-The alternative to Docker for the admin scenario. Ask which one the user wants
-before installing either — this is the single largest install in the matrix, and
-if the API is going to run in a container the host never needs a JDK at all.
+The alternative to Docker for the `api` platform. This is the single largest
+install in the matrix, and if the API is going to run in a container the host
+never needs a JDK at all.
 
-If a JDK is needed, install it with mise:
+**`mars init` decides this for you**, and the rule it applies is narrower than
+"api implies Docker or a JDK": it skips a toolchain only when Docker is already
+working **and no other enabled platform claims it**. So an `api`-only project with
+Docker installs neither, while `api` + `android` still installs the JDK — Gradle
+runs on the host — and skips only Maven.
+
+If a JDK is needed outside a project, install it with mise:
 
 ```bash
 mise use --global java@temurin-17
@@ -267,8 +354,8 @@ installer — winget's Temurin package sets it, most others do not.
 
 ## Rust and Tauri
 
-Desktop scenario only. There is no container fallback here — Tauri compiles
-native code against the host.
+For the `desktop` platform only. There is no container fallback here — Tauri
+compiles native code against the host.
 
 **Never the distro package.** A distro-packaged `rustc` satisfies `command -v
 rustc`, so it looks installed while being too old for Tauri 2. Install with mise,
@@ -278,6 +365,9 @@ rustup toolchain, pinned in the same file as everything else:
 ```bash
 mise use --global rust
 ```
+
+`mars init` runs exactly that line when `desktop` is enabled. The system packages
+further down are the part it cannot install.
 
 Because rustup is underneath, the toolchain does not live under mise's usual
 `installs` directory; mise keeps a symlink and sets `RUSTUP_TOOLCHAIN`. An
@@ -314,16 +404,118 @@ but guessing repeatedly wastes the user's confirmation each time.
 
 ## Android
 
-Only for the `android` platform. JDK 17 as above, plus the Android SDK — most
-easily via Android Studio, which manages the SDK, platform tools and an
-acceptable JDK together:
+Only for the `android` platform, and it needs three separate things. `mars init`
+installs all three, the SDK included.
+
+### JDK — installed by `mars init`
+
+The `java@temurin-17` line from the mise block above. Gradle runs on the *host*,
+so the JDK is required even on a machine that has the Android CLI: the CLI is
+additive, never a substitute. This is why `add_scenario()` in both detection
+scripts sets `want_java` **and** `want_android_cli` for `android`.
+
+### Android CLI — installed by `mars init`, outside mise
+
+Google's agent-first `android` CLI, not the SDK's `sdkmanager` / `avdmanager`. It
+is a single user-scoped binary and needs no admin rights. `mars init` downloads
+Google's own installer and runs it, because mise has no plugin for the tool:
+
+| OS      | Installer                                                    | Lands in                              |
+| ------- | ------------------------------------------------------------ | ------------------------------------- |
+| Windows | `install.cmd`, `PATH` written to `HKCU\Environment`           | `%USERPROFILE%\AppData\AndroidCLI`    |
+| macOS   | `install.sh`, `export PATH=…` appended to a shell profile     | `$HOME/.local/bin`                    |
+| Linux   | `install.sh`, `export PATH=…` appended to a shell profile     | `$HOME/.local/bin`                    |
+
+Binaries live under `https://dl.google.com/android/cli/latest/<triple>/`. Only
+four triples exist, and the names do not follow the pattern one would guess —
+these were confirmed by HTTP HEAD, so do not "correct" them:
+
+| Verified (200)                                        | Guessed, and 404                                     |
+| ----------------------------------------------------- | ---------------------------------------------------- |
+| `windows_x86_64`, `darwin_arm64`, `darwin_x86_64`, `linux_x86_64` | `mac_arm64`, `mac_x86_64`, `linux_arm64`, `linux_aarch64` |
+
+`linux_arm64` being absent is the one that matters in practice: an ARM Linux host
+cannot install this tool, and `mars init` says so rather than downloading a
+binary that will not execute.
+
+Three properties of the tool shape how the rest of the repository treats it:
+
+- **No version floor.** `android -V` has no published version contract and may
+  print a build string with no dotted number in it. Both detection scripts
+  therefore report it by *presence* — `OK android-cli present` — instead of
+  routing it through `report` / `Write-Report`, which would extract an empty
+  version and announce a working install as `MISS`.
+
+- **`android emulator` is disabled on Windows** by Google, so a bare `OK` there
+  would overstate what works. Both scripts emit `NOTE android-emulator
+  disabled-on-windows` alongside the `OK`, and `mars init` prints the same
+  caveat after installing.
+
+- **`PATH` needs a new terminal.** Both installers write `PATH` into a profile or
+  the registry, neither of which reaches the already-running shell. This is the
+  general `mars init` caveat from the top of this file, not something specific to
+  Android.
+
+### Android SDK — installed by `mars init`
+
+`android sdk install` makes the SDK part of the automated path, so Android Studio
+is no longer required to obtain one. `mars init` runs it after the CLI install,
+because the CLI is what performs the download — the ordering is a dependency, not
+a preference.
+
+**The package set is derived from the project, not pinned here.** `compileSdk` is
+read out of `apps/android/app/build.gradle.kts` and expanded to three packages:
+
+| Package                  | Where the version comes from                                  |
+| ------------------------ | ------------------------------------------------------------- |
+| `platforms/android-<N>`  | `compileSdk` in the app's build file                          |
+| `build-tools/<N>.0.0`    | paired with `compileSdk`, as the project declares no `buildToolsVersion` |
+| `platform-tools`         | unversioned; one per SDK                                      |
+
+Two `compileSdk` syntaxes are accepted, because AGP changed it: the block form
+`compileSdk { version = release(36) }` used by this project, and the classic
+scalar `compileSdk = 36`. Matching only one fails *silently* — it derives an empty
+package set rather than raising — so both are parsed, and a build file with
+neither is reported and skipped.
+
+**Location.** An existing `ANDROID_HOME` / `ANDROID_SDK_ROOT` wins, so a machine
+that already has an SDK does not get a second one. Otherwise the conventional
+per-OS path is used — the same one Android Studio picks, so the two share an SDK
+instead of maintaining one each:
+
+| OS      | Default SDK location            |
+| ------- | ------------------------------- |
+| Windows | `%LOCALAPPDATA%\Android\Sdk`    |
+| macOS   | `$HOME/Library/Android/sdk`     |
+| Linux   | `$HOME/Android/Sdk`             |
+
+The path is passed explicitly as `android --sdk="<path>" sdk install …` rather
+than read back out of `android info`, so the value that reaches
+`local.properties` is one we chose, not one parsed out of human-readable output
+whose shape is not a contract. Note `--sdk` is a *global* flag and must precede
+the subcommand.
+
+**Discovery.** Gradle finds the SDK through `ANDROID_HOME` or through `sdk.dir` in
+`apps/android/local.properties`. A child process cannot set an environment
+variable in the parent shell, so the file is the only channel that works within
+the same run — `mars init` writes `sdk.dir` there, with backslashes doubled
+because Java `.properties` treats one as an escape. An existing `sdk.dir` is
+**never** rewritten: the file is gitignored and per-machine, so the user may be
+pointing it somewhere deliberately.
+
+**When it is skipped.** No CLI on the host and no successful CLI install this run
+(an ARM Linux host, for instance, where no binary exists) means there is nothing
+to install with. `mars init` says so and exits 0; running it again once the CLI is
+present completes the job. Note the freshly installed CLI *is* found within the
+same run — it is located by absolute path, not by the stale `PATH` of the running
+process.
+
+**Android Studio remains a valid manual route**, and the easier one if the user
+wants the IDE anyway, since it manages the SDK, platform tools and an acceptable
+JDK together:
 
 | OS / pkg         | Command                                                            |
 | ---------------- | ------------------------------------------------------------------ |
 | Windows / winget | `winget install --id Google.AndroidStudio -e`                      |
 | macOS / brew     | `brew install --cask android-studio`                               |
 | Linux            | Download from developer.android.com; the distro packages lag badly |
-
-The SDK location must be discoverable, either through `ANDROID_HOME` or through
-`sdk.dir` in `local.properties`. That file is gitignored, so it is per-machine
-and a fresh clone never has it.
