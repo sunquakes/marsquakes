@@ -13,7 +13,7 @@
 pnpm add -g @marsquakes/cli
 mars create my-app
 cd my-app
-pnpm install
+mars init
 mars dev
 ```
 
@@ -32,32 +32,44 @@ mars dev
 - **可运行的管理后台** —— `apps/web-admin`，Vue 3 + Vite，Docker 与 nginx 配置
   都已经写好。
 - **可选的其他端** —— Web 客户端、Tauri 桌面端、Android、iOS、Windows、Linux、
-  macOS。没勾选的平台不会被复制，生成出来的仓库因此保持精简。
-- **可运行的编排** —— `pnpm install` 之后直接 `mars dev`，所有启用的端并行启动，
+  macOS。没勾选的平台不会被复制，生成出来的仓库因此保持精简 —— 它们的工具链同样
+  不会被安装，你的机器也因此保持精简。
+- **可运行的编排** —— `mars init` 之后直接 `mars dev`，所有启用的端并行启动，
   中间没有额外的接线步骤。
 - **无需本地工具链的 Docker** —— `.build` 变体镜像在镜像内部从源码编译，因此全新
   检出的仓库既不需要宿主机装 JDK 和 Maven，也不需要装 Node。
 
+所以每一次勾选，你同时认下了两件事：`apps/` 下多一个目录，以及你机器上多一套
+工具链。`mars init` 会把你的勾选从 `platforms.json` 里读回来，并安装它所隐含的
+那些工具 —— 每一项勾选的代价见下面的表格。
+
 ## 平台
 
-| 平台      | 目录             | 技术栈                   | 默认勾选 | 成熟度     |
-| --------- | ---------------- | ------------------------ | -------- | ---------- |
-| API       | `apps/api`       | JeecgBoot / Spring Boot  | 是       | 可用       |
-| Web Admin | `apps/web-admin` | Vue 3 + Vite             | 是       | 可用       |
-| Desktop   | `apps/desktop`   | Tauri + React + Rust     | 否       | 可用       |
-| Web       | `apps/web`       | 待定                     | 否       | 仅有骨架   |
-| Android   | `apps/android`   | Kotlin + Jetpack Compose | 否       | 仅有骨架   |
-| iOS       | `apps/ios`       | Swift + SwiftUI          | 否       | 仅有骨架   |
-| Windows   | `apps/windows`   | 待定                     | 否       | 仅有骨架   |
-| Linux     | `apps/linux`     | 待定                     | 否       | 仅有骨架   |
-| macOS     | `apps/macos`     | 待定                     | 否       | 仅有骨架   |
+| 平台      | 目录             | 技术栈                   | 默认勾选 | 需要的工具链         | 成熟度     |
+| --------- | ---------------- | ------------------------ | -------- | -------------------- | ---------- |
+| API       | `apps/api`       | JeecgBoot / Spring Boot  | 是       | Docker、JDK、Maven   | 可用       |
+| Web Admin | `apps/web-admin` | Vue 3 + Vite             | 是       | —                    | 可用       |
+| Desktop   | `apps/desktop`   | Tauri + React + Rust     | 否       | Rust                 | 可用       |
+| Web       | `apps/web`       | 待定                     | 否       | —                    | 仅有骨架   |
+| Android   | `apps/android`   | Kotlin + Jetpack Compose | 否       | JDK、Android CLI + SDK | 仅有骨架 |
+| iOS       | `apps/ios`       | Swift + SwiftUI          | 否       | —                    | 仅有骨架   |
+| Windows   | `apps/windows`   | 待定                     | 否       | —                    | 仅有骨架   |
+| Linux     | `apps/linux`     | 待定                     | 否       | —                    | 仅有骨架   |
+| macOS     | `apps/macos`     | 待定                     | 否       | —                    | 仅有骨架   |
 
 「可用」表示该平台开箱即可构建、运行；「仅有骨架」表示目录与约定已经就位，但业务
 代码还只是占位。
 
+`mars init` 会把你已启用的各端在「需要的工具链」这一列上取并集，缺什么装什么，
+所以 `api` + `android` 只会下载一个 JDK，而不是两个。`—` 表示这个平台除了你本来
+就有的 Node 和 pnpm 之外不再需要别的东西 —— 要么它就是用这两样构建的（`web`、
+`web-admin`），要么它依赖的是版本管理器装不了的系统工具链（`ios` 需要 Xcode、
+`windows` 需要 MSVC、`linux` 需要 gcc）。
+
 生成的项目有一个单一事实来源 `platforms.json`，它记录了每个平台的目录、技术栈以及
 是否启用。`mars dev`、`mars build`、`mars clean` 都读取这个文件，而不是把路径写死
-在代码里。
+在代码里；`mars init` 要安装的工具链同样是从这个文件推导出来的 —— 所以事后启用一个
+平台，再跑一次 `mars init` 就够了。
 
 ## CLI 参考
 
@@ -71,21 +83,29 @@ mars <command> [options]
 | `update`                | 从模板更新项目（保留 `apps`/`docs`/`.docs`）         |
 | `dev`                   | 启动开发（默认所有已启用的平台）                     |
 | `build`                 | 构建（默认所有已启用的平台）                         |
-| `init`                  | 安装依赖并检查环境                                   |
+| `init`                  | 安装依赖，并安装已启用平台需要的工具链               |
 | `clean`                 | 清理所有构建产物                                     |
 
-| 选项                    | 适用于        | 说明                     |
-| ----------------------- | ------------- | ------------------------ |
-| `--template <url>`      | `create`      | 使用某个 git 仓库作为模板 |
-| `--from <path>`         | `create`      | 使用本地目录作为模板     |
-| `-n, --non-interactive` | `create`      | 接受默认的平台勾选       |
-| `--platform <platform>` | `dev`/`build` | 只作用于某一个平台       |
-| `--docker`              | `dev`/`build` | 在 Docker 容器内运行     |
-| `--lang <en\|zh>`       | 全部          | 输出语言（默认 `en`）    |
-| `--help`                | 全部          | 显示帮助                 |
+`init` 是真正把你的勾选落到实处的命令：它读取 `platforms.json`，算出这些平台需要
+哪些工具链，逐个校验版本是否达到下限，缺的就装上。事后启用了新平台，再跑一次。
+
+| 选项                    | 适用于               | 说明                     |
+| ----------------------- | -------------------- | ------------------------ |
+| `--template <url>`      | `create`             | 使用某个 git 仓库作为模板 |
+| `--from <path>`         | `create`             | 使用本地目录作为模板     |
+| `-n, --non-interactive` | `create`             | 接受默认的平台勾选       |
+| `--platform <platform>` | `dev`/`build`        | 只作用于某一个平台       |
+| `--docker`              | `init`/`dev`/`build` | 让 API 平台走 Docker     |
+| `--lang <en\|zh>`       | 全部                 | 输出语言（默认 `en`）    |
+| `--help`                | 全部                 | 显示帮助                 |
 
 平台取值：`web`、`web-admin`、`android`、`ios`、`api`、`windows`、`linux`、
 `macos`、`all`。
+
+`--docker` 在两处含义不同。在 `dev`/`build` 上它真的会构建镜像并在容器里跑代码；
+在 `init` 上它只是**声明** API 将来跑在容器里，从而让 `init` 跳过宿主机的 JDK 和
+Maven —— 但仅限于没有别的已启用平台也需要它们的情况，所以在 `api` + `android` 的
+项目里 Maven 会被跳过，JDK 仍然会为 Gradle 装上。
 
 ## 为什么是 CLI，而不是模板仓库
 
@@ -107,8 +127,9 @@ mars <command> [options]
 pnpm 是唯一受支持的包管理器。Node 自带 Corepack，执行 `corepack enable pnpm`
 即可获得锁定的版本。
 
-其他的一切 —— JDK 17、Maven 3.9+、Rust、Android SDK、Docker 20.10+ —— 只有在你
-启用对应平台时才需要，而且 Docker 工作流可以替代其中大部分。
+其他的一切 —— JDK 17、Maven 3.9+、Rust、Android CLI + SDK、Docker 20.10+ —— 只有
+在你启用对应平台时才需要，而且不用你手工装：`mars init` 会按你的勾选推导出清单并
+安装它们。Docker 工作流可以替代其中大部分。
 
 ---
 
@@ -131,7 +152,8 @@ cd marsquakes
 
 ```bash
 pnpm install
-pnpm run init                # 安装依赖 + 检查每个已启用平台的工具链
+pnpm run init                # 检查每个已启用平台需要的工具链
+                             # （`mars init` 还会把缺的装上）
 
 pnpm dev                     # 并行启动所有已启用的平台
 pnpm dev:web-admin           # 只启动管理后台

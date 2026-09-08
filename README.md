@@ -13,7 +13,7 @@
 pnpm add -g @marsquakes/cli
 mars create my-app
 cd my-app
-pnpm install
+mars init
 mars dev
 ```
 
@@ -34,35 +34,49 @@ a real, running template and trims it down to the platforms you selected:
   Docker and nginx configuration already written.
 - **Optional extra targets** — web client, Tauri desktop app, Android, iOS,
   Windows, Linux, macOS. Unselected platforms are never copied, so the
-  generated repository stays small.
-- **Working orchestration** — `pnpm install` then `mars dev` starts every
+  generated repository stays small — and their toolchains are never installed
+  either, so the machine stays small too.
+- **Working orchestration** — `mars init` then `mars dev` starts every
   enabled platform in parallel. No wiring step in between.
 - **Docker without a local toolchain** — the `.build` image variants compile
   from source inside the image, so a clean checkout needs neither JDK, Maven
   nor Node on the host.
 
+Each tick therefore commits you to two things: a directory in `apps/`, and a
+toolchain on your machine. `mars init` reads the selection back out of
+`platforms.json` and installs what it implies — see the table below for the
+price of each tick.
+
 ## Platforms
 
-| Platform  | Directory        | Tech stack               | Default | Maturity      |
-| --------- | ---------------- | ------------------------ | ------- | ------------- |
-| API       | `apps/api`       | JeecgBoot / Spring Boot  | yes     | Ready         |
-| Web Admin | `apps/web-admin` | Vue 3 + Vite             | yes     | Ready         |
-| Desktop   | `apps/desktop`   | Tauri + React + Rust     | no      | Ready         |
-| Web       | `apps/web`       | TBD                      | no      | Scaffold only |
-| Android   | `apps/android`   | Kotlin + Jetpack Compose | no      | Scaffold only |
-| iOS       | `apps/ios`       | Swift + SwiftUI          | no      | Scaffold only |
-| Windows   | `apps/windows`   | TBD                      | no      | Scaffold only |
-| Linux     | `apps/linux`     | TBD                      | no      | Scaffold only |
-| macOS     | `apps/macos`     | TBD                      | no      | Scaffold only |
+| Platform  | Directory        | Tech stack               | Default | Toolchain it requires  | Maturity      |
+| --------- | ---------------- | ------------------------ | ------- | ---------------------- | ------------- |
+| API       | `apps/api`       | JeecgBoot / Spring Boot  | yes     | Docker, JDK, Maven     | Ready         |
+| Web Admin | `apps/web-admin` | Vue 3 + Vite             | yes     | —                      | Ready         |
+| Desktop   | `apps/desktop`   | Tauri + React + Rust     | no      | Rust                   | Ready         |
+| Web       | `apps/web`       | TBD                      | no      | —                      | Scaffold only |
+| Android   | `apps/android`   | Kotlin + Jetpack Compose | no      | JDK, Android CLI + SDK | Scaffold only |
+| iOS       | `apps/ios`       | Swift + SwiftUI          | no      | —                      | Scaffold only |
+| Windows   | `apps/windows`   | TBD                      | no      | —                      | Scaffold only |
+| Linux     | `apps/linux`     | TBD                      | no      | —                      | Scaffold only |
+| macOS     | `apps/macos`     | TBD                      | no      | —                      | Scaffold only |
 
 "Ready" means the platform builds and runs out of the box. "Scaffold only"
 means the directory and conventions exist but the application code is still a
 placeholder.
 
+`mars init` takes the union of the toolchain column across your enabled
+platforms and installs whatever is missing, so `api` + `android` downloads one
+JDK, not two. A `—` means the platform adds nothing beyond Node and pnpm —
+either because it builds with those (`web`, `web-admin`), or because it builds
+with an OS toolchain no version manager can install (`ios` needs Xcode,
+`windows` MSVC, `linux` gcc).
+
 The generated project keeps a single source of truth, `platforms.json`, which
 records every platform, its directory, its tech stack and whether it is
 enabled. `mars dev`, `mars build` and `mars clean` all read that file instead of
-hard-coding paths.
+hard-coding paths, and `mars init` derives the toolchain it installs from the
+same file — so enabling a platform later and re-running `mars init` is enough.
 
 ## CLI reference
 
@@ -70,27 +84,38 @@ hard-coding paths.
 mars <command> [options]
 ```
 
-| Command                 | Description                                                        |
-| ----------------------- | ------------------------------------------------------------------ |
-| `create <project-name>` | Create a new project from a template                               |
-| `update`                | Update the project from the template (keeps `apps`/`docs`/`.docs`) |
-| `dev`                   | Start development (default: all enabled platforms)                 |
-| `build`                 | Build (default: all enabled platforms)                             |
-| `init`                  | Install dependencies and check the environment                     |
-| `clean`                 | Remove all build artifacts                                         |
+| Command                 | Description                                                          |
+| ----------------------- | -------------------------------------------------------------------- |
+| `create <project-name>` | Create a new project from a template                                 |
+| `update`                | Update the project from the template (keeps `apps`/`docs`/`.docs`)   |
+| `dev`                   | Start development (default: all enabled platforms)                   |
+| `build`                 | Build (default: all enabled platforms)                               |
+| `init`                  | Install dependencies + the toolchain your enabled platforms require  |
+| `clean`                 | Remove all build artifacts                                           |
 
-| Option                  | Applies to    | Description                           |
-| ----------------------- | ------------- | ------------------------------------- |
-| `--template <url>`      | `create`      | use a git repository as the template  |
-| `--from <path>`         | `create`      | use a local directory as the template |
-| `-n, --non-interactive` | `create`      | accept the default platform selection |
-| `--platform <platform>` | `dev`/`build` | limit to one platform                 |
-| `--docker`              | `dev`/`build` | run inside a Docker container         |
-| `--lang <en\|zh>`       | all           | output language (default `en`)        |
-| `--help`                | all           | show help                             |
+`init` is the command that acts on your platform selection: it reads
+`platforms.json`, works out which toolchains those platforms need, checks each
+one against its minimum version and installs the ones that are missing. Run it
+again after enabling a platform.
+
+| Option                  | Applies to           | Description                            |
+| ----------------------- | -------------------- | -------------------------------------- |
+| `--template <url>`      | `create`             | use a git repository as the template   |
+| `--from <path>`         | `create`             | use a local directory as the template  |
+| `-n, --non-interactive` | `create`             | accept the default platform selection  |
+| `--platform <platform>` | `dev`/`build`        | limit to one platform                  |
+| `--docker`              | `init`/`dev`/`build` | use Docker for the API platform        |
+| `--lang <en\|zh>`       | all                  | output language (default `en`)         |
+| `--help`                | all                  | show help                              |
 
 Platform values: `web`, `web-admin`, `android`, `ios`, `api`, `windows`,
 `linux`, `macos`, `all`.
+
+`--docker` means two different things. On `dev`/`build` it actually builds an
+image and runs the code inside it. On `init` it only *declares* that the API
+will run in a container, which lets `init` skip the host JDK and Maven — but
+only when no other enabled platform needs them, so in an `api` + `android`
+project Maven is skipped while the JDK is still installed for Gradle.
 
 ## Why a CLI instead of a template repository
 
@@ -115,9 +140,10 @@ two ways:
 pnpm is the only supported package manager. Node ships Corepack, so
 `corepack enable pnpm` is enough to get the pinned version.
 
-Everything else — JDK 17, Maven 3.9+, Rust, Android SDK, Docker 20.10+ — is
-only needed for the specific platforms you enable, and the Docker workflow can
-replace most of it.
+Everything else — JDK 17, Maven 3.9+, Rust, Android CLI + SDK, Docker 20.10+ —
+is only needed for the specific platforms you enable, and you do not install it
+by hand: `mars init` derives the list from your selection and installs it. The
+Docker workflow can replace most of it.
 
 ---
 
@@ -141,7 +167,8 @@ Already cloned without `--recursive`? `git submodule update --init --recursive`.
 
 ```bash
 pnpm install
-pnpm run init                # install dependencies + check every enabled toolchain
+pnpm run init                # check the toolchain every enabled platform needs
+                             # (`mars init` additionally installs what is missing)
 
 pnpm dev                     # start every enabled platform in parallel
 pnpm dev:web-admin           # admin frontend only
