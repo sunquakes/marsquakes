@@ -28,9 +28,17 @@ a real, running template and trims it down to the platforms you selected:
   Docker and nginx configuration already written.
 - **Optional extra targets** — web client, Tauri desktop app, Android, iOS,
   Windows, Linux, macOS. You choose these during `mars create`; unselected
-  platforms are never copied, so the generated repository stays small.
-- **Working orchestration** — `pnpm install` then `mars dev` starts every
+  platforms are never copied, so the generated repository stays small — and
+  their toolchains are never installed either, so the machine stays small too.
+- **Working orchestration** — `mars init` then `mars dev` starts every
   enabled platform in parallel. No wiring step in between.
+
+Each tick therefore commits you to two things: a directory in `apps/`, and a
+toolchain on your machine. `mars init` reads the selection back out of
+`platforms.json` and installs what it implies — a JDK and Maven for `api`, Rust
+for `desktop`, the Android CLI and SDK for `android` — so see
+[Platforms](./platforms.md#the-platform-matrix) for the price of each tick, and
+[`mars init`](./cli.md#mars-init) for how it is paid.
 
 ## How the pieces fit
 
@@ -100,8 +108,9 @@ admin system and a desktop app need different things installed:
 | pnpm | 9.15.x | installing dependencies in the generated project |
 
 Everything else — JDK, Maven, Rust, Android SDK — is only needed for the
-specific platforms you enable, and the [Docker workflow](./docker.md) can
-replace most of it.
+specific platforms you enable, and you do not install it by hand:
+[`mars init`](./cli.md#mars-init) derives the list from your selection and
+installs it. The [Docker workflow](./docker.md) can replace most of it.
 
 ## License
 

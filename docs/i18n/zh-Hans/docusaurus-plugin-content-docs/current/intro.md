@@ -27,9 +27,16 @@ mars create my-app
   配置都已写好。
 - **可选的其他端** —— Web 客户端、Tauri 桌面端、Android、iOS、Windows、
   Linux、macOS。这些在 `mars create` 时由你选择；未勾选的端不会被复制，
-  生成出来的仓库因此保持精简。
-- **可用的编排能力** —— `pnpm install` 之后直接 `mars dev`，所有已启用的端
+  生成出来的仓库因此保持精简 —— 它们的工具链同样不会被安装，你的机器也因此
+  保持精简。
+- **可用的编排能力** —— `mars init` 之后直接 `mars dev`，所有已启用的端
   并行启动，中间没有额外的接线步骤。
+
+所以每一次勾选，你同时认下了两件事：`apps/` 下多一个目录，以及你机器上多一套
+工具链。`mars init` 会从 `platforms.json` 把这份勾选读回来，并按它的含义去安装 ——
+`api` 要 JDK 和 Maven，`desktop` 要 Rust，`android` 要 Android CLI 与 SDK。每一项
+勾选的代价见[平台](./platforms.md)，这笔账怎么付见
+[`mars init`](./cli.md#mars-init)。
 
 ## 各部分如何协作
 
@@ -91,7 +98,8 @@ my-app/
 | Node | >= 22.12.0 | 运行 `mars` CLI 本身 |
 | pnpm | 9.15.x | 在生成的项目中安装依赖 |
 
-其余的 JDK、Maven、Rust、Android SDK，只有在你启用了对应的端时才需要，而且
+其余的 JDK、Maven、Rust、Android SDK，只有在你启用了对应的端时才需要，而且不用你
+手工装：[`mars init`](./cli.md#mars-init) 会按你的勾选推导出清单并安装它们。
 [Docker 工作流](./docker.md)可以替代其中大部分。
 
 ## 许可证

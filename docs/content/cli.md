@@ -22,7 +22,7 @@ mars <command> [options]
 | `update` | Update build wiring from the template, keeping `apps/`, `docs/`, `.docs/`, `design/` |
 | `dev` | Start development (default: all enabled platforms) |
 | `build` | Build (default: all enabled platforms) |
-| `init` | Install dependencies and check the environment |
+| `init` | Install dependencies, then check and install the toolchain your selection implies |
 | `clean` | Remove all build artifacts |
 
 Every command except `create` must be run **inside** a generated project. The
@@ -66,17 +66,26 @@ The CLI picks a template source in this order, stopping at the first match:
 
 ### Platform selection
 
-| Platform | Category | Pre-selected | Selectable |
-| -------- | -------- | ------------ | ---------- |
-| `web-admin` | web | yes | yes |
-| `api` | api | yes | yes |
-| `desktop` | desktop | no | yes |
-| `web` | web | no | no |
-| `android` | mobile | no | no |
-| `ios` | mobile | no | no |
-| `windows` | desktop | no | no |
-| `linux` | desktop | no | no |
-| `macos` | desktop | no | no |
+| Platform | Category | Pre-selected | Selectable | Toolchain a tick pulls in |
+| -------- | -------- | ------------ | ---------- | ------------------------- |
+| `web-admin` | web | yes | yes | — |
+| `api` | api | yes | yes | Docker, JDK, Maven |
+| `desktop` | desktop | no | yes | Rust |
+| `web` | web | no | no | — |
+| `android` | mobile | no | no | JDK, Android CLI |
+| `ios` | mobile | no | no | — |
+| `windows` | desktop | no | no | — |
+| `linux` | desktop | no | no | — |
+| `macos` | desktop | no | no | — |
+
+The last column is the part that outlives `create`. A tick decides which
+`apps/<name>` directory is copied **and** what [`mars init`](#mars-init) will
+later probe and install on your machine, so the selector prints that column next
+to every row as `↳ toolchain:` before you commit to it. An empty cell means the
+platform needs nothing beyond the Node and pnpm you already have — either
+because it builds with the base tools (`web`, `web-admin`) or because it builds
+with an OS toolchain that no version manager can install (`ios` needs Xcode,
+`windows` MSVC, `linux` gcc).
 
 **Pre-selected** and **selectable** are separate keys in `platforms.json`:
 `enabled` controls whether the entry can be picked at all (a `false` entry is
@@ -90,6 +99,11 @@ default project. Omit `default` and it falls back to `enabled`.
 through the prompt. See [AI Agents](./ai-agents.md) for the prompt's input
 syntax.
 
+Because `api` is one of those two, the default project asks for Docker, a JDK
+and Maven — `-n` is a way to skip the *prompt*, not a way to skip the install.
+The CLI prints the resulting toolchain set on this path too, so the consequence
+is still stated even though nothing was displayed to tick.
+
 Unselected platforms are never copied into the new project — the directory is
 skipped entirely rather than copied and deleted.
 
@@ -97,7 +111,10 @@ skipped entirely rather than copied and deleted.
 
 1. Resolves the template and copies everything **except** `apps/`.
 2. Copies only the `apps/<name>` directories you selected.
-3. Rewrites `platforms.json` so `enabled` matches your selection.
+3. Rewrites `platforms.json` so `enabled` matches your selection. This is also
+   what makes the selection outlive `create`: every later command, `mars init`
+   included, re-derives its work from that file rather than from a record of
+   what you ticked.
 4. Replaces the project name across the generated files (`package.json`,
    `AGENTS.md`, `platforms.json`, compose files and others).
 5. Deletes the template's `.git`, initialises a fresh repository and creates an
@@ -107,9 +124,12 @@ It then prints the three commands you need next:
 
 ```bash
 cd my-app
-pnpm install
+mars init
 mars dev
 ```
+
+`mars init` rather than `pnpm install`, because installing the npm dependencies
+is only the first half of what your ticks implied — see below.
 
 ## `mars update`
 
@@ -161,10 +181,66 @@ mars build --platform api --docker
 `build` is implemented for `web`, `web-admin`, `desktop` and `android`. Other
 platforms report that building is not supported yet.
 
-## `mars init` / `mars clean`
+## `mars init`
 
 ```bash
-mars init      # install dependencies + check the toolchain of each enabled platform
+mars init            # dependencies + the toolchain your selection implies
+mars init --docker   # same, but the API runs in a container
+```
+
+This is where a tick made during `create` is paid for. `init` reads
+`platforms.json`, takes the union of the toolchains its enabled platforms need,
+and works through them in order:
+
+1. Verifies pnpm is present, then runs `pnpm install` for the workspace. You do
+   not run `pnpm install` yourself — `init` replaces it rather than following it.
+2. Runs `gradlew --version` if `android` is enabled, to prime the Gradle wrapper.
+3. Reports the set it derived, naming where each entry came from:
+
+   ```
+   🧰 Toolchain required by this project: Docker, JDK, Maven
+      (derived from: API Service)
+   ```
+
+4. Probes each tool and prints one line per result — `✅` with the version, `⚠️`
+   if it is older than the floor, `❌` if it is missing.
+5. Installs only what came back not-`ok`, by one of three routes.
+6. Installs the Android SDK packages if `android` is enabled, deriving them from
+   `compileSdk` and writing `sdk.dir` into `local.properties`.
+
+The three install routes exist because not every tool can be handled the same
+way:
+
+| Route | Tools | How |
+| ----- | ----- | --- |
+| Version manager | JDK, Maven, Rust | `mise use --global <pin>` |
+| Official installer | Android CLI | Google's own install script, user-scoped, no admin rights |
+| Report only | Docker | Named with a pointer to the install matrix; a system service is not something a version manager installs |
+
+Two consequences worth knowing:
+
+- **The set is deduplicated.** `api` and `android` both want a JDK, and only one
+  gets downloaded.
+- **`init` is idempotent.** It re-derives from the current `platforms.json` every
+  time, so after you enable another platform by hand the fix is to run it again.
+  A tool that probes `ok` is left alone.
+
+`--docker` means "the API runs in a container", so its host JDK and Maven are
+not needed. It is opt-in and never inferred: the documented default keeps MySQL
+and Redis in Docker while the API itself runs on the host, so a reachable Docker
+is no evidence of the arrangement. The flag is also scoped — in an `api` +
+`android` project Maven is skipped but the JDK is still installed, because
+Gradle runs on the host.
+
+Anything `init` could not install prints the path to
+`.agents/skills/marsquakes-setup/references/install-matrix.md`, which carries the
+per-OS commands and version floors. And because a child process cannot change
+its parent shell's environment, a successful install ends by telling you to open
+a new shell so the tool lands on `PATH`.
+
+## `mars clean`
+
+```bash
 mars clean     # remove build artifacts across the workspace
 ```
 
@@ -174,7 +250,16 @@ mars clean     # remove build artifacts across the workspace
 on the host and keeps only MySQL and Redis in containers — see
 [Set up the environment](./ai-admin-env.md).
 
-Adding `--docker` to `dev` or `build` makes the CLI:
+`--docker` means two different things depending on the command, so keep them
+apart:
+
+| Command | What `--docker` does |
+| ------- | -------------------- |
+| `init` | Only declares that the API will run in a container, so its host JDK and Maven are skipped. Nothing is built, nothing is started. |
+| `dev`, `build` | Actually builds an image for the platform and runs your code inside a container. |
+
+The rest of this section describes the second meaning only. Adding `--docker`
+to `dev` or `build` makes the CLI:
 
 1. Verify Docker is installed.
 2. Resolve the platform directory from `platforms.json` (`dir`, defaulting to
