@@ -153,6 +153,50 @@ Re-run the detection script and show the diff against step 1. A tool that moved 
 `MISS` to `OK` is the only proof that matters; an installer exiting 0 is not, as
 several of them succeed while leaving nothing on `PATH`.
 
+#### Consuming the output in scripts and CI
+
+The script is a reporter for an interactive agent, so its **exit code is always
+0 on a normal run** (only bad arguments exit non-zero). A gate must therefore
+parse the lines, never the exit code. The machine-readable part of the contract
+is stable in both `detect-env.sh` and `detect-env.ps1`:
+
+- One finding per line: `OK <tool> <version>`, `OLD <tool> <version> (need >=<floor>)`,
+  `MISS <tool> -`.
+- `NOTE <topic> <detail>` lines are context, not findings — ignore them.
+- Only the requested scope is reported: the default run covers the base tools;
+  `--scenario`/`-Scenario` adds the platform probes. Gate on the tools your run
+  asked for, not on every tool the script can name. Manual items (Docker, Tauri
+  system libraries) should not be hard-gated in a job that does not install them.
+
+Gate a run by requiring the `OK` lines you expect and rejecting any `MISS`/`OLD`
+for the same set:
+
+```bash
+out="$(sh scripts/detect-env.sh --scenario api,desktop)"
+printf '%s\n' "$out"
+for t in java maven rustc cargo; do
+  printf '%s\n' "$out" | grep -Eq "^OK $t " || { echo "$t not ready"; exit 1; }
+done
+! printf '%s\n' "$out" | grep -Eq '^(MISS|OLD) (java|maven|rustc|cargo) '
+```
+
+```powershell
+$out = & scripts\detect-env.ps1 -Scenario api,desktop
+$out | ForEach-Object { Write-Host $_ }
+foreach ($tool in 'java','maven','rustc','cargo') {
+  if ($out -notmatch "^OK $tool ") { throw "$tool not ready" }
+  if ($out -match "^(MISS|OLD) $tool ") { throw "$tool missing or outdated" }
+}
+```
+
+A pipeline that is meant to exercise this skill should play the same five steps
+rather than approximating them: detect on the clean runner, install the baseline
+exactly as the matrix says, gate the base scope, run `mars init`, then gate the
+project's scenario scope. A runner image that already carries the derived
+toolchains hides failures in `mars init`'s own install path, so such a job has to
+hide them (sanitize `PATH`) before init; the workflow at
+`.github/workflows/mars-bootstrap.yml` is the reference implementation.
+
 Stop there if there is no project yet. The machine being ready is this skill's
 whole deliverable, and the natural next step is the user's own:
 

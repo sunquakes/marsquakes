@@ -1,0 +1,431 @@
+# End-to-end test of the consumer journey the marsquakes-setup skill prescribes:
+# on a clean runner the workflow literally plays the skill's five-step playbook
+# (.agents/skills/marsquakes-setup/SKILL.md):
+#
+#   1. detect the clean runner (baseline record, informational)
+#   2. install only the baseline tools -- mise, Node, pnpm, the mars CLI --
+#      using the exact commands in references/install-matrix.md
+#   3. re-run the skill's detect script as a hard gate (MISS/OLD must be gone)
+#   4. run `mars init`, which derives JDK / Maven / Rust from the scaffolded
+#      project's platforms.json and installs them itself via mise
+#   5. detect again with --scenario api,desktop and require OK on every
+#      toolchain mars init was supposed to derive
+#
+# This is deliberately NOT a build of the checked-out repository. The runner
+# images preinstall Temurin, Maven and Rust, which would let `mars init` skip
+# its mise installs and leave that whole code path untested -- so before init
+# the PATH is sanitized: every directory carrying a preinstalled JDK, Maven or
+# Rust is removed and the mise shims directory is moved to the front. What
+# remains is exactly what a brand-new machine following the skill has.
+#
+# The scaffolded project enables exactly three platforms -- web-admin, desktop
+# and api (android is patched off in the template copy) -- so `mars init`
+# derives the full toolchain set: JDK, Maven and Rust.
+name: Mars bootstrap (create + init)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/mars-cli/**
+      - .agents/skills/marsquakes-setup/**
+      - platforms.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - package.json
+      - .nvmrc
+      - .gitmodules
+      - apps/web-admin/**
+      - apps/desktop/**
+      - apps/api/**
+      - .github/workflows/mars-bootstrap.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - packages/mars-cli/**
+      - .agents/skills/marsquakes-setup/**
+      - platforms.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - package.json
+      - .nvmrc
+      - .gitmodules
+      - apps/web-admin/**
+      - apps/desktop/**
+      - apps/api/**
+      - .github/workflows/mars-bootstrap.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mars-bootstrap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bootstrap:
+    name: Install environment, create and init on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Check out template repository
+        uses: actions/checkout@v4
+
+      # apps/desktop is a git submodule pointed at an SSH URL. The scaffold
+      # copies its working-tree files, so the submodule must be populated first.
+      # Rewrite SSH to HTTPS (the submodule repository is public); forks without
+      # a deploy key would otherwise fail the clone.
+      - name: Fetch the desktop submodule over HTTPS
+        shell: bash
+        run: |
+          git config --global --replace-all url."https://github.com/".insteadOf "git@github.com:"
+          git submodule sync --recursive
+          git submodule update --init --recursive --depth 1
+          test -f apps/desktop/package.json
+          test -f apps/desktop/src-tauri/Cargo.toml
+
+      # Skill step 1: detect BEFORE installing anything. This is the clean-runner
+      # baseline record only -- GitHub images already carry git and other tools,
+      # so it is not expected to be empty. It must not be used as a gate.
+      - name: Detect environment (baseline on clean runner, macOS / Linux)
+        if: runner.os != 'Windows'
+        run: bash "$GITHUB_WORKSPACE/.agents/skills/marsquakes-setup/scripts/detect-env.sh"
+
+      - name: Detect environment (baseline on clean runner, Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & "$env:GITHUB_WORKSPACE\.agents\skills\marsquakes-setup\scripts\detect-env.ps1"
+
+      # mise is the one toolchain manager `mars init` relies on but cannot
+      # install itself, so the host setup must put it in place. The commands
+      # below are exactly the install-matrix.md rows for each OS.
+      - name: Install mise (macOS / Linux)
+        if: runner.os != 'Windows'
+        run: |
+          curl -sSfL https://mise.run | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          mkdir -p "$HOME/.config/mise"
+          printf 'eval "$(%s/mise activate bash)"\n' "$HOME/.local/bin" > "$HOME/.config/mise/activate.sh"
+          echo "BASH_ENV=$HOME/.config/mise/activate.sh" >> "$GITHUB_ENV"
+          "$HOME/.local/bin/mise" --version
+
+      # Windows has no curl|sh route, so the matrix prescribes winget. winget
+      # does not refresh the PATH of an already running process -- and neither
+      # does it reliably reach later CI steps -- so every later PowerShell step
+      # dot-sources this activation script, which also falls back to the WinGet
+      # Links directory before invoking `mise activate pwsh`.
+      - name: Install mise (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          winget install --id jdx.mise -e --silent --accept-source-agreements --accept-package-agreements
+          $activateDir = Join-Path $env:USERPROFILE '.config\mise'
+          New-Item -ItemType Directory -Force -Path $activateDir | Out-Null
+          @'
+          $links = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links'
+          if ((Get-Command mise -ErrorAction SilentlyContinue) -eq $null -and (Test-Path (Join-Path $links 'mise.exe'))) {
+            $env:Path = "$links;$env:Path"
+          }
+          (& mise activate pwsh) | Out-String | Invoke-Expression
+          '@ | Set-Content -Encoding UTF8 (Join-Path $activateDir 'activate.ps1')
+          . (Join-Path $activateDir 'activate.ps1')
+          mise --version
+
+      # Node is installed by mise on purpose: it exercises the "mise first"
+      # path end to end, and corepack then provides the pnpm version pinned by
+      # the template's packageManager field -- no version is hard-coded here.
+      - name: Install Node.js and pnpm (macOS / Linux)
+        if: runner.os != 'Windows'
+        run: |
+          mise use --global node@22
+          node -v
+          corepack enable pnpm
+          pnpm --version
+
+      - name: Install Node.js and pnpm (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
+          mise use --global node@22
+          node -v
+          corepack enable pnpm
+          pnpm --version
+
+      # Install the CLI under test the same way a consumer does -- globally with
+      # pnpm -- but point it at this checkout's package so the workflow tests
+      # the code in the PR, not whatever version was last published to npm.
+      - name: Install the mars CLI globally (macOS / Linux)
+        if: runner.os != 'Windows'
+        run: |
+          echo "PNPM_HOME=$HOME/.local/share/pnpm" >> "$GITHUB_ENV"
+          echo "$HOME/.local/share/pnpm" >> "$GITHUB_PATH"
+          export PNPM_HOME="$HOME/.local/share/pnpm"
+          pnpm add -g "$GITHUB_WORKSPACE/packages/mars-cli"
+          mars --help
+
+      - name: Install the mars CLI globally (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
+          $pnpmHome = Join-Path $env:LOCALAPPDATA 'pnpm'
+          New-Item -ItemType Directory -Force -Path $pnpmHome | Out-Null
+          Add-Content -Path $env:GITHUB_PATH -Value $pnpmHome
+          Add-Content -Path $env:GITHUB_ENV -Value "PNPM_HOME=$pnpmHome"
+          $env:PNPM_HOME = $pnpmHome
+          $env:Path = "$pnpmHome;$env:Path"
+          pnpm add -g (Join-Path $env:GITHUB_WORKSPACE 'packages\mars-cli')
+          mars --help
+
+      # Skill step 5 (baseline half): MISS -> OK is the only proof. The default
+      # scope reports exactly the "Always" tools -- mise, node, pnpm, git, mars,
+      # corepack -- and the gate parses OK/MISS/OLD lines the way SKILL.md tells
+      # an agent to. The detect script always exits 0, so the grep is the gate.
+      - name: Detect gate for the baseline tools (macOS / Linux)
+        if: runner.os != 'Windows'
+        run: |
+          set -euo pipefail
+          out="$(bash "$GITHUB_WORKSPACE/.agents/skills/marsquakes-setup/scripts/detect-env.sh")"
+          printf '%s\n' "$out"
+          printf '%s\n' "$out" | grep -Eq '^OK mise '
+          printf '%s\n' "$out" | grep -Eq '^OK node '
+          printf '%s\n' "$out" | grep -Eq '^OK pnpm '
+          printf '%s\n' "$out" | grep -Eq '^OK git '
+          printf '%s\n' "$out" | grep -Eq '^OK mars '
+          printf '%s\n' "$out" | grep -Eq '^OK corepack '
+          if printf '%s\n' "$out" | grep -Eq '^(MISS|OLD) (mise|node|pnpm|git|mars|corepack) '; then
+            echo "Baseline tool missing or outdated (see lines above)" >&2
+            exit 1
+          fi
+
+      - name: Detect gate for the baseline tools (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
+          $out = & "$env:GITHUB_WORKSPACE\.agents\skills\marsquakes-setup\scripts\detect-env.ps1"
+          $out | ForEach-Object { Write-Host $_ }
+          foreach ($tool in 'mise','node','pnpm','git','mars','corepack') {
+            if (-not ($out -match "^OK $tool ")) { throw "Baseline tool not OK: $tool" }
+            if ($out -match "^(MISS|OLD) $tool ") { throw "Baseline tool missing or outdated: $tool" }
+          }
+
+      # Tauri links against system libraries that mise cannot manage. Only
+      # Linux needs an explicit step here: GitHub's macOS image ships the Xcode
+      # command line tools, and the Windows image ships MSVC Build Tools and the
+      # WebView2 runtime. A genuinely clean Windows box would additionally need
+      # the "Desktop development with C++" workload per install-matrix.md.
+      - name: Install Tauri system libraries (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      # Non-interactive `mars create -n` selects platforms where default is
+      # true and the host supports them. This template defaults to android +
+      # web-admin + api, and desktop is explicitly default:false -- the inverse
+      # of the scope this workflow wants (android would also pull the Android
+      # CLI/SDK into `mars init`). Flip exactly those two flags in the template
+      # copy; the generated project then derives api + desktop + web-admin.
+      - name: Select web-admin, desktop and api in the template (macOS / Linux)
+        if: runner.os != 'Windows'
+        run: |
+          node -e 'const fs=require("fs");const f=process.argv[1];const c=JSON.parse(fs.readFileSync(f,"utf8"));c.platforms.mobile.android.enabled=false;c.platforms.desktop.desktop.enabled=true;c.platforms.desktop.desktop.default=true;fs.writeFileSync(f,JSON.stringify(c,null,2));' "$GITHUB_WORKSPACE/platforms.json"
+
+      - name: Select web-admin, desktop and api in the template (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          node -e "const fs=require('fs');const f=process.argv[1];const c=JSON.parse(fs.readFileSync(f,'utf8'));c.platforms.mobile.android.enabled=false;c.platforms.desktop.desktop.enabled=true;c.platforms.desktop.desktop.default=true;fs.writeFileSync(f,JSON.stringify(c,null,2));" (Join-Path $env:GITHUB_WORKSPACE 'platforms.json')
+
+      # Scaffold outside the checkout so there is no chance of mars mistaking
+      # the current directory for the target (create refuses an existing dir and
+      # copies from --from, so this is the fresh-machine layout).
+      - name: mars create (macOS / Linux)
+        if: runner.os != 'Windows'
+        working-directory: ${{ runner.temp }}
+        run: mars create mars-e2e -n --from "$GITHUB_WORKSPACE"
+
+      - name: mars create (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
+          mars create mars-e2e -n --from $env:GITHUB_WORKSPACE
+
+      # Hide every toolchain the runner image preinstalled so that `mars init`
+      # itself has to install the JDK, Maven and Rust via mise. Without this the
+      # probes all report OK and the mise install path -- the code under test --
+      # never executes. The filter is adaptive rather than a list of image paths:
+      # any PATH directory that actually carries a java/mvn/rustc/cargo/rustup
+      # binary is dropped, which covers the Ubuntu symlinks in /usr/local/bin,
+      # Homebrew's /opt/homebrew/bin/mvn on macOS and .cargo/bin everywhere. The
+      # mise shims directory is exempted because it will provide the replacements.
+      # Persisted via GITHUB_ENV so the post-init detect gate resolves them too.
+      - name: Sanitize PATH (hide preinstalled JDK, Maven and Rust; macOS / Linux)
+        if: runner.os != 'Windows'
+        run: |
+          shims="$(mise data 2>/dev/null)/shims"
+          has_tool() {
+            for n in java mvn rustc cargo rustup; do
+              for ext in '' .exe .cmd .bat; do
+                [ -e "$1/$n$ext" ] && return 0
+              done
+            done
+            return 1
+          }
+          kept=""
+          dropped=""
+          IFS=':' read -ra dirs <<< "$PATH"
+          for d in "${dirs[@]}"; do
+            if [ "$d" = "$shims" ]; then
+              continue
+            elif has_tool "$d"; then
+              dropped="${dropped:+$dropped:}$d"
+            else
+              kept="${kept:+$kept:}$d"
+            fi
+          done
+          newpath="$shims:$HOME/.local/bin:${PNPM_HOME:-$HOME/.local/share/pnpm}:$kept"
+          echo "PATH=$newpath" >> "$GITHUB_ENV"
+          export PATH="$newpath"
+          hash -r
+          echo "Dropped PATH entries:"
+          printf '%s\n' "$dropped" | tr ':' '\n' | sed 's/^/  - /'
+          for t in java mvn rustc cargo rustup; do
+            if command -v "$t" >/dev/null 2>&1; then
+              echo "Preinstalled $t still reachable at $(command -v "$t") -- PATH filter incomplete" >&2
+              exit 1
+            fi
+          done
+          for t in mise node pnpm git corepack; do
+            command -v "$t" >/dev/null 2>&1 || { echo "$t vanished from the sanitized PATH" >&2; exit 1; }
+          done
+          echo "java/mvn/rustc hidden; mise shims at $shims"
+
+      - name: Sanitize PATH (hide preinstalled JDK, Maven and Rust; Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
+          $shims = Join-Path ((mise data).Trim()) 'shims'
+          $links = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links'
+          $toolNames = @('java','mvn','rustc','cargo','rustup')
+          $exts = @('.exe','.cmd','.bat','')
+          function Test-ToolDir($d) {
+            foreach ($n in $toolNames) {
+              foreach ($e in $exts) {
+                if (Test-Path (Join-Path $d "$n$e")) { return $true }
+              }
+            }
+            return $false
+          }
+          $kept = New-Object System.Collections.Generic.List[string]
+          $dropped = New-Object System.Collections.Generic.List[string]
+          foreach ($d in ($env:Path -split ';')) {
+            if (-not $d) { continue }
+            if ($d -eq $shims) { continue }
+            if (Test-ToolDir $d) { $dropped.Add($d) } else { $kept.Add($d) }
+          }
+          $sanitized = (@($shims, $links, $env:PNPM_HOME) + $kept) -join ';'
+          "PATH=$sanitized" | Add-Content -Path $env:GITHUB_ENV
+          $env:Path = $sanitized
+          Write-Host 'Dropped PATH entries:'
+          $dropped | ForEach-Object { Write-Host "  - $_" }
+          foreach ($t in 'java','mvn','rustc','cargo','rustup') {
+            if (Get-Command $t -ErrorAction SilentlyContinue) {
+              throw "Preinstalled $t still reachable -- PATH filter incomplete"
+            }
+          }
+          foreach ($t in 'mise','node','pnpm','git','corepack') {
+            if (-not (Get-Command $t -ErrorAction SilentlyContinue)) { throw "$t vanished from the sanitized PATH" }
+          }
+          Write-Host "java/mvn/rustc hidden; mise shims at $shims"
+
+      # Skill workflow: per-platform toolchains are derived here, not up front.
+      # `mars init` reads the scaffolded platforms.json and installs what the
+      # probes report missing -- now forced through mise by the PATH above.
+      - name: mars init (macOS / Linux)
+        if: runner.os != 'Windows'
+        working-directory: ${{ runner.temp }}/mars-e2e
+        run: mars init
+
+      - name: mars init (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: ${{ runner.temp }}\mars-e2e
+        run: |
+          . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
+          mars init
+
+      # Skill step 5 (project half): re-detect with the api+desktop scenario and
+      # require OK on the language toolchains mars init derives -- JDK, Maven,
+      # and Rust (rustc/cargo; rustup is installer-only and stays out of the
+      # gate). Docker is api's manual item and stays out of the hard gate too;
+      # Tauri system libraries were installed by the apt step.
+      # Scaffold contents and a frozen-lockfile reinstall are asserted too.
+      # `mars init` itself cannot be the gate: its runner logs failures but
+      # always exits zero, and a failed mise install is only a printed warning.
+      - name: Detect gate and verify scaffold (macOS / Linux)
+        if: runner.os != 'Windows'
+        working-directory: ${{ runner.temp }}/mars-e2e
+        run: |
+          set -euo pipefail
+          for d in web-admin desktop api; do
+            test -d "apps/$d" || { echo "missing apps/$d"; exit 1; }
+          done
+          test ! -e apps/android || { echo "apps/android must not be scaffolded"; exit 1; }
+          test -f apps/desktop/src-tauri/Cargo.toml || { echo "desktop submodule content missing"; exit 1; }
+          node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('platforms.json','utf8'));if(c.platforms.mobile.android.enabled)throw new Error('android must be disabled');for(const [g,p] of [['desktop','desktop'],['web','web-admin'],['api','api']]){if(!c.platforms[g][p].enabled)throw new Error(p+' must be enabled');}"
+          pnpm install --frozen-lockfile
+          out="$(bash "$GITHUB_WORKSPACE/.agents/skills/marsquakes-setup/scripts/detect-env.sh" --scenario api,desktop)"
+          printf '%s\n' "$out"
+          for t in java maven rustc cargo; do
+            printf '%s\n' "$out" | grep -Eq "^OK $t " || { echo "$t was not installed by mars init"; exit 1; }
+          done
+          if printf '%s\n' "$out" | grep -Eq '^(MISS|OLD) (java|maven|rustc|cargo) '; then
+            echo "Derived toolchain missing or below floor (see lines above)" >&2
+            exit 1
+          fi
+          mise ls --global || true
+          echo "All bootstrap checks passed."
+
+      - name: Detect gate and verify scaffold (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: ${{ runner.temp }}\mars-e2e
+        run: |
+          . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
+          foreach ($d in 'web-admin','desktop','api') {
+            if (-not (Test-Path "apps\$d")) { throw "missing apps/$d" }
+          }
+          if (Test-Path 'apps\android') { throw 'apps/android must not be scaffolded' }
+          if (-not (Test-Path 'apps\desktop\src-tauri\Cargo.toml')) { throw 'desktop submodule content missing' }
+          node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('platforms.json','utf8'));if(c.platforms.mobile.android.enabled)throw new Error('android must be disabled');for(const [g,p] of [['desktop','desktop'],['web','web-admin'],['api','api']]){if(!c.platforms[g][p].enabled)throw new Error(p+' must be enabled');}"
+          pnpm install --frozen-lockfile
+          $out = & "$env:GITHUB_WORKSPACE\.agents\skills\marsquakes-setup\scripts\detect-env.ps1" -Scenario api,desktop
+          $out | ForEach-Object { Write-Host $_ }
+          foreach ($tool in 'java','maven','rustc','cargo') {
+            if (-not ($out -match "^OK $tool ")) { throw "$tool was not installed by mars init" }
+            if ($out -match "^(MISS|OLD) $tool ") { throw "Derived toolchain missing or below floor: $tool" }
+          }
+          mise ls --global
+          Write-Host 'All bootstrap checks passed.'

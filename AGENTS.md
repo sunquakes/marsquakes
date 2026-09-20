@@ -455,6 +455,72 @@ Run directly within the monorepo:
 node packages/mars-cli/bin/mars.js create my-project --from .
 ```
 
+### Setup skill and bootstrap CI are one contract
+
+The `marsquakes-setup` skill (`.agents/skills/marsquakes-setup/`) is the single
+source of truth for how a consumer machine is bootstrapped. Its five-step
+playbook is:
+
+1. detect with `scripts/detect-env.{sh,ps1}` before installing anything
+2. install only the "Always" baseline (mise, Node via mise, pnpm via Corepack,
+   the `mars` CLI) using the exact commands in `references/install-matrix.md`
+3. re-detect and treat `MISS -> OK` as the only proof
+4. run `mars init`, which derives per-platform toolchains (JDK, Maven, Rust)
+   from the scaffolded project's `platforms.json` and installs them via mise
+5. detect again with the matching `--scenario`
+
+Rules for keeping both sides unified — these apply to every edit of either the
+skill or the workflow:
+
+- **Skill and workflow change together — "一改都改".** The skill is the source
+  of truth and `.github/workflows/mars-bootstrap.yml` is its executable
+  conformance test, so they must never drift: a skill change that alters
+  behavior requires the matching workflow change in the **same commit**, and a
+  workflow change that alters the prescribed behavior must update the skill.
+  Purely editorial edits (typos, prose) need no workflow change. The skill
+  files whose semantic edits trigger a workflow edit are:
+  - `SKILL.md` — the five-step playbook and the gate/CI consumption contract
+  - `references/install-matrix.md` — baseline install commands (the workflow
+    runs them verbatim) and the version floors/pins
+  - `scripts/detect-env.sh` and `scripts/detect-env.ps1` — scenario names, the
+    tool set each scenario reports, and the output-line contract the gates parse
+  Pairs that must land together: a new playbook step -> a new workflow step; a
+  renamed/re-scoped `--scenario` or a changed reported tool set -> the gate
+  invocation and tool list; a changed output-line format -> the gate parsing;
+  a changed baseline command -> the install step that runs it.
+- **Version floors, pins and probe commands have more than one home — update
+  every home that carries them.** The detect scripts (`REQ_*` in both
+  `detect-env.sh` and `detect-env.ps1`) and `references/install-matrix.md`
+  always carry them; for the toolchains `mars init` derives (JDK, Maven, Rust,
+  Docker) the same floors, pins and probe commands are also enforced at run
+  time by `TOOL_SPECS` / `PLATFORM_TOOLCHAIN` in
+  `packages/mars-cli/bin/mars.js`. Keeping these in step is what makes the
+  skill's verdict and `mars init`'s verdict agree on what "ready" means. The
+  workflow gates assert `OK <tool>` lines rather than specific versions, so a
+  floor bump normally needs **no** workflow edit — do not churn the gates for
+  one; the skill-path trigger re-runs the workflow regardless.
+- **The bootstrap workflow must play the playbook, not approximate it.**
+  `.github/workflows/mars-bootstrap.yml` is the reference implementation named
+  in `SKILL.md`: baseline detect (record only, never a gate) -> baseline hard
+  gate -> `mars create` from the template -> `mars init` -> scenario hard gate.
+- **Never hand-install derived toolchains in CI.** JDK, Maven and Rust are
+  `mars init`'s job, derived from `platforms.json`. Because hosted runner
+  images preinstall all three, the workflow sanitizes `PATH` before `mars init`
+  (drop every directory carrying a `java`/`mvn`/`rustc`/`cargo`/`rustup`
+  binary, exempt and front-load the mise shims dir) so the CLI's own install
+  path actually executes. Do not "simplify" this away; without it that code
+  path is never exercised.
+- **Gate on detect output lines, never on the exit code.** The detect scripts
+  are interactive reporters and exit 0 on every normal run (only bad arguments
+  exit non-zero). The machine-readable contract is `OK|OLD|MISS <tool>
+  <version>` plus ignorable `NOTE` lines; gate the tools the run actually asked
+  for, and do not hard-gate manual items (Docker, Tauri system libraries) that
+  the job does not install. See `SKILL.md` → "Consuming the output in scripts
+  and CI" for the canonical bash/PowerShell snippets.
+- **Touching the skill runs the pipeline.** The workflow's trigger `paths`
+  include `.agents/skills/marsquakes-setup/**`; keep it that way when adding or
+  renaming skill files.
+
 ## Monorepo Description
 
 This project uses **pnpm workspace + Turborepo** to manage dependencies and builds within the npm ecosystem.
