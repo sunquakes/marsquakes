@@ -447,6 +447,18 @@ function run(command, cwd, stdio = 'inherit') {
   }
 }
 
+// The Gradle wrapper ships as two files and neither name works on both hosts.
+// A bare `gradlew` is not on PATH for a POSIX shell, and `./gradlew` is the
+// extension-less script that cmd.exe cannot execute -- so the invocation has to
+// be chosen per platform rather than written once. Every gradlew call site goes
+// through here: the three that existed before this helper had drifted to three
+// different spellings, two of which only ran on one OS.
+function gradlew(task) {
+  return process.platform === 'win32'
+    ? `gradlew.bat ${task}`
+    : `./gradlew ${task}`;
+}
+
 function spawnProcess(command, args, cwd) {
   const child = spawn(command, args, {
     cwd,
@@ -1780,10 +1792,7 @@ function initCommand(args = []) {
     const androidDir = path.join(rootDir, 'apps', 'android');
     if (fs.existsSync(path.join(androidDir, 'gradlew'))) {
       console.log('\n📱 Checking Android Gradle wrapper...');
-      // Neither form is portable: a bare `gradlew` is not on PATH for a POSIX
-      // shell, and `./gradlew` runs the extension-less script that cmd.exe
-      // cannot execute.
-      run(process.platform === 'win32' ? 'gradlew.bat --version' : './gradlew --version', androidDir);
+      run(gradlew('--version'), androidDir);
     }
   }
 
