@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Start Documentation (dev server)",
+      "type": "shell",
+      "command": "pnpm dev:docs",
+      "detail": "Start the Docusaurus dev server at http://localhost:3000/",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": {
+        "owner": "docusaurus",
+        "pattern": {
+          "regexp": "^$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Starting the development server",
+          "endsPattern": "Docusaurus website is running at"
+        }
+      },
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "Build Documentation",
+      "type": "shell",
+      "command": "pnpm build:docs",
+      "detail": "Production build of the Docusaurus site (throws on broken links)",
+      "problemMatcher": []
+    }
+  ]
+}
