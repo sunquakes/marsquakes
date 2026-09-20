@@ -248,7 +248,7 @@ mars clean     # remove build artifacts across the workspace
 
 `--docker` exists for CI and packaging. Day-to-day development runs your own code
 on the host and keeps only MySQL and Redis in containers — see
-[Set up the environment](./ai-admin-env.md).
+[Start a Project](./ai-start.md).
 
 `--docker` means two different things depending on the command, so keep them
 apart:

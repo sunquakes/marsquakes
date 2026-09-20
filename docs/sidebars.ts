@@ -13,15 +13,29 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 // pick an arbitrary one for the "next/previous" footer links, which then
 // contradicts the sidebar the reader actually came from.
 //
-// `aiSidebar` is grouped by *scenario*, and every scenario group carries its own
-// environment page next to its prompts page. That duplication of shape is
-// deliberate: an admin system needs Docker and a database, a desktop app needs
-// Rust and no database at all, and centralising both into one setup page made
-// readers install things they did not need. Only what *every* scenario requires
-// — Node.js, the agent, the CLI — lives in the first group.
+// Both sidebars open with an Introduction and then present the same
+// three-stage journey — environment setup, start a project, then run/build
+// the application — but in the vocabulary each audience needs.
+//
+// `guideSidebar` mirrors `aiSidebar` exactly: `intro` and the start step stay
+// bare top-level entries, after which the Applications category splits by
+// platform, and every platform opens into the same three sub-pages —
+// Environment, Develop and Deploy. The platform is the one thing that decides
+// the commands, and inside a platform those three are the lifecycle stages.
+// The deep material the journey references (CLI, platforms.json, Docker,
+// conventions) is parked in Reference at the bottom, out of the way of someone
+// doing the journey once.
+//
+// `aiSidebar` is the same journey without shell commands: install the agent,
+// install the skill, read how the working style differs, then start a project.
+// The agent must come before the skill — the skill is a bundle of instructions
+// handed to an agent that does not exist yet. `ai-start` is a bare top-level
+// entry rather than a one-item category, because a category of one renders as a
+// folder the reader has to open to find its only child. After that the
+// Applications category splits by platform.
 //
 // Category labels are user-facing strings, so each one generates an i18n key
-// (`sidebar.aiSidebar.category.<Label>`) in
+// (`sidebar.<sidebarId>.category.<Label>`) in
 // `i18n/zh-Hans/docusaurus-plugin-content-docs/current.json`. Renaming a label
 // orphans its translation, which then silently falls back to English.
 //
@@ -30,14 +44,55 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 const sidebars: SidebarsConfig = {
   guideSidebar: [
     'intro',
-    'getting-started',
-    'cli',
-    'platforms',
-    'docker',
-    'conventions',
+    'install',
+    'create-project',
+    {
+      type: 'category',
+      label: 'Applications',
+      collapsed: false,
+      items: [
+        {
+          type: 'category',
+          label: 'Admin System',
+          collapsed: false,
+          items: [
+            'guide-admin-env',
+            'guide-admin-develop',
+            'guide-admin-deploy',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Desktop',
+          collapsed: false,
+          items: [
+            'guide-desktop-env',
+            'guide-desktop-develop',
+            'guide-desktop-deploy',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Android',
+          collapsed: false,
+          items: [
+            'guide-android-env',
+            'guide-android-develop',
+            'guide-android-deploy',
+          ],
+        },
+      ],
+    },
+    {
+      type: 'category',
+      label: 'Reference',
+      collapsed: false,
+      items: ['cli', 'platforms', 'docker', 'conventions'],
+    },
   ],
 
   aiSidebar: [
+    'ai-intro',
     {
       type: 'category',
       label: 'Environment Setup',
@@ -48,22 +103,42 @@ const sidebars: SidebarsConfig = {
         'ai-agents',
       ],
     },
+    'ai-start',
     {
       type: 'category',
-      label: 'Admin System',
+      label: 'Applications',
       collapsed: false,
       items: [
-        'ai-admin-env',
-        'ai-admin-prompts',
-      ],
-    },
-    {
-      type: 'category',
-      label: 'Desktop App',
-      collapsed: false,
-      items: [
-        'ai-desktop-env',
-        'ai-desktop-prompts',
+        {
+          type: 'category',
+          label: 'Admin System',
+          collapsed: false,
+          items: [
+            'ai-admin-project',
+            'ai-admin-module',
+            'ai-admin-deploy',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Desktop App',
+          collapsed: false,
+          items: [
+            'ai-desktop-project',
+            'ai-desktop-module',
+            'ai-desktop-deploy',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Android App',
+          collapsed: false,
+          items: [
+            'ai-android-project',
+            'ai-android-module',
+            'ai-android-deploy',
+          ],
+        },
       ],
     },
   ],

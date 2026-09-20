@@ -292,21 +292,15 @@
   color: var(--ifm-color-emphasis-700);
 }
 
-/* Keeps the code block aligned with `.sectionLead` instead of stretching to the
-   full container width, which made four short shell commands look oversized. */
-.codeBlock {
-  max-width: 46rem;
-  margin: 0 auto 1.5rem;
-}
-
 /* Two-path navigation explainer: two cards side by side, each with an icon,
-   a heading and a body. The AI Guide card gets a subtle visual emphasis. */
+   a heading and a body. The cards now span the full container width like the
+   platform grid further down — the old 52rem cap left them floating as a
+   narrow strip in the middle of the page. The AI Guide card gets a subtle
+   visual emphasis. */
 .pathGrid {
   display: grid;
   gap: 1.5rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  max-width: 52rem;
-  margin: 0 auto;
 }
 
 .pathCard {
@@ -361,10 +355,39 @@
   color: var(--ifm-color-emphasis-700);
 }
 
-.pathCardLink {
-  margin-top: auto;
-  font-size: 0.875rem;
-  font-weight: 600;
+/* The CTAs are Infima buttons now rather than text links. Every card is a
+   flex column, so `margin-top: auto` parks the button on the card's bottom
+   edge and both buttons stay aligned when the two bodies differ in length.
+   `.button` is an Infima global class, hence the `:global(...)` wrapper. */
+.pathCard :global(.button) {
+  margin-top: 0.75rem;
+  align-self: flex-start;
+}
+
+/* Beginner hint under the cards: a soft callout banner rather than another
+   card, so it reads as advice attached to the pair above it. */
+.beginnerNote {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+  border-left: 3px solid var(--ifm-color-primary);
+  border-radius: var(--ifm-card-border-radius, 12px);
+  background: var(--ifm-card-background-color, var(--ifm-background-surface-color));
+}
+
+.beginnerIcon {
+  font-size: 1.25rem;
+  line-height: 1.5;
+}
+
+.beginnerNote p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ifm-color-emphasis-700);
 }
 
 @media screen and (max-width: 768px) {
@@ -373,63 +396,264 @@
   }
 }
 
-.featureGrid {
+/* --- Quick start: numbered steps beside a terminal panel ----------------- */
+
+/* The commands alone used to sit in a 46rem-centred code block, which matched
+   nothing else on the page. The section now reads as two columns: the five
+   commands explained as steps on the left, the same five commands in a
+   terminal chrome on the right. */
+.quickGrid {
   display: grid;
-  gap: 1rem;
-  /* Five equal tracks so all five cards sit on a single row. minmax(0, 1fr)
-     rather than a bare 1fr: a 1fr track keeps an automatic minimum, so one
-     long word would push the row wider than the container instead of wrapping. */
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 3rem;
+  align-items: start;
 }
 
-.featureCard {
-  height: 100%;
-  padding: 1.25rem;
-  border: 1px solid var(--ifm-color-emphasis-200);
-}
-
-.featureTitle {
-  font-size: 1.05rem;
-  line-height: 1.35;
-  margin-bottom: 0.5rem;
-}
-
-.featureDescription {
-  margin-bottom: 0;
-  font-size: 0.875rem;
-  line-height: 1.55;
+.quickLead {
+  margin-bottom: 1.75rem;
   color: var(--ifm-color-emphasis-700);
 }
 
-/* Five across stops being readable once each card drops below ~12rem, so fall
-   back to three per row: six tracks with every card spanning two. */
-@media screen and (max-width: 1080px) {
-  .featureGrid {
-    gap: 1.5rem;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+.stepList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stepItem {
+  display: flex;
+  gap: 1rem;
+  padding: 0.25rem 0 1.5rem;
+  /* A transparent rail on every item (including the last) keeps the badge and
+     text at the same x position; non-last items colour it in below. */
+  border-left: 2px solid transparent;
+}
+
+.stepItem:not(:last-child) {
+  border-left-color: var(--ifm-color-emphasis-200);
+}
+
+/* The number sits half on the connector line: the item's left border runs
+   behind the badge, so the badges read as stops on a single rail. */
+.stepNumber {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-left: -1px;
+  border-radius: 50%;
+  background: var(--ifm-color-primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.stepItem:not(:last-child) .stepNumber {
+  box-shadow: 0 0 0 4px var(--ifm-color-emphasis-100);
+}
+
+.stepTitle {
+  margin: 0.1rem 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.stepDescription {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.quickFootnote {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+/* Terminal panel: the outer card carries the window chrome; the Docusaurus
+   CodeBlock inside it fills the body. Its own prism background (github light /
+   dracula dark) is left untouched, so the bar is painted to match each theme
+   separately below. */
+.terminal {
+  border-radius: var(--ifm-card-border-radius, 12px);
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
+  background: var(--prism-background-color, #f6f8fa);
+}
+
+.terminalBar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.9rem;
+  background: #e1e4e8;
+  border-bottom: 1px solid #d0d4d9;
+}
+
+.terminalDots {
+  display: inline-flex;
+  gap: 0.4rem;
+}
+
+.terminalDots i {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: #fc625d;
+}
+
+.terminalDots i:nth-child(2) {
+  background: #fdbc40;
+}
+
+.terminalDots i:nth-child(3) {
+  background: #34c759;
+}
+
+.terminalLabel {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #57606a;
+}
+
+/* Kill the CodeBlock container's own margin/radius/border so it merges with
+   the terminal card. `:global(.theme-code-block)` is the class Docusaurus puts
+   on the container, plus its prism inline style supplies the background. */
+.terminal :global(.theme-code-block) {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+[data-theme='dark'] .terminal {
+  background: var(--prism-background-color, #282a36);
+}
+
+[data-theme='dark'] .terminalBar {
+  background: #1e2029;
+  border-bottom-color: #343645;
+}
+
+[data-theme='dark'] .terminalLabel {
+  color: #9aa0b4;
+}
+
+@media screen and (max-width: 900px) {
+  .quickGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
   }
 
-  .featureCard {
-    grid-column: span 2;
-    padding: 1.75rem;
+  .terminal {
+    max-width: 46rem;
+    margin: 0 auto;
   }
+}
 
-  .featureTitle {
-    font-size: 1.15rem;
+/* --- Platform matrix: one compact card per target platform --------------- */
+
+/* The grid replaces the old five "what you get" feature cards with the
+   concrete list from `content/platforms.md`. Each row reads icon + name/stack
+   + a Ready / Scaffold-only pill, so the section sells the product (one
+   scaffold, every target) with facts rather than abstract bullet points. */
+.platformGrid {
+  display: grid;
+  gap: 1rem;
+  /* minmax(0, 1fr) rather than a bare 1fr: a 1fr track keeps an automatic
+     minimum, so one long stack name would push the row wider than the
+     container instead of wrapping. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 1.5rem;
+}
+
+.platformCard {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  height: 100%;
+  margin-bottom: 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--ifm-color-emphasis-200);
+}
+
+/* Targets that build today get the same primary-colour emphasis as the
+   recommended path card; scaffold-only targets stay neutral. */
+.platformCardReady {
+  border-color: var(--ifm-color-primary);
+}
+
+.platformIcon {
+  flex: none;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.platformMeta {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.platformName {
+  margin-bottom: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.platformStack {
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.platformBadge {
+  flex: none;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.6;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.platformBadgeReady {
+  background: var(--ifm-color-primary);
+  color: #fff;
+}
+
+.platformBadgeSoon {
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-emphasis-700);
+}
+
+.platformFootnote {
+  margin-bottom: 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--ifm-color-emphasis-700);
+}
+
+/* Three across stops being readable once each card drops below ~14rem, so fall
+   back to two per row below the Docusaurus desktop breakpoint. */
+@media screen and (max-width: 996px) {
+  .platformGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .featureDescription {
-    font-size: inherit;
-  }
-
-  /* Fires only when the grid holds exactly five cards: shift the trailing pair
-     inwards by one track so 3 + 2 reads as deliberate rather than ragged. */
-  .featureCard:nth-child(4):nth-last-child(2) {
-    grid-column: 2 / span 2;
-  }
-
-  .featureCard:nth-child(5):nth-last-child(1) {
-    grid-column: 4 / span 2;
+@media screen and (max-width: 768px) {
+  .platformGrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -452,21 +676,6 @@
   .heroArt {
     max-width: 17rem;
   }
-
-  /* Two per row: four tracks, each card spanning two. The 3 + 2 offsets from
-     the 1080px step are reset, and the odd card out is centred instead. */
-  .featureGrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .featureCard:nth-child(4):nth-last-child(2),
-  .featureCard:nth-child(5):nth-last-child(1) {
-    grid-column: span 2;
-  }
-
-  .featureCard:last-child:nth-child(odd) {
-    grid-column: 2 / span 2;
-  }
 }
 
 @media screen and (max-width: 768px) {
@@ -484,17 +693,5 @@
 
   .heroArt {
     max-width: 14rem;
-  }
-
-  /* Single column: one track, no spans, no centring offsets. */
-  .featureGrid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .featureCard,
-  .featureCard:nth-child(4):nth-last-child(2),
-  .featureCard:nth-child(5):nth-last-child(1),
-  .featureCard:last-child:nth-child(odd) {
-    grid-column: auto;
   }
 }

@@ -1,14 +1,42 @@
 {
+  "sidebar.guideSidebar.category.Applications": {
+    "message": "应用",
+    "description": "The label for category Applications in sidebar guideSidebar"
+  },
+  "sidebar.guideSidebar.category.Admin System": {
+    "message": "后台管理系统",
+    "description": "The label for category Admin System in sidebar guideSidebar"
+  },
+  "sidebar.guideSidebar.category.Desktop": {
+    "message": "桌面端",
+    "description": "The label for category Desktop in sidebar guideSidebar"
+  },
+  "sidebar.guideSidebar.category.Android": {
+    "message": "Android",
+    "description": "The label for category Android in sidebar guideSidebar"
+  },
+  "sidebar.guideSidebar.category.Reference": {
+    "message": "参考",
+    "description": "The label for category Reference in sidebar guideSidebar"
+  },
   "sidebar.aiSidebar.category.Environment Setup": {
     "message": "环境准备",
     "description": "The label for category Environment Setup in sidebar aiSidebar"
   },
+  "sidebar.aiSidebar.category.Applications": {
+    "message": "应用",
+    "description": "The label for category Applications in sidebar aiSidebar"
+  },
   "sidebar.aiSidebar.category.Admin System": {
-    "message": "后台管理功能",
+    "message": "后台管理系统",
     "description": "The label for category Admin System in sidebar aiSidebar"
   },
   "sidebar.aiSidebar.category.Desktop App": {
     "message": "桌面应用",
     "description": "The label for category Desktop App in sidebar aiSidebar"
+  },
+  "sidebar.aiSidebar.category.Android App": {
+    "message": "Android 应用",
+    "description": "The label for category Android App in sidebar aiSidebar"
   }
 }

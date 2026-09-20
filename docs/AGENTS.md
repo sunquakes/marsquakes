@@ -52,7 +52,15 @@ docs/
 ├── tsconfig.json             # Extends @docusaurus/tsconfig
 ├── package.json              # name: "docs", requires Node >= 22.12.0
 ├── content/                  # Published Markdown (the only publishable source)
-│   ├── intro.md  getting-started.md  platforms.md
+│   ├── intro.md  install.md  create-project.md  platforms.md
+│   ├── guide-admin-env.md  guide-admin-develop.md  guide-admin-deploy.md
+│   ├── guide-desktop-env.md  guide-desktop-develop.md  guide-desktop-deploy.md
+│   ├── guide-android-env.md  guide-android-develop.md  guide-android-deploy.md
+│   ├── ai-intro.md
+│   ├── ai-setup-agent.md  ai-setup.md  ai-agents.md  ai-start.md
+│   ├── ai-admin-project.md  ai-admin-module.md  ai-admin-deploy.md
+│   ├── ai-desktop-project.md  ai-desktop-module.md  ai-desktop-deploy.md
+│   ├── ai-android-project.md  ai-android-module.md  ai-android-deploy.md
 │   └── docker.md  cli.md  conventions.md
 ├── src/
 │   ├── css/custom.css        # Infima variable overrides (Mars-red palette)
@@ -68,9 +76,17 @@ docs/
         │   └── footer.json                             # Footer column and link labels
         └── docusaurus-plugin-content-docs/
             ├── current.json                            # Sidebar category labels
-            └── current/                                # Translated Markdown
-                ├── intro.md  getting-started.md  platforms.md
-                └── docker.md  cli.md  conventions.md
+            └── current/                                # Translated Markdown (same filenames as content/)
+                ├── intro.md  install.md  create-project.md  platforms.md
+                ├── guide-admin-env.md  guide-admin-develop.md  guide-admin-deploy.md
+                ├── guide-desktop-env.md  guide-desktop-develop.md  guide-desktop-deploy.md
+                ├── guide-android-env.md  guide-android-develop.md  guide-android-deploy.md
+                ├── ai-intro.md
+                ├── ai-setup-agent.md  ai-setup.md  ai-agents.md  ai-start.md
+                ├── ai-admin-project.md  ai-admin-module.md  ai-admin-deploy.md
+                ├── ai-desktop-project.md  ai-desktop-module.md  ai-desktop-deploy.md
+                ├── ai-android-project.md  ai-android-module.md  ai-android-deploy.md
+                └── cli.md  platforms.md  docker.md  conventions.md
 ```
 
 ## Routing
@@ -156,6 +172,34 @@ start. That assumption is load-bearing, not decorative:
 - **Drop anything that only serves automation.** CI usage, exit codes,
   machine-readable output and unattended-run advice have no reader here.
 
+### Prompts ask for outcomes, never for an implementation
+
+The prompt the reader pastes must describe **what they want**, never **how it is
+achieved**. The reader does not know what Docker, SQL, a compose file, a profile,
+the backend or "the background" is — every one of those words in a prompt makes
+them feel they have to understand it. The agent knows the project conventions,
+so the technical how-to is the agent's job, decided automatically:
+
+- **No tool or mechanism names inside the `Say this` block.** Not "start the
+  database in Docker", not "run the menu SQL", not "use the code generator", not
+  "restart the backend". Say the outcome instead: "start everything this system
+  needs", "make the new menu appear", "build it the project's standard way",
+  "make my changes show up".
+- **Defaults are assumed, never requested.** The database and cache run in Docker
+  by default; the backend and website run on the host by default; long-running
+  services are started in the background by default so the agent keeps answering.
+  A prompt therefore never contains Docker, compose, `.env`, profiles, ports or
+  "in the background". The agent follows the defaults documented in the root
+  `AGENTS.md` and the platform `AGENTS.md` files on its own.
+- **The mechanism still has to be documented — outside the prompt.** Which default
+  was chosen, and why, belongs in the surrounding prose or a table (educational,
+  reader can ignore it) or in a `| What you see | Say this |` row (needed only
+  when a default went wrong). Troubleshooting sentences may name the mechanism,
+  because the reader pastes them rather than understanding them; prompts may not.
+- **Only addresses the reader actually opens belong in "What you should see".**
+  For an admin system that is the admin website's login page only. Backend URLs,
+  database ports and container names are not an outcome for this reader.
+
 ### Prompt-and-result structure
 
 Every page in `aiSidebar` **except** `ai-setup-agent` and `ai-setup` must contain
@@ -203,10 +247,12 @@ or a table.
 
 `onBrokenLinks` is `throw`, but **`onBrokenAnchors` only warns**. A heading that
 other pages link to by anchor (for example
-`## Step 6 — Package it up for other people` and its `## 阶段 6 —— 打包`
-counterpart, both targeted from `ai-admin-env.md`) must keep its exact text, in
-both locales, or the link 404s inside a build that still passes. Grep for the
-anchor before renaming a heading.
+`## What "ready" should look like` on the Start a Project page, which every
+English `*-project` prompts page targets as `./ai-start.md#what-ready-should-look-like`)
+must keep its exact text, or the link 404s inside a build that still passes.
+Grep for the anchor before renaming a heading. Chinese headings get CJK slug
+variants, so translated pages deliberately link to the page without an anchor —
+do not "complete" those links by guessing the slug.
 
 ## Platform-specific examples use Tabs
 

@@ -12,69 +12,83 @@ import styles from './index.module.css';
 // `pnpm -C docs write-translations` can extract it into
 // `i18n/<locale>/code.json`. Never hard-code prose here.
 
-type Feature = {
-  title: ReactNode;
-  description: ReactNode;
+// The platform matrix mirrors the table in `content/platforms.md`. When the
+// docs page adds, removes or reclassifies a target, update this list too —
+// the landing page is a summary of that single source of truth, not a second
+// opinion on what is ready.
+type PlatformTarget = {
+  icon: string;
+  nameKey: string;
+  name: string;
+  stackKey?: string;
+  stack?: string;
+  ready: boolean;
 };
 
-const features: Feature[] = [
+const platformTargets: PlatformTarget[] = [
   {
-    title: (
-      <Translate id="home.feature.selective.title">Pick your platforms</Translate>
-    ),
-    description: (
-      <Translate id="home.feature.selective.description">
-        mars create asks which targets you need and copies only those. Skipped
-        platforms never land in the generated repository.
-      </Translate>
-    ),
+    icon: '🔌',
+    nameKey: 'home.platform.api.name',
+    name: 'API',
+    stackKey: 'home.platform.api.stack',
+    stack: 'JeecgBoot / Spring Boot',
+    ready: true,
   },
   {
-    title: (
-      <Translate id="home.feature.running.title">Running, not a skeleton</Translate>
-    ),
-    description: (
-      <Translate id="home.feature.running.description">
-        A Spring Boot API and a Vue 3 admin frontend that build and start out of
-        the box, already wired together — not folders you still have to fill in.
-      </Translate>
-    ),
+    icon: '🖥️',
+    nameKey: 'home.platform.admin.name',
+    name: 'Web Admin',
+    stackKey: 'home.platform.admin.stack',
+    stack: 'Vue 3 + Vite',
+    ready: true,
   },
   {
-    title: (
-      <Translate id="home.feature.registry.title">Single source of truth</Translate>
-    ),
-    description: (
-      <Translate id="home.feature.registry.description">
-        platforms.json declares every platform, its directory, tech stack and
-        whether it is enabled. Every mars command reads it instead of
-        hard-coding paths.
-      </Translate>
-    ),
+    icon: '🧩',
+    nameKey: 'home.platform.desktop.name',
+    name: 'Desktop',
+    stackKey: 'home.platform.desktop.stack',
+    stack: 'Tauri + React + Rust',
+    ready: true,
   },
   {
-    title: (
-      <Translate id="home.feature.docker.title">
-        Docker without a local toolchain
-      </Translate>
-    ),
-    description: (
-      <Translate id="home.feature.docker.description">
-        The .build image variants compile from source inside the image, so a
-        clean checkout needs neither JDK, Maven nor Node on the host.
-      </Translate>
-    ),
+    icon: '🤖',
+    nameKey: 'home.platform.android.name',
+    name: 'Android',
+    stackKey: 'home.platform.android.stack',
+    stack: 'Kotlin + Jetpack Compose',
+    ready: false,
   },
   {
-    title: (
-      <Translate id="home.feature.update.title">Upgradeable after creation</Translate>
-    ),
-    description: (
-      <Translate id="home.feature.update.description">
-        mars update pulls later improvements to the build wiring into an
-        existing project and never touches your application code.
-      </Translate>
-    ),
+    icon: '📱',
+    nameKey: 'home.platform.ios.name',
+    name: 'iOS',
+    stackKey: 'home.platform.ios.stack',
+    stack: 'Swift + SwiftUI',
+    ready: false,
+  },
+  {
+    icon: '🌐',
+    nameKey: 'home.platform.web.name',
+    name: 'Web',
+    ready: false,
+  },
+  {
+    icon: '🪟',
+    nameKey: 'home.platform.windows.name',
+    name: 'Windows',
+    ready: false,
+  },
+  {
+    icon: '🐧',
+    nameKey: 'home.platform.linux.name',
+    name: 'Linux',
+    ready: false,
+  },
+  {
+    icon: '🍎',
+    nameKey: 'home.platform.macos.name',
+    name: 'macOS',
+    ready: false,
   },
 ];
 
@@ -165,11 +179,14 @@ function Hero(): ReactNode {
             </Translate>
           </p>
           <div className={styles.heroActions}>
-            <Link className="button button--primary button--lg" to="/docs/ai-setup-agent">
-              <Translate id="home.hero.primaryCta">Start with the AI Guide</Translate>
+            <Link className="button button--primary button--lg" to="/docs/">
+              <Translate id="home.hero.primaryCta">Read the Introduction</Translate>
             </Link>
-            <Link className="button button--secondary button--lg" to="/docs/getting-started">
-              <Translate id="home.hero.secondaryCta">Start with the Guide</Translate>
+            <Link
+              className="button button--secondary button--lg"
+              to="https://github.com/sunquakes/marsquakes"
+            >
+              <Translate id="home.hero.secondaryCta">View on GitHub</Translate>
             </Link>
           </div>
         </div>
@@ -179,10 +196,8 @@ function Hero(): ReactNode {
   );
 }
 
-// Explains the two navbar entries, which are split by *how you work* rather
-// than by topic. Placed directly under the banner because "which of the two
-// menus is mine?" is the first question the navbar raises, and the answer
-// decides how much of the toolchain a reader has to install by hand.
+// The two navbar entries are split by *how you work* rather than by topic:
+// the AI Guide versus the manual Guide.
 function Paths(): ReactNode {
   return (
     <section className={styles.section}>
@@ -190,13 +205,6 @@ function Paths(): ReactNode {
         <h2 className={styles.sectionTitle}>
           <Translate id="home.paths.title">Two ways to use it</Translate>
         </h2>
-        <p className={styles.sectionLead}>
-          <Translate id="home.paths.lead">
-            The two entries in the top navigation bar are not two topics — they
-            are two ways of working. Pick the one that matches how you want to
-            drive the project.
-          </Translate>
-        </p>
         <div className={styles.pathGrid}>
           <div
             className={clsx(styles.pathCard, styles.pathCardRecommended)}
@@ -213,15 +221,15 @@ function Paths(): ReactNode {
             </h3>
             <p className={styles.pathCardBody}>
               <Translate id="home.paths.ai.description">
-                You describe what you want in plain language and an AI coding
-                agent runs every command for you. It installs the toolchain,
-                creates the project, starts the services and fixes what breaks.
-                You never open a terminal to type a build command yourself —
-                each page is a prompt you copy, paste, and then check against
-                the expected result.
+                You do not write code. Say what you want in plain language; the
+                agent installs the tools, creates the project and runs every
+                command. Each page is a prompt to paste and a result to check.
               </Translate>
             </p>
-            <Link className={styles.pathCardLink} to="/docs/ai-setup-agent">
+            <Link
+              className="button button--primary button--lg"
+              to="/docs/ai-setup-agent"
+            >
               <Translate id="home.paths.ai.cta">
                 Start with the AI Guide →
               </Translate>
@@ -237,33 +245,97 @@ function Paths(): ReactNode {
             </h3>
             <p className={styles.pathCardBody}>
               <Translate id="home.paths.manual.description">
-                You run the commands yourself. This track is the reference: the
-                full mars command surface, what each platform contains, how
-                platforms.json is structured, and the Docker variants. Useful
-                when you already know the stack, or when you want to understand
-                what the agent did on your behalf.
+                You run the commands yourself. Clear numbered steps take you
+                from installing the CLI to developing and deploying each
+                platform, with the full command reference at the end.
               </Translate>
             </p>
-            <Link className={styles.pathCardLink} to="/docs/getting-started">
+            <Link
+              className="button button--secondary button--lg"
+              to="/docs/install"
+            >
               <Translate id="home.paths.manual.cta">
                 Start with the Guide →
               </Translate>
             </Link>
           </div>
         </div>
-        <p className={styles.sectionLead}>
-          <Translate id="home.paths.beginner">
-            New to development? Take the AI Guide. It assumes no prior
-            experience with Java, Vue, Docker or Rust — the agent installs
-            what is missing, and a full admin system with a login page, user
-            management and permissions is something you can reach by following
-            prompts rather than by writing code.
-          </Translate>
-        </p>
+        <div className={styles.beginnerNote}>
+          <span className={styles.beginnerIcon} aria-hidden="true">
+            💡
+          </span>
+          <p>
+            <Translate id="home.paths.beginner">
+              New to development? Take the AI Guide — no Java, Vue, Docker or
+              Rust experience needed. You follow prompts, not code.
+            </Translate>
+          </p>
+        </div>
       </div>
     </section>
   );
 }
+
+type QuickStartStep = {
+  title: ReactNode;
+  description: ReactNode;
+};
+
+const quickStartSteps: QuickStartStep[] = [
+  {
+    title: (
+      <Translate id="home.quickstart.step1.title">Install the tool</Translate>
+    ),
+    description: (
+      <Translate id="home.quickstart.step1.description">
+        Get pnpm, then install the mars CLI once, globally.
+      </Translate>
+    ),
+  },
+  {
+    title: (
+      <Translate id="home.quickstart.step2.title">Create your project</Translate>
+    ),
+    description: (
+      <Translate id="home.quickstart.step2.description">
+        mars create asks which platforms you need and copies only those.
+      </Translate>
+    ),
+  },
+  {
+    title: (
+      <Translate id="home.quickstart.step3.title">Move into it</Translate>
+    ),
+    description: (
+      <Translate id="home.quickstart.step3.description">
+        Every later command runs from inside the new project folder.
+      </Translate>
+    ),
+  },
+  {
+    title: (
+      <Translate id="home.quickstart.step4.title">
+        Install what it needs
+      </Translate>
+    ),
+    description: (
+      <Translate id="home.quickstart.step4.description">
+        One pnpm install sets up the whole workspace at once.
+      </Translate>
+    ),
+  },
+  {
+    title: (
+      <Translate id="home.quickstart.step5.title">Start developing</Translate>
+    ),
+    description: (
+      <Translate id="home.quickstart.step5.description">
+        mars dev starts every enabled platform; native targets bring their own
+        toolchains when enabled.
+      </Translate>
+    ),
+  },
+];
 
 function QuickStart(): ReactNode {
   return (
@@ -272,47 +344,125 @@ function QuickStart(): ReactNode {
         <h2 className={styles.sectionTitle}>
           <Translate id="home.quickstart.title">Quick start</Translate>
         </h2>
-        <p className={styles.sectionLead}>
-          <Translate id="home.quickstart.lead">
-            Node 18 or newer and pnpm are the only prerequisites. mars create
-            prompts you for the platforms; native targets bring their own
-            toolchains when you enable them.
-          </Translate>
-        </p>
-        <div className={styles.codeBlock}>
-          <CodeBlock language="bash">{quickStart}</CodeBlock>
+        <div className={styles.quickGrid}>
+          <div>
+            <p className={styles.quickLead}>
+              <Translate id="home.quickstart.lead">
+                Node 22.12.0 or newer and pnpm are the only prerequisites. Five
+                commands take you from nothing to a running project.
+              </Translate>
+            </p>
+            <ol className={styles.stepList}>
+              {quickStartSteps.map((step, index) => (
+                <li className={styles.stepItem} key={index}>
+                  <span className={styles.stepNumber} aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <h3 className={styles.stepTitle}>{step.title}</h3>
+                    <p className={styles.stepDescription}>
+                      {step.description}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <p className={styles.quickFootnote}>
+              <Translate id="home.quickstart.next">
+                Need the full matrix of platforms, Docker variants and CLI
+                flags?
+              </Translate>{' '}
+              <Link to="/docs/install">
+                <Translate id="home.quickstart.nextLink">
+                  Continue with Environment Setup
+                </Translate>
+              </Link>
+              .
+            </p>
+          </div>
+          <div className={styles.terminal}>
+            <div className={styles.terminalBar}>
+              <span className={styles.terminalDots} aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+              <span className={styles.terminalLabel}>bash</span>
+            </div>
+            <CodeBlock language="bash">{quickStart}</CodeBlock>
+          </div>
         </div>
-        <p className={styles.sectionLead}>
-          <Translate id="home.quickstart.next">
-            Need the full matrix of platforms, Docker variants and CLI flags?
-          </Translate>{' '}
-          <Link to="/docs/getting-started">
-            <Translate id="home.quickstart.nextLink">
-              Continue in Getting Started
-            </Translate>
-          </Link>
-          .
-        </p>
       </div>
     </section>
   );
 }
 
-function Features(): ReactNode {
+function Platforms(): ReactNode {
   return (
-    <section className={clsx(styles.section, styles.sectionAlt)}>
+    <section className={styles.section}>
       <div className="container">
         <h2 className={styles.sectionTitle}>
-          <Translate id="home.features.title">Why a generator</Translate>
+          <Translate id="home.platforms.title">One scaffold, every target</Translate>
         </h2>
-        <div className={styles.featureGrid}>
-          {features.map((feature, index) => (
-            <div className={clsx('card', styles.featureCard)} key={index}>
-              <h3 className={styles.featureTitle}>{feature.title}</h3>
-              <p className={styles.featureDescription}>{feature.description}</p>
-            </div>
+        <p className={styles.sectionLead}>
+          <Translate id="home.platforms.lead">
+            Every platform mars can generate, in the one monorepo. Tick the
+            targets you need; mars create copies only those and mars init
+            derives the toolchain each one needs.
+          </Translate>
+        </p>
+        <ul className={styles.platformGrid}>
+          {platformTargets.map((target) => (
+            <li
+              className={clsx(
+                'card',
+                styles.platformCard,
+                target.ready && styles.platformCardReady,
+              )}
+              key={target.nameKey}
+            >
+              <span className={styles.platformIcon} aria-hidden="true">
+                {target.icon}
+              </span>
+              <span className={styles.platformMeta}>
+                <h3 className={styles.platformName}>
+                  <Translate id={target.nameKey}>{target.name}</Translate>
+                </h3>
+                {target.stackKey ? (
+                  <span className={styles.platformStack}>
+                    <Translate id={target.stackKey}>{target.stack}</Translate>
+                  </span>
+                ) : null}
+              </span>
+              <span
+                className={clsx(
+                  styles.platformBadge,
+                  target.ready
+                    ? styles.platformBadgeReady
+                    : styles.platformBadgeSoon,
+                )}
+              >
+                {target.ready ? (
+                  <Translate id="home.platforms.ready">Ready</Translate>
+                ) : (
+                  <Translate id="home.platforms.scaffold">Scaffold only</Translate>
+                )}
+              </span>
+            </li>
           ))}
-        </div>
+        </ul>
+        <p className={styles.platformFootnote}>
+          <Translate id="home.platforms.footnote">
+            "Ready" builds and runs out of the box today; "Scaffold only"
+            reserves the structure for you.
+          </Translate>{' '}
+          <Link to="/docs/platforms">
+            <Translate id="home.platforms.footnoteLink">
+              See the full platform matrix
+            </Translate>
+          </Link>
+          .
+        </p>
       </div>
     </section>
   );
@@ -333,7 +483,7 @@ export default function Home(): ReactNode {
       <main>
         <Paths />
         <QuickStart />
-        <Features />
+        <Platforms />
       </main>
     </Layout>
   );

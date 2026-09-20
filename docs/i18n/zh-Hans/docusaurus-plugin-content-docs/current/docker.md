@@ -58,7 +58,7 @@ docker compose up -d
 `container_name` **会**被继承，不要重复声明。
 :::
 
-## 基础服务
+## 基础服务 {#base-services}
 
 `docker-compose.infra.yml` 在本地提供 MySQL 与 Redis，让一次全新检出无需在宿主机
 安装数据库就能完整跑起来。它是**用 `-f` 叠加的独立文件**，而不是 `extends` 覆盖：

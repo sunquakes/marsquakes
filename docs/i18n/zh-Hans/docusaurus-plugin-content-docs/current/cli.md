@@ -99,7 +99,7 @@ Tauri 应用，你可以主动勾上，只是不属于默认项目。不写 `def
 
 未勾选的端根本不会被复制进新项目 —— 是直接跳过该目录，而不是先复制再删除。
 
-### `create` 具体做了什么
+### `create` 具体做了什么 {#what-create-does}
 
 1. 解析模板，复制除 `apps/` 以外的全部内容。
 2. 只复制你勾选的那些 `apps/<name>` 目录。
@@ -231,7 +231,7 @@ mars clean     # 清理整个 workspace 的构建产物
 ## Docker 模式
 
 `--docker` 是为 CI 和打包准备的。日常开发是自己的代码跑在宿主机上，容器里只留
-MySQL 和 Redis —— 见[搭好环境](./ai-admin-env.md)。
+MySQL 和 Redis —— 见[开始一个项目](./ai-start.md)。
 
 `--docker` 在不同命令下含义不同，别混起来：
 

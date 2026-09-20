@@ -9,21 +9,20 @@ import TabItem from '@theme/TabItem';
 
 # 安装 Agent
 
-Agent 就是跟你对话的那个程序。它负责替你打字——包括安装后面所有页面要用到的工具。
-所以这一页是你唯一需要自己敲几条命令的地方。过了这一页，你基本就不用再敲命令了。
+Agent 就是跟你对话的那个程序，替你打字——包括安装后面所有页面要用到的工具。所以这一页是
+你唯一需要自己粘贴几条命令的地方。过了这一页，你只需要粘贴提示词。
 
-本系列文档使用 **DeepSeek Harness（命令 `dsh`）**。英文版同一页讲的是 OpenAI Codex
-CLI——两条线是刻意选的不同工具，不是互译关系。
+本系列中文页面使用 **DeepSeek Harness（命令 `dsh`）**；英文页面使用 OpenAI Codex
+CLI——工具不同，工作方式完全一样。
 
 :::info 这一页需要打开终端
-Windows 上叫 **PowerShell**，macOS 上叫 **终端**，Linux 上就是你系统里那个黑窗口。
-复制下面的命令，粘贴进去，回车。这就是全部的操作了。
+Windows 上叫 **PowerShell**，macOS 上叫 **终端**，Linux 上就是你系统里那个终端窗口。
+粘贴命令，回车，就这么简单。
 :::
 
 ## 1. 安装 Agent
 
-本系列用 DeepSeek Harness，简称 dsh。它需要 Node.js 和 pnpm 才能运行，所以先装这两个。
-下面用 mise 来装 Node——切到你自己的系统那个页签：
+dsh 需要 Node.js 和 pnpm 才能运行，先用 mise 装 Node——切到你自己系统的页签：
 
 <Tabs groupId="os">
 <TabItem value="unix" label="macOS / Linux">
@@ -68,11 +67,11 @@ Node 就位后，下面这条命令两个系统完全一样：
 corepack enable pnpm
 ```
 
-**你应该看到：** 两条命令都没有报错。之后可以用 `node -v` 确认，版本必须是 `v22.19.0`
+**你应该看到：** 两条命令都没有报错。之后可以用 `node -v` 确认，版本必须是 `v22.12.0`
 或更高。
 
 这里必须是 22，不能用更低的：很多电脑上现成装的是 Node 20，而 dsh 在 Node 20 上直接
-装不上。这是这一页最容易踩的坑，所以第一条命令的作用就是先把版本换对。
+装不上。这是这一页最容易踩的坑。
 
 然后安装 dsh 本体：
 
@@ -95,7 +94,7 @@ dsh 处于 developer preview 阶段，命令和配置未来可能变化。跟本
 `dsh --help` 和[官方仓库](https://github.com/deepseek-ai/deepseek-harness)为准。
 :::
 
-## 2. 配置 API Key
+## 2. 登录
 
 Agent 需要一把钥匙才能工作。命令行和网页版读的是两个不同的位置：
 
@@ -104,13 +103,13 @@ Agent 需要一把钥匙才能工作。命令行和网页版读的是两个不�
 | 网页界面 | 界面里 Settings → Models，在页面上填就行 |
 | 命令行 | 在 `~/.dsh/.credentials.yaml` 里 |
 
-创建一个文件 `~/.dsh/.credentials.yaml`，内容如下（把 `sk-xxxxxxxxxxxxxxxx` 换成你自己的密钥）：
+创建文件 `~/.dsh/.credentials.yaml`，内容如下（把 `sk-xxxxxxxxxxxxxxxx` 换成你自己的密钥）：
 
 ```yaml
 DEEPSEEK_API_KEY: sk-xxxxxxxxxxxxxxxx
 ```
 
-接下来要收紧这个文件的权限，否则 dsh 拒绝加载：
+接下来收紧这个文件的权限，否则 dsh 拒绝加载：
 
 <Tabs groupId="os">
 <TabItem value="unix" label="macOS / Linux">
@@ -136,24 +135,15 @@ dsh --profile headless "回复 ok"
 
 **你应该看到：** 终端打印了一行回复，没有报错。如果报凭据缺失，说明 dsh 没读到你刚写的那个文件。
 
-## 3. 启动
+## 3. 站在正确的目录里
 
-```bash
-dsh web
-```
-
-**你应该看到：** 浏览器自动打开了一个页面，地址是 `http://127.0.0.1:3080`。
-
-以后每次要用 Agent 时，先跑这条命令，等浏览器打开，然后就可以在网页里跟它对话了。
-
-## 4. 站在正确的目录里
-
-**dsh 把启动时所在的那个目录当作工作区根目录**——它只能看到和改动这个目录里的东西。
+**dsh 把启动时所在的目录当作工作区根目录**——它只能看到和改动这个目录里的东西。你还没有
+项目，所以要站在项目的「父目录」里启动，而不是项目本身里面。
 
 <Tabs groupId="os">
 <TabItem value="unix" label="macOS / Linux">
 
-要新建项目：站在新项目的「父目录」
+要新建项目：站在新项目的父目录
 
 ```bash
 cd ~/projects
@@ -170,7 +160,7 @@ dsh web
 </TabItem>
 <TabItem value="windows" label="Windows (PowerShell)">
 
-要新建项目：站在新项目的「父目录」
+要新建项目：站在新项目的父目录
 
 ```powershell
 cd $HOME\projects
@@ -187,10 +177,12 @@ dsh web
 </TabItem>
 </Tabs>
 
-**你应该看到：** 让 Agent 执行 `pwd`，输出必须是你以为的那个目录。站错目录的典型症状是
-Agent 声称创建成功了，但你在预期位置找不到目录——它建在别处了。
+**你应该看到：** 浏览器自动打开了一个页面，地址是 `http://127.0.0.1:3080`；让 Agent 执行
+`pwd`，输出必须是你以为的那个目录。以后每次用 Agent，都是先 `dsh web`、等浏览器打开，
+再在网页里跟它对话。站错目录的典型症状是 Agent 声称创建成功了，但你在预期位置找不到
+东西——它建在别处了。
 
 ## 下一步
 
-Agent 跑起来了，但它还不知道怎么装东西。
-下一步[安装 Skill](./ai-setup.md)——之后剩下的环境准备就是一句提示词的事。
+Agent 跑起来了，但它还不知道怎么装东西。下一步[安装 Skill](./ai-setup.md)——之后剩下的
+环境准备就是一句提示词的事。

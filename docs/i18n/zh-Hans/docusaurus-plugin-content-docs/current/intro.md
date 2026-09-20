@@ -18,31 +18,20 @@ mars create my-app
 
 ## 你会得到什么
 
-`mars create` 生成的不是需要你继续填空的骨架，而是复制一份真实可跑的模板，
-再按你勾选的端裁剪：
+`mars create` 复制一份真实可跑的模板，再按你勾选的端裁剪，而不是留给你一个
+待填空的骨架：
 
 - **可运行的后端** —— `apps/api`，基于 JDK 17 的 Spring Boot，既可用 Maven
   构建，也可完全在 Docker 内构建。
 - **可运行的后台前端** —— `apps/web-admin`，Vue 3 + Vite，Docker 与 nginx
   配置都已写好。
 - **可选的其他端** —— Web 客户端、Tauri 桌面端、Android、iOS、Windows、
-  Linux、macOS。这些在 `mars create` 时由你选择；未勾选的端不会被复制，
-  生成出来的仓库因此保持精简 —— 它们的工具链同样不会被安装，你的机器也因此
-  保持精简。
-- **可用的编排能力** —— `mars init` 之后直接 `mars dev`，所有已启用的端
+  Linux、macOS。未勾选的端不会被复制，它们的工具链也不会被安装。
+- **可用的编排能力** —— 先 `mars init`，再 `mars dev`，所有已启用的端
   并行启动，中间没有额外的接线步骤。
 
-所以每一次勾选，你同时认下了两件事：`apps/` 下多一个目录，以及你机器上多一套
-工具链。`mars init` 会从 `platforms.json` 把这份勾选读回来，并按它的含义去安装 ——
-`api` 要 JDK 和 Maven，`desktop` 要 Rust，`android` 要 Android CLI 与 SDK。每一项
-勾选的代价见[平台](./platforms.md)，这笔账怎么付见
-[`mars init`](./cli.md#mars-init)。
-
-## 各部分如何协作
-
-生成的项目以 `platforms.json` 作为唯一事实来源，记录每个端的目录、技术栈以及
-是否启用。`mars dev`、`mars build`、`mars clean` 都读取这个文件，而不是把路径
-写死 —— 所以之后要启用某个端，是改配置，而不是重构。
+[`platforms.json`](./platforms.md) 是每个 `mars` 命令都读取的唯一事实来源，
+所以之后启用某个端是改配置，而不是重构：
 
 ```
 my-app/
@@ -54,53 +43,42 @@ my-app/
 └── AGENTS.md                # 项目约定，同时供 AI 编码助手读取
 ```
 
-## 为什么做成 CLI，而不是模板仓库
+与直接克隆模板仓库不同，端在创建时就选好，而且之后仍可运行 `mars update`：
+它把后续对构建接线的改进同步进已有项目，同时完全不动 `apps/`、`docs/`、
+`.docs/` 和 `design/`。
 
-直接克隆模板仓库，会把所有端一并带上（不管你要不要），而且会把你固定在克隆的
-那一刻。`@marsquakes/cli` 有两点不同：
+## 路线
 
-1. **按需生成** —— 创建时勾选端，生成的仓库只包含这些端。
-2. **`mars update`** —— 可以把后续对构建接线的改进（`turbo.json`、
-   `platforms.json`、`packages/`、`scripts/`）同步进已有项目，同时完全不动
-   `apps/`、`docs/`、`.docs/` 和 `design/`。你的业务代码永远不会被覆盖。
+这条线由你自己按顺序敲每一条命令：
 
-## 下一步读什么
+1. **[环境准备](./install.md)** —— 安装 Node 和 pnpm（仅有的前置要求），
+   然后安装 `mars` CLI。
+2. **[开始一个项目](./create-project.md)** —— 运行 `mars create`、勾选端，
+   然后 `mars init` 安装它们隐含的工具链。
+3. **构建一个应用** —— 每个端都有同样的三页：
 
-文档分成两条线，对应顶部导航栏的两个菜单。按你的工作方式挑一条读就行。
+   | 端 | 环境准备 | 如何开发 | 部署 |
+   | -- | -------- | -------- | ---- |
+   | 后台管理系统 | [环境准备](./guide-admin-env.md) | [如何开发](./guide-admin-develop.md) | [部署](./guide-admin-deploy.md) |
+   | 桌面端 | [环境准备](./guide-desktop-env.md) | [如何开发](./guide-desktop-develop.md) | [部署](./guide-desktop-deploy.md) |
+   | Android | [环境准备](./guide-android-env.md) | [如何开发](./guide-android-develop.md) | [部署](./guide-android-deploy.md) |
 
-**使用指南** —— 命令由你自己敲：
+4. **参考** —— 需要时再查：
+   [CLI](./cli.md) · [平台](./platforms.md) · [Docker](./docker.md) ·
+   [约定](./conventions.md)。
 
-| 页面 | 内容 |
-| ---- | ---- |
-| [快速开始](./getting-started.md) | 安装 CLI 并创建第一个项目 |
-| [CLI](./cli.md) | 完整的 `mars` 命令与参数参考 |
-| [平台](./platforms.md) | 每个端包含什么，以及 `platforms.json` 的作用 |
-| [Docker](./docker.md) | 不装本地 JDK / Node 工具链也能构建运行 |
-| [约定](./conventions.md) | 目录规则、提交信息、分支 |
-
-**AI 开发指南** —— 命令由 AI 编程助手替你敲。这部分按应用场景分组，每个场景
-分组里都带着自己那份环境安装说明，因为后台管理系统和桌面应用要装的东西并不一样：
-
-| 分组 | 页面 | 内容 |
-| ---- | ---- | ---- |
-| 环境准备 | [安装 Agent](./ai-setup-agent.md) | 安装并配置 DeepSeek Harness |
-| | [安装 Skill](./ai-setup.md) | 下载环境准备 Skill，让 Agent 替你装好整条工具链 |
-| | [配合 AI Agent 使用](./ai-agents.md) | 让 AI 编程助手驱动 `mars` 的提示词示例 |
-| 后台管理功能 | [后台管理环境](./ai-admin-env.md) | Docker、MySQL 和 Redis |
-| | [后台管理提示词](./ai-admin-prompts.md) | 六个阶段，从创建项目到 `api` + `web-admin` 跑起来 |
-| 桌面应用 | [桌面应用环境](./ai-desktop-env.md) | Rust 和 Tauri 的系统依赖 |
-| | [桌面应用提示词](./ai-desktop-prompts.md) | 六个阶段，从创建项目到打出安装包 |
+更想用一句话描述需求、让 AI Agent 替你敲命令？改走 **AI 开发指南**，
+从它的[简介](./ai-intro.md)开始。
 
 ## 环境要求
 
 | 工具 | 版本 | 用途 |
 | ---- | ---- | ---- |
 | Node | >= 22.12.0 | 运行 `mars` CLI 本身 |
-| pnpm | 9.15.x | 在生成的项目中安装依赖 |
+| pnpm | >= 9.0.0 | 在生成的项目中安装依赖 |
 
-其余的 JDK、Maven、Rust、Android SDK，只有在你启用了对应的端时才需要，而且不用你
-手工装：[`mars init`](./cli.md#mars-init) 会按你的勾选推导出清单并安装它们。
-[Docker 工作流](./docker.md)可以替代其中大部分。
+其余的 JDK、Maven、Rust、Android SDK，只有在你启用了对应端时才需要，而且不用
+手工装：[`mars init`](./cli.md#mars-init) 会按你的勾选推导出清单并安装。
 
 ## 许可证
 

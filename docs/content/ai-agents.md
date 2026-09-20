@@ -1,22 +1,18 @@
 ---
 id: ai-agents
 title: How Vibe Coding Works Here
-sidebar_position: 1
+sidebar_position: 3
 ---
 
 # How Vibe Coding Works Here
 
 You describe what you want in ordinary sentences. The agent writes the code, runs
-the tools and reports back. You never have to learn a command.
-
-That is the whole deal, and this track is written for it. Every page gives you
-something to say and tells you what you should see afterwards. If what you see
-does not match, the page gives you the next thing to say.
+the tools and reports back. You never type a command or read code — every page
+gives you something to say, then tells you what you should see.
 
 :::tip You do not need to understand the output
-Agents print a lot of text. Almost none of it is for you. The only parts that
-matter are the ones this guide asks you to look for — usually a web address, a
-file path, or a window opening on your screen.
+Almost none of the text agents print is for you. Look only for what this guide
+points at — usually a web address, a file path, or a window opening.
 :::
 
 ## The one habit worth learning
@@ -30,17 +26,34 @@ Ask for a **result you can see**, not for an action.
 | "Build the app" | "Build the app, then tell me exactly where the installer file is" |
 | "Fix it" | "It shows an error. Read the error, tell me the cause, then fix it" |
 
-Asking for the address, the path or the file list is what lets you check the work
-without reading any code. An agent that says "done" and nothing else has given
-you nothing to check.
+The address, path or file list is what lets you check the work. An agent that
+says "done" and nothing else has given you nothing to check.
+
+### Platform-specific examples
+
+| Instead of | Say |
+| ---------- | --- |
+| "Set up a project" | "Create a project containing only the website-based management system" |
+| "Fix the build" | "The docs build fails. Read the error, tell me the cause, then fix it" |
+| "Add a table" | "Add an article list page, following the conventions in `apps/web-admin/AGENTS.md`" |
+| "Make it work" | "Start everything the management system needs, the standard way, and tell me when the page is ready to open" |
+| "Set up a desktop project" | "Create a project with only the desktop app — answer the selection question and pick Desktop" |
+| "Start the app" | "Start the desktop app and tell me when the window is open" |
+| "Add a products page" | "Add a product screen, following the step-by-step workflow in `apps/desktop/AGENTS.md`" |
+| "Build it" | "Build the release version — I need an installer file, tell me its exact path" |
+| "Set up an Android project" | "Create a project with only the Android app — answer the selection question and pick Android" |
+| "Put it on my phone" | "Install the app on the phone I have plugged in, and tell me when it is on there" |
+
+Same pattern every time: say what you want, name the constraint, point at the
+rules file, and ask for something you can look at.
 
 ## Your first project, start to finish
 
 > **Say this**
 >
-> I want to create a new project called `admin-platform`. I only need the backend
-> and the admin website — no phone app, no desktop app. Set it up and tell me
-> what you created.
+> I want to create a new project called `admin-platform`. I only need the
+> website-based management system — no phone app, no desktop app. Set it up and
+> tell me what you created.
 
 **What you should see:** a short confirmation of the two pieces it is building.
 
@@ -50,10 +63,9 @@ you nothing to check.
    - API Service
 ```
 
-Those two are the default combination, so nothing had to be chosen by hand. Ask
-one follow-up question — "which pieces did you actually create?" — and the answer
-should be exactly those two and nothing else. Anything extra means it built the
-wrong thing, and it is much cheaper to start over now than later.
+Those two are the default combination. Follow up once — "which pieces did you
+actually create?" — and the answer should be exactly those two. Anything extra
+means it built the wrong thing; restarting now is much cheaper than later.
 
 > **Say this**
 >
@@ -61,20 +73,16 @@ wrong thing, and it is much cheaper to start over now than later.
 > address to open in my browser.
 
 **What you should see:** a web address, usually starting `http://localhost:`.
-Open it. That is your project running on your own machine.
+Open it — that is your project running on your own machine.
 
-Your project also already has its history saved once, automatically, before you
-changed anything. So if a later experiment goes wrong you can always ask the
-agent to put things back the way they were.
+Your project's history is saved once automatically before you change anything, so
+if a later experiment goes wrong you can always ask the agent to restore it.
 
 ## Asking for a different combination
 
-The default pair is the backend plus the admin website. Anything else — a desktop
-app, for example — means the tool stops and asks which pieces you want, and the
-agent has to answer that question rather than skip it.
-
-You do not have to know how that question looks. You only have to say which
-pieces you want and to name them by name:
+The default pair is the backend plus the admin website. Anything else makes the
+tool stop and ask which pieces you want — the agent must answer that question, not
+skip it. You only have to name the pieces:
 
 > **Say this**
 >
@@ -90,9 +98,8 @@ pieces you want and to name them by name:
 ```
 
 :::caution Say the name, never a number
-The tool prints a numbered list, and those numbers move around between versions.
-If you tell the agent "pick 6", it will eventually pick the wrong thing. Always
-name the label you want. Some entries are marked `[developing]` — those are
+The numbers in the printed list move between versions, so "pick 6" eventually
+picks the wrong thing — always name the label. Entries marked `[developing]` are
 unfinished and get quietly ignored if chosen.
 :::
 
@@ -100,18 +107,17 @@ unfinished and get quietly ignored if chosen.
 
 | Say this | What you get |
 | -------- | ------------ |
-| "Start just the admin website" | the website opens, but every page errors until the backend runs too |
-| "Start the backend" | the backend answers at `http://localhost:8080/jeecg-boot` |
+| "Start just the admin website" | the website opens, but every page errors until the whole system is running |
+| "Start the whole system" | everything the website needs is up, and the login page opens |
 | "Build everything for release" | finished files you could hand to someone else to install |
 | "Update my project to the latest template" | the shared template files refresh; your own work is left alone |
 | "Check what my computer is missing, then install it" | a plain list of what is missing, then the installs |
-| "Start the database" | the database and cache running in the background |
+| "Start everything the system needs" | its data store and cache are started the standard way, with nothing for you to choose |
 
 ## Two rules to repeat in your prompts
 
-Agents get these two wrong more than anything else, so it is worth saying them
-out loud. You do not need to know why — just paste this whenever the agent is
-about to write documents or save its work:
+Agents get these two wrong more than anything else. Paste this whenever the agent
+is about to write documents or save its work:
 
 ```text
 Before you start: read the AGENTS.md file nearest to whatever you are changing
@@ -122,13 +128,12 @@ are in English.
 
 ## When something looks wrong
 
-You will not always be able to tell what went wrong, and you do not need to. Hand
-the problem back:
+You do not need to diagnose it. Hand the problem back:
 
 | What you notice | Say this |
 | --------------- | -------- |
 | It says "done" but you have nothing to open | "Tell me the exact web address, and the file paths you created" |
-| It seems frozen with no new output | "Are you waiting on something that never finishes? Run it in the background and tell me when it is up" |
+| It seems frozen with no new output | "Are you waiting on something that never finishes? Start it the way that lets you keep talking to me, and tell me when it is up" |
 | An error you cannot read | "Read that error, explain the cause in plain language, then fix it" |
 | It changed more than you expected | "List every file you changed and why. Undo anything I did not ask for" |
 | You are not sure it did the right thing | "Show me your plan before you change anything else" |
@@ -141,6 +146,5 @@ and read it before agreeing.
 
 ## Next
 
-Pick what you are building: [Admin System Setup](./ai-admin-env.md) — a website
-with a login and data behind it — or [Desktop App Setup](./ai-desktop-env.md) —
-an app that installs on a computer.
+[Start a Project](./ai-start.md) — pick what you want to build and get set up
+in one go.

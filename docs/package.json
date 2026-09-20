@@ -7,8 +7,8 @@
   "license": "Apache-2.0",
   "scripts": {
     "pack-skill": "node ../scripts/pack-skill.js",
-    "dev": "pnpm run pack-skill && docusaurus start",
-    "start": "pnpm run pack-skill && docusaurus start",
+    "dev": "pnpm run pack-skill && docusaurus start --no-open",
+    "start": "pnpm run pack-skill && docusaurus start --no-open",
     "build": "pnpm run pack-skill && docusaurus build",
     "serve": "docusaurus serve",
     "clean": "docusaurus clear",

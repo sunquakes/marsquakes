@@ -17,23 +17,19 @@
   },
   "link.item.label.Environment Setup": {
     "message": "环境准备",
-    "description": "The label of footer link with label=Environment Setup linking to /docs/ai-setup-agent"
+    "description": "The label of footer links with label=Environment Setup linking to /docs/ai-setup-agent and /docs/install"
   },
-  "link.item.label.Admin System": {
-    "message": "后台管理功能",
-    "description": "The label of footer link with label=Admin System linking to /docs/ai-admin-env"
+  "link.item.label.Start a Project": {
+    "message": "开始一个项目",
+    "description": "The label of footer link with label=Start a Project linking to /docs/ai-start"
   },
-  "link.item.label.Desktop App": {
-    "message": "桌面应用",
-    "description": "The label of footer link with label=Desktop App linking to /docs/ai-desktop-env"
+  "link.item.label.Applications": {
+    "message": "应用",
+    "description": "The label of footer link with label=Applications linking to /docs/ai-admin-project"
   },
   "link.item.label.Introduction": {
     "message": "简介",
-    "description": "The label of footer link with label=Introduction linking to /docs"
-  },
-  "link.item.label.Getting Started": {
-    "message": "快速开始",
-    "description": "The label of footer link with label=Getting Started linking to /docs/getting-started"
+    "description": "The label of footer links with label=Introduction linking to /docs/ai-intro and /docs"
   },
   "link.item.label.Docker": {
     "message": "Docker",

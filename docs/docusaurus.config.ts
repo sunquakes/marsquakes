@@ -114,16 +114,17 @@ const config: Config = {
         {
           title: 'AI',
           items: [
+            { label: 'Introduction', to: '/docs/ai-intro' },
             { label: 'Environment Setup', to: '/docs/ai-setup-agent' },
-            { label: 'Admin System', to: '/docs/ai-admin-env' },
-            { label: 'Desktop App', to: '/docs/ai-desktop-env' },
+            { label: 'Start a Project', to: '/docs/ai-start' },
+            { label: 'Applications', to: '/docs/ai-admin-project' },
           ],
         },
         {
           title: 'Docs',
           items: [
             { label: 'Introduction', to: '/docs' },
-            { label: 'Getting Started', to: '/docs/getting-started' },
+            { label: 'Environment Setup', to: '/docs/install' },
             { label: 'Docker', to: '/docs/docker' },
           ],
         },

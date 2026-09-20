@@ -24,17 +24,14 @@
     "message": "一个用于生成多端 monorepo 的 npm 包。装一次，运行 mars create，勾选需要的端 —— 后端 API、管理后台、桌面端与移动端已经串联好，开箱可跑。"
   },
   "home.hero.primaryCta": {
-    "message": "从 AI 开发指南开始"
+    "message": "阅读简介"
   },
   "home.hero.secondaryCta": {
-    "message": "从使用指南开始"
+    "message": "在 GitHub 上查看"
   },
 
   "home.paths.title": {
     "message": "两种使用方式"
-  },
-  "home.paths.lead": {
-    "message": "顶部导航栏里的两个入口不是两类主题，而是两种做事方式。选择与你的动手方式相符的那一个。"
   },
   "home.paths.ai.badge": {
     "message": "不需要写代码"
@@ -43,7 +40,7 @@
     "message": "AI 开发指南"
   },
   "home.paths.ai.description": {
-    "message": "你用日常语言描述想要什么，AI 编码助手替你执行每一条命令：安装工具链、创建项目、启动服务、修好报错。你不需要自己在终端里敲构建命令 —— 每一页都是一段提示词，复制、粘贴，然后照着页面上的预期结果核对一遍就行。"
+    "message": "你不需要写代码。用日常语言说出想要什么，助手替你装好工具、创建项目、执行每一条命令。每一页只有一段要粘贴的提示词，和一个用来核对的结果。"
   },
   "home.paths.ai.cta": {
     "message": "从 AI 开发指南开始 →"
@@ -52,58 +49,115 @@
     "message": "使用指南"
   },
   "home.paths.manual.description": {
-    "message": "命令由你自己执行。这一条线是参考手册：完整的 mars 命令、每个端里装了什么、platforms.json 怎么组织、以及各个 Docker 变体。适合你已经熟悉这套技术栈，或者想弄清 AI 刚才替你做了什么。"
+    "message": "命令由你自己执行。清晰的编号步骤带你从安装 CLI 走到每个端的开发与部署，末尾附有完整的命令参考。"
   },
   "home.paths.manual.cta": {
     "message": "从使用指南开始 →"
   },
   "home.paths.beginner": {
-    "message": "没有开发经验？走 AI 开发指南这条线。它不预设你懂 Java、Vue、Docker 或 Rust —— 缺什么由 AI 助手装上；一套带登录页、用户管理和权限控制的完整后台系统，靠照着提示词一步步走就能跑起来，而不必自己写代码。"
+    "message": "没有开发经验？走 AI 开发指南 —— 不需要懂 Java、Vue、Docker 或 Rust。你跟着提示词走，而不是写代码。"
   },
-  "home.features.title": {
-    "message": "为什么用生成器"
+  "home.platforms.title": {
+    "message": "一套脚手架，覆盖所有端"
   },
-  "home.feature.selective.title": {
-    "message": "按需勾选端"
+  "home.platforms.lead": {
+    "message": "mars 能生成的每一个平台，都在同一个 monorepo 里。勾选你需要的端，mars create 只复制这些端，mars init 再为每个端推导所需的工具链。"
   },
-  "home.feature.selective.description": {
-    "message": "mars create 会询问你需要哪些端，只复制这些端。没勾的平台不会出现在生成的仓库里。"
+  "home.platforms.ready": {
+    "message": "已就绪"
   },
-  "home.feature.running.title": {
-    "message": "可运行，而不是空架子"
+  "home.platforms.scaffold": {
+    "message": "仅脚手架"
   },
-  "home.feature.running.description": {
-    "message": "Spring Boot 后端与 Vue 3 管理后台开箱即可构建、启动，且已经串联好 —— 不是等着你填充的空目录。"
+  "home.platforms.footnote": {
+    "message": "“已就绪”表示今天就能开箱构建并运行；“仅脚手架”表示已为你预留好目录结构。"
   },
-  "home.feature.registry.title": {
-    "message": "单一事实来源"
+  "home.platforms.footnoteLink": {
+    "message": "查看完整平台矩阵"
   },
-  "home.feature.registry.description": {
-    "message": "platforms.json 声明了每个平台的目录、技术栈以及是否启用。每个 mars 命令都读取它，而不是把路径写死在代码里。"
+  "home.platform.api.name": {
+    "message": "API"
   },
-  "home.feature.docker.title": {
-    "message": "无需本地工具链的 Docker"
+  "home.platform.api.stack": {
+    "message": "JeecgBoot / Spring Boot"
   },
-  "home.feature.docker.description": {
-    "message": ".build 变体镜像会在镜像内部从源码编译，因此全新检出的仓库既不需要宿主机装 JDK 和 Maven，也不需要装 Node。"
+  "home.platform.admin.name": {
+    "message": "管理后台"
   },
-  "home.feature.update.title": {
-    "message": "生成之后仍可升级"
+  "home.platform.admin.stack": {
+    "message": "Vue 3 + Vite"
   },
-  "home.feature.update.description": {
-    "message": "mars update 会把后续对构建配置的改进拉进已有项目，同时绝不触碰你的业务代码。"
+  "home.platform.desktop.name": {
+    "message": "桌面端"
+  },
+  "home.platform.desktop.stack": {
+    "message": "Tauri + React + Rust"
+  },
+  "home.platform.android.name": {
+    "message": "Android"
+  },
+  "home.platform.android.stack": {
+    "message": "Kotlin + Jetpack Compose"
+  },
+  "home.platform.ios.name": {
+    "message": "iOS"
+  },
+  "home.platform.ios.stack": {
+    "message": "Swift + SwiftUI"
+  },
+  "home.platform.web.name": {
+    "message": "Web"
+  },
+  "home.platform.windows.name": {
+    "message": "Windows"
+  },
+  "home.platform.linux.name": {
+    "message": "Linux"
+  },
+  "home.platform.macos.name": {
+    "message": "macOS"
   },
   "home.quickstart.title": {
     "message": "快速开始"
   },
   "home.quickstart.lead": {
-    "message": "前置条件只有 Node 18 及以上和 pnpm。mars create 会提示你勾选端；启用原生端时，它们各自的工具链才需要就位。"
+    "message": "前置条件只有 Node 22.12.0 及以上和 pnpm。五条命令，从零到项目跑起来。"
+  },
+  "home.quickstart.step1.title": {
+    "message": "安装工具"
+  },
+  "home.quickstart.step1.description": {
+    "message": "先装好 pnpm，然后全局安装一次 mars 命令行工具。"
+  },
+  "home.quickstart.step2.title": {
+    "message": "创建项目"
+  },
+  "home.quickstart.step2.description": {
+    "message": "mars create 会询问你需要哪些端，只复制这些端。"
+  },
+  "home.quickstart.step3.title": {
+    "message": "进入项目目录"
+  },
+  "home.quickstart.step3.description": {
+    "message": "之后所有命令都在新项目文件夹里运行。"
+  },
+  "home.quickstart.step4.title": {
+    "message": "安装所需依赖"
+  },
+  "home.quickstart.step4.description": {
+    "message": "一条 pnpm install 就把整个工作区一次性装好。"
+  },
+  "home.quickstart.step5.title": {
+    "message": "开始开发"
+  },
+  "home.quickstart.step5.description": {
+    "message": "mars dev 会启动所有启用的端；启用原生端时会用到它们各自的工具链。"
   },
   "home.quickstart.next": {
     "message": "需要完整的平台矩阵、Docker 变体和 CLI 参数说明？"
   },
   "home.quickstart.nextLink": {
-    "message": "继续阅读《快速开始》"
+    "message": "继续阅读《环境准备》"
   },
   "skillDownload.button.label": {
     "message": "下载 Skill"
