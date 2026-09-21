@@ -280,12 +280,14 @@ jobs:
       # Hide every toolchain the runner image preinstalled so that `mars init`
       # itself has to install the JDK, Maven and Rust via mise. Without this the
       # probes all report OK and the mise install path -- the code under test --
-      # never executes. The filter is adaptive rather than a list of image paths:
-      # any PATH directory that actually carries a java/mvn/rustc/cargo/rustup
-      # binary is dropped, which covers the Ubuntu symlinks in /usr/local/bin,
-      # Homebrew's /opt/homebrew/bin/mvn on macOS and .cargo/bin everywhere. The
-      # mise shims directory is exempted because it will provide the replacements.
-      # Persisted via GITHUB_ENV so the post-init detect gate resolves them too.
+      # never executes. Hiding is per-binary, not per-directory: a single shadow
+      # bin symlinks every executable found on PATH except java/mvn/rustc/cargo/
+      # rustup. This is required because on the runners those toolchains share a
+      # directory with core tools (cargo/rustc live in /usr/bin next to sed/tr,
+      # Homebrew's mvn sits next to brew), so dropping the directory removes the
+      # core tools too. The mise shims directory stays first and provides the
+      # replacements after `mars init`. Persisted via GITHUB_ENV so the post-init
+      # detect gate resolves them too.
       - name: Sanitize PATH (hide preinstalled JDK, Maven and Rust; macOS / Linux)
         if: runner.os != 'Windows'
         run: |
@@ -294,39 +296,44 @@ jobs:
           # three levels up), honoring an explicit MISE_DATA_DIR when present.
           data_dir="${MISE_DATA_DIR:-$(dirname "$(dirname "$(dirname "$(mise where node)")")")}"
           shims="$data_dir/shims"
-          has_tool() {
-            for n in java mvn rustc cargo rustup; do
-              for ext in '' .exe .cmd .bat; do
-                [ -e "$1/$n$ext" ] && return 0
-              done
+          # Hiding must be per-binary, not per-directory. On the GitHub runners
+          # rustc/cargo share /usr/bin with core tools (sed/tr/git) -- rustup
+          # installs into the system bin rather than ~/.cargo/bin -- so
+          # dropping the whole directory removes sed/tr too and the step dies
+          # on its own `tr`/`sed` calls. Build a shadow bin that symlinks every
+          # executable on PATH except the toolchain binaries we want hidden.
+          shadow="${RUNNER_TEMP:-/tmp}/mars-shadow-bin"
+          rm -rf "$shadow"
+          mkdir -p "$shadow"
+          hidden="java mvn rustc cargo rustup"
+          is_hidden() {
+            for n in $hidden; do
+              [ "$1" = "$n" ] && return 0
             done
             return 1
           }
-          kept=""
-          dropped=""
           IFS=':' read -ra dirs <<< "$PATH"
           for d in "${dirs[@]}"; do
-            if [ "$d" = "$shims" ]; then
-              continue
-            elif has_tool "$d"; then
-              dropped="${dropped:+$dropped:}$d"
-            else
-              kept="${kept:+$kept:}$d"
-            fi
+            [ -d "$d" ] || continue
+            for f in "$d"/*; do
+              [ -e "$f" ] || continue
+              base="$(basename "$f")"
+              if is_hidden "$base"; then continue; fi
+              [ -e "$shadow/$base" ] || ln -s "$f" "$shadow/$base"
+            done
           done
-          newpath="$shims:$HOME/.local/bin:${PNPM_HOME:-$HOME/.local/share/pnpm}:$kept"
+          newpath="$shims:$HOME/.local/bin:${PNPM_HOME:-$HOME/.local/share/pnpm}:$shadow"
           echo "PATH=$newpath" >> "$GITHUB_ENV"
           export PATH="$newpath"
           hash -r
-          echo "Dropped PATH entries:"
-          printf '%s\n' "$dropped" | tr ':' '\n' | sed 's/^/  - /'
+          echo "Shadow bin at $shadow ($(find "$shadow" -maxdepth 1 -type l | wc -l) executables linked)"
           for t in java mvn rustc cargo rustup; do
             if command -v "$t" >/dev/null 2>&1; then
               echo "Preinstalled $t still reachable at $(command -v "$t") -- PATH filter incomplete" >&2
               exit 1
             fi
           done
-          for t in mise node pnpm git corepack; do
+          for t in mise node pnpm git corepack sed tr; do
             command -v "$t" >/dev/null 2>&1 || { echo "$t vanished from the sanitized PATH" >&2; exit 1; }
           done
           echo "java/mvn/rustc hidden; mise shims at $shims"
