@@ -173,6 +173,7 @@ jobs:
           echo "PNPM_HOME=$HOME/.local/share/pnpm" >> "$GITHUB_ENV"
           echo "$HOME/.local/share/pnpm" >> "$GITHUB_PATH"
           export PNPM_HOME="$HOME/.local/share/pnpm"
+          export PATH="$PNPM_HOME:$PATH"
           pnpm add -g "$GITHUB_WORKSPACE/packages/mars-cli"
           mars --help
 

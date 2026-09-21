@@ -273,6 +273,16 @@ pnpm add -g @marsquakes/cli
 mars --help
 ```
 
+pnpm places global executables in `PNPM_HOME` and refuses the install when that
+directory is not on the current shell's `PATH`. Run `pnpm setup` once and open
+a new shell so it is exported permanently, or for a single non-interactive
+session export both explicitly:
+
+```bash
+export PNPM_HOME="$HOME/.local/share/pnpm"
+export PATH="$PNPM_HOME:$PATH"
+```
+
 For a one-off scaffold, skip the global install entirely. This also sidesteps a
 stale global copy, which is the more common failure once a machine has been used
 for a while:
