@@ -234,12 +234,20 @@ is:
 
 ```bash
 corepack enable pnpm
+mise reshim node
 pnpm --version
 ```
 
 Corepack ships with Node, so it is available as soon as `mise use --global
-node@22` has run. Pinning pnpm a second time in mise would mean two sources of
-truth for one version, and `packageManager` is the one the repository enforces.
+node@22` has run, but `corepack enable` writes the `pnpm` link into Node's own
+bin directory (`~/.local/share/mise/installs/node/<version>/bin`), not into
+mise's shim directory. In an interactive shell that bin dir is on `PATH`, so
+the link resolves on its own; in a non-interactive context (CI, `BASH_ENV`)
+`mise activate` exposes only `~/.local/share/mise/shims`, and the new link is
+not indexed until `mise reshim node` rebuilds the shims. Always reshim right
+after enabling pnpm so both contexts behave identically. Pinning pnpm a second
+time in mise would mean two sources of truth for one version, and
+`packageManager` is the one the repository enforces.
 
 **Do not `npm i -g pnpm` alongside Corepack.** Two pnpm installations on `PATH`
 resolve unpredictably, and the loser is usually the pinned one.

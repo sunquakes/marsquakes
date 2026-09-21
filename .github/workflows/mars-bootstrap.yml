@@ -141,12 +141,16 @@ jobs:
       # Node is installed by mise on purpose: it exercises the "mise first"
       # path end to end, and corepack then provides the pnpm version pinned by
       # the template's packageManager field -- no version is hard-coded here.
+      # corepack writes the pnpm link into node's own bin dir, which a
+      # non-interactive "mise activate" leaves off PATH (only the shims dir is
+      # present), so reshim to index pnpm before first use.
       - name: Install Node.js and pnpm (macOS / Linux)
         if: runner.os != 'Windows'
         run: |
           mise use --global node@22
           node -v
           corepack enable pnpm
+          mise reshim node
           pnpm --version
 
       - name: Install Node.js and pnpm (Windows)
@@ -157,6 +161,7 @@ jobs:
           mise use --global node@22
           node -v
           corepack enable pnpm
+          mise reshim node
           pnpm --version
 
       # Install the CLI under test the same way a consumer does -- globally with
