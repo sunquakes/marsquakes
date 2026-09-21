@@ -14,9 +14,12 @@
 # This is deliberately NOT a build of the checked-out repository. The runner
 # images preinstall Temurin, Maven and Rust, which would let `mars init` skip
 # its mise installs and leave that whole code path untested -- so before init
-# the PATH is sanitized: every directory carrying a preinstalled JDK, Maven or
-# Rust is removed and the mise shims directory is moved to the front. What
-# remains is exactly what a brand-new machine following the skill has.
+# the PATH is sanitized per-binary: a single shadow bin symlinks every
+# executable on PATH except java/mvn/rustc/cargo/rustup, and the mise shims
+# directory stays first. Per-directory removal is wrong on these images because
+# rustc/cargo live in /usr/bin alongside core tools (sed/tr); per-binary
+# hiding leaves the core tools intact. What remains is exactly what a brand-new
+# machine following the skill has.
 #
 # The scaffolded project enables exactly three platforms -- web-admin, desktop
 # and api (android is patched off in the template copy) -- so `mars init`
