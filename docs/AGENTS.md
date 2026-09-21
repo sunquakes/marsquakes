@@ -336,6 +336,88 @@ pnpm clean                    # Clear the .docusaurus cache
 pnpm type-check               # tsc --noEmit
 ```
 
+## Icons
+
+All decorative and UI icons come from **`react-icons`** (already a dependency).
+Never hand-roll an SVG or drop an emoji in for an interface icon. Pick the set
+by what the glyph represents:
+
+- **`react-icons/si`** — Simple Icons, for brand marks (Spring Boot, Vue,
+  Tauri, Android, Apple).
+- **`react-icons/lu`** — Lucide, for generic UI concepts (globe, phone, bot,
+  book, lightbulb, download). This is the default choice for anything that is
+  not a brand.
+- **`react-icons/fa`** — Font Awesome, for the handful of marks neither set
+  carries well (the Windows and Tux/Linux marks).
+
+Import the icon as a component and type a configurable icon as `IconType`, then
+render it through a member expression so the icon stays data-driven:
+
+```tsx
+import type { IconType } from 'react-icons';
+import { SiAndroid } from 'react-icons/si';
+import { LuGlobe } from 'react-icons/lu';
+
+// <target.icon aria-hidden="true" />
+```
+
+Every decorative icon sits on the standard **chip**: a fixed-size rounded
+square whose glyph colour and faint brand wash come from two CSS custom
+properties — `--mq-icon-ink` (a deepened brand colour for the glyph) and
+`--mq-icon-tint` (the same brand colour at roughly 10–18% opacity). Size the
+glyph through `font-size` on the chip and `width`/`height` on the inner `svg`,
+and give every tone a `[data-theme='dark']` override:
+
+```css
+.chip {
+  --mq-icon-ink: var(--ifm-color-emphasis-700);
+  --mq-icon-tint: var(--ifm-color-emphasis-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.7rem;
+  color: var(--mq-icon-ink);
+  background: var(--mq-icon-tint);
+  font-size: 1.15rem;
+}
+.chip svg { width: 1.15em; height: 1.15em; }
+
+.toneWeb {
+  --mq-icon-ink: #2f6fed;
+  --mq-icon-tint: rgb(47 111 237 / 0.12);
+}
+[data-theme='dark'] .toneWeb {
+  --mq-icon-ink: #6ea8ff;
+  --mq-icon-tint: rgb(110 168 255 / 0.16);
+}
+```
+
+Keep colours as Infima variables or these custom properties — never hard-code a
+tone directly on the component — so a palette change in `custom.css`
+propagates and dark mode keeps working. Mark purely decorative glyphs
+`aria-hidden="true"`.
+
+**Never use emoji as a visual icon.** Emoji render through each operating
+system's emoji font, so the same character looks different on every platform,
+and newer codepoints show as a tofu box on older systems (the Windows
+`🪟` U+1FA9F glyph rendered as an empty square before it was replaced). SVG
+icon sets avoid both problems.
+
+Three deliberate exceptions are not violations:
+
+- **Emoji inside fenced code blocks that transcribe real `mars` CLI output.**
+  The CLI literally prints them (`packages/mars-cli/bin/mars.js` emits `🌐`,
+  `📋`, `✅`, `⚠️`, `❌` and more), so a documented terminal session keeps them
+  to stay faithful to what the tool prints. Do not "tidy" them — that would
+  make the docs disagree with the command.
+- **Typographic characters in prose.** `→`, `↑`, `↓`, `↳`, `©` and similar
+  are punctuation, not emoji, and are fine in ordinary copy (for example
+  "Start with the AI Guide →").
+- **The custom hero artwork.** The Mars/seismograph illustration on the
+  landing page is bespoke brand artwork, intentionally outside the icon system.
+
 ## Coding Standards
 
 - **Node >= 22.12.0** is required, which is the repository-wide floor declared in
