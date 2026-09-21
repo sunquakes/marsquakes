@@ -6,6 +6,8 @@ const path = require('path');
 const readline = require('readline');
 const { execSync, spawn } = require('child_process');
 
+const pkg = require(path.join(__dirname, '..', 'package.json'));
+
 const DEFAULT_TEMPLATE = 'https://github.com/sunquakes/marsquakes.git';
 
 const LOCALES = {
@@ -1983,6 +1985,11 @@ function main() {
   if (args.length === 0 || args.includes('--help')) {
     showUsage();
     process.exit(args.includes('--help') ? 0 : 1);
+  }
+
+  if (args.includes('--version') || args.includes('-v') || args.includes('-V')) {
+    console.log(pkg.version);
+    process.exit(0);
   }
 
   const command = args[0];
