@@ -289,7 +289,11 @@ jobs:
       - name: Sanitize PATH (hide preinstalled JDK, Maven and Rust; macOS / Linux)
         if: runner.os != 'Windows'
         run: |
-          shims="$(mise data 2>/dev/null)/shims"
+          # `mise data`/`mise root` were removed from the CLI, so derive the
+          # data dir from the node install path (<data>/installs/node/<ver>,
+          # three levels up), honoring an explicit MISE_DATA_DIR when present.
+          data_dir="${MISE_DATA_DIR:-$(dirname "$(dirname "$(dirname "$(mise where node)")")")}"
+          shims="$data_dir/shims"
           has_tool() {
             for n in java mvn rustc cargo rustup; do
               for ext in '' .exe .cmd .bat; do
@@ -332,7 +336,15 @@ jobs:
         shell: pwsh
         run: |
           . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
-          $shims = Join-Path ((mise data).Trim()) 'shims'
+          # `mise data` was removed; derive the data dir from the node install
+          # path (<data>\installs\node\<ver>, three levels up), honoring an
+          # explicit MISE_DATA_DIR when present.
+          if ($env:MISE_DATA_DIR) {
+            $dataDir = $env:MISE_DATA_DIR
+          } else {
+            $dataDir = [System.IO.Directory]::GetParent((mise where node).Trim()).Parent.Parent.FullName
+          }
+          $shims = Join-Path $dataDir 'shims'
           $links = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Links'
           $toolNames = @('java','mvn','rustc','cargo','rustup')
           $exts = @('.exe','.cmd','.bat','')
