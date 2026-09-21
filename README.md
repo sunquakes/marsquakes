@@ -1,4 +1,8 @@
-# Marsquakes
+<p align="center">
+  <img src="https://marsquakes.cc/img/logo.svg" alt="Marsquakes logo" width="120" />
+</p>
+
+<h1 align="center">Marsquakes</h1>
 
 **English** | [简体中文](./README.zh-CN.md)
 
