@@ -22,9 +22,10 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 // platform, and every platform opens into the same three sub-pages —
 // Environment, Develop and Deploy. The platform is the one thing that decides
 // the commands, and inside a platform those three are the lifecycle stages.
-// The deep material the journey references (CLI, platforms.json, Docker,
-// conventions) is parked in Reference at the bottom, out of the way of someone
-// doing the journey once.
+// The deep material the journey references (CLI, platforms.json) is parked in
+// Reference at the bottom, out of the way of someone doing the journey once.
+// docker.md and conventions.md stay published — the footer and the guide pages
+// link to them — but they are deliberately absent from the sidebar.
 //
 // `aiSidebar` is the same journey without shell commands: install the agent,
 // install the skill, read how the working style differs, then start a project.
@@ -87,7 +88,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Reference',
       collapsed: false,
-      items: ['cli', 'platforms', 'docker', 'conventions'],
+      items: ['cli', 'platforms'],
     },
   ],
 
