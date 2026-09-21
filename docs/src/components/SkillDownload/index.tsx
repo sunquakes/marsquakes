@@ -1,5 +1,6 @@
 import Translate, { translate } from '@docusaurus/Translate';
 import useBaseUrl from '@docusaurus/useBaseUrl';
+import { LuDownload } from 'react-icons/lu';
 import type { ReactNode } from 'react';
 
 import { archive } from './archive';
@@ -45,24 +46,7 @@ export default function SkillDownload(): ReactNode {
           { name: archive.name, size: archive.size },
         )}
       >
-        {/* Inherits `currentColor` from the button label, so it tracks the
-            theme without a second colour declaration. */}
-        <svg
-          className={styles.icon}
-          viewBox="0 0 24 24"
-          width="20"
-          height="20"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M12 3v12" />
-          <path d="M7 10l5 5 5-5" />
-          <path d="M4 20h16" />
-        </svg>
+        <LuDownload className={styles.icon} aria-hidden="true" />
         <span className={styles.label}>
           <Translate
             id="skillDownload.button.label"

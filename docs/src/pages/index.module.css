@@ -336,10 +336,47 @@
   letter-spacing: 0.04em;
 }
 
+/* The path-card marks use the same chip language as the platform matrix
+   below: a fixed rounded square with a faint tint and a deeper ink, so the
+   two sections read as one icon system. */
 .pathCardIcon {
-  font-size: 1.8rem;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  margin-bottom: 0.5rem;
+  border-radius: 0.75rem;
+  color: var(--mq-icon-ink, var(--ifm-color-emphasis-700));
+  background: var(--mq-icon-tint, var(--ifm-color-emphasis-100));
+  font-size: 1.3rem;
   line-height: 1;
-  margin-bottom: 0.25rem;
+}
+
+.pathCardIcon svg {
+  width: 1.3em;
+  height: 1.3em;
+}
+
+.toneAi {
+  --mq-icon-ink: #2f6fed;
+  --mq-icon-tint: rgb(47 111 237 / 0.12);
+}
+
+.toneGuide {
+  --mq-icon-ink: #b05a1e;
+  --mq-icon-tint: rgb(217 119 40 / 0.14);
+}
+
+[data-theme='dark'] .toneAi {
+  --mq-icon-ink: #6ea8ff;
+  --mq-icon-tint: rgb(47 111 237 / 0.18);
+}
+
+[data-theme='dark'] .toneGuide {
+  --mq-icon-ink: #e08a4c;
+  --mq-icon-tint: rgb(217 119 40 / 0.18);
 }
 
 .pathCardTitle {
@@ -379,8 +416,32 @@
 }
 
 .beginnerIcon {
-  font-size: 1.25rem;
-  line-height: 1.5;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 0.6rem;
+  color: var(--mq-icon-ink, #97680a);
+  background: var(--mq-icon-tint, rgb(230 172 24 / 0.16));
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.beginnerIcon svg {
+  width: 1.05em;
+  height: 1.05em;
+}
+
+.toneTip {
+  --mq-icon-ink: #97680a;
+  --mq-icon-tint: rgb(230 172 24 / 0.16);
+}
+
+[data-theme='dark'] .toneTip {
+  --mq-icon-ink: #f2c744;
+  --mq-icon-tint: rgb(230 172 24 / 0.18);
 }
 
 .beginnerNote p {
@@ -588,10 +649,114 @@
   border-color: var(--ifm-color-primary);
 }
 
+/* Every target's mark is drawn on the same rounded chip. Each tone sets the
+   glyph ink and the brand-coloured wash behind it; the wash is faint so the
+   nine cards still read as one family, while the ink keeps every brand mark
+   legible at 1.15rem. */
 .platformIcon {
+  --mq-icon-ink: var(--ifm-color-emphasis-700);
+  --mq-icon-tint: var(--ifm-color-emphasis-100);
+
+  display: flex;
   flex: none;
-  font-size: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 0.7rem;
+  color: var(--mq-icon-ink);
+  background: var(--mq-icon-tint);
+  font-size: 1.15rem;
   line-height: 1;
+}
+
+.platformIcon svg {
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.toneSpring {
+  --mq-icon-ink: #4c9123;
+  --mq-icon-tint: rgb(109 179 63 / 0.14);
+}
+
+.toneVue {
+  --mq-icon-ink: #33966b;
+  --mq-icon-tint: rgb(66 184 131 / 0.14);
+}
+
+.toneTauri {
+  --mq-icon-ink: #8c6608;
+  --mq-icon-tint: rgb(255 193 49 / 0.18);
+}
+
+.toneAndroid {
+  --mq-icon-ink: #1e9e5a;
+  --mq-icon-tint: rgb(61 220 132 / 0.14);
+}
+
+.toneIos {
+  --mq-icon-ink: #636c76;
+  --mq-icon-tint: rgb(110 118 129 / 0.14);
+}
+
+.toneWeb {
+  --mq-icon-ink: #2f6fed;
+  --mq-icon-tint: rgb(47 111 237 / 0.12);
+}
+
+.toneWindows {
+  --mq-icon-ink: #0a6cc0;
+  --mq-icon-tint: rgb(0 120 212 / 0.12);
+}
+
+/* Tux and the Apple mark are near-black brand glyphs, so on the light theme
+   they keep the neutral ink; the dark theme below flips them to white. */
+.toneLinux,
+.toneApple {
+  --mq-icon-ink: #1f2328;
+  --mq-icon-tint: rgb(31 35 40 / 0.1);
+}
+
+[data-theme='dark'] .toneSpring {
+  --mq-icon-ink: #7cc84f;
+  --mq-icon-tint: rgb(109 179 63 / 0.16);
+}
+
+[data-theme='dark'] .toneVue {
+  --mq-icon-ink: #54cf9a;
+  --mq-icon-tint: rgb(66 184 131 / 0.16);
+}
+
+[data-theme='dark'] .toneTauri {
+  --mq-icon-ink: #ffc131;
+  --mq-icon-tint: rgb(255 193 49 / 0.16);
+}
+
+[data-theme='dark'] .toneAndroid {
+  --mq-icon-ink: #54e698;
+  --mq-icon-tint: rgb(61 220 132 / 0.16);
+}
+
+[data-theme='dark'] .toneIos {
+  --mq-icon-ink: #aab4be;
+  --mq-icon-tint: rgb(110 118 129 / 0.22);
+}
+
+[data-theme='dark'] .toneWeb {
+  --mq-icon-ink: #6ea8ff;
+  --mq-icon-tint: rgb(47 111 237 / 0.18);
+}
+
+[data-theme='dark'] .toneWindows {
+  --mq-icon-ink: #4ea8ef;
+  --mq-icon-tint: rgb(0 120 212 / 0.18);
+}
+
+[data-theme='dark'] .toneLinux,
+[data-theme='dark'] .toneApple {
+  --mq-icon-ink: #f0f3f6;
+  --mq-icon-tint: rgb(240 243 246 / 0.12);
 }
 
 .platformMeta {

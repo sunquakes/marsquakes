@@ -4,6 +4,16 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import CodeBlock from '@theme/CodeBlock';
 import Layout from '@theme/Layout';
 import clsx from 'clsx';
+import type { IconType } from 'react-icons';
+import {
+  SiAndroid,
+  SiApple,
+  SiSpringboot,
+  SiTauri,
+  SiVuedotjs,
+} from 'react-icons/si';
+import { FaLinux, FaWindows } from 'react-icons/fa';
+import { LuBookOpen, LuBot, LuGlobe, LuLightbulb, LuSmartphone } from 'react-icons/lu';
 import type { ReactNode } from 'react';
 
 import styles from './index.module.css';
@@ -16,8 +26,26 @@ import styles from './index.module.css';
 // docs page adds, removes or reclassifies a target, update this list too —
 // the landing page is a summary of that single source of truth, not a second
 // opinion on what is ready.
+// Each target carries one react-icons mark and the name of its brand-tone
+// class, so every icon reads at the same size on the same rounded chip while
+// keeping its own brand colour.
+const platformTones = {
+  spring: styles.toneSpring,
+  vue: styles.toneVue,
+  tauri: styles.toneTauri,
+  android: styles.toneAndroid,
+  ios: styles.toneIos,
+  web: styles.toneWeb,
+  windows: styles.toneWindows,
+  linux: styles.toneLinux,
+  apple: styles.toneApple,
+} as const;
+
+type PlatformTone = keyof typeof platformTones;
+
 type PlatformTarget = {
-  icon: string;
+  icon: IconType;
+  tone: PlatformTone;
   nameKey: string;
   name: string;
   stackKey?: string;
@@ -27,7 +55,8 @@ type PlatformTarget = {
 
 const platformTargets: PlatformTarget[] = [
   {
-    icon: '🔌',
+    icon: SiSpringboot,
+    tone: 'spring',
     nameKey: 'home.platform.api.name',
     name: 'API',
     stackKey: 'home.platform.api.stack',
@@ -35,7 +64,8 @@ const platformTargets: PlatformTarget[] = [
     ready: true,
   },
   {
-    icon: '🖥️',
+    icon: SiVuedotjs,
+    tone: 'vue',
     nameKey: 'home.platform.admin.name',
     name: 'Web Admin',
     stackKey: 'home.platform.admin.stack',
@@ -43,7 +73,8 @@ const platformTargets: PlatformTarget[] = [
     ready: true,
   },
   {
-    icon: '🧩',
+    icon: SiTauri,
+    tone: 'tauri',
     nameKey: 'home.platform.desktop.name',
     name: 'Desktop',
     stackKey: 'home.platform.desktop.stack',
@@ -51,7 +82,8 @@ const platformTargets: PlatformTarget[] = [
     ready: true,
   },
   {
-    icon: '🤖',
+    icon: SiAndroid,
+    tone: 'android',
     nameKey: 'home.platform.android.name',
     name: 'Android',
     stackKey: 'home.platform.android.stack',
@@ -59,7 +91,8 @@ const platformTargets: PlatformTarget[] = [
     ready: false,
   },
   {
-    icon: '📱',
+    icon: LuSmartphone,
+    tone: 'ios',
     nameKey: 'home.platform.ios.name',
     name: 'iOS',
     stackKey: 'home.platform.ios.stack',
@@ -67,25 +100,29 @@ const platformTargets: PlatformTarget[] = [
     ready: false,
   },
   {
-    icon: '🌐',
+    icon: LuGlobe,
+    tone: 'web',
     nameKey: 'home.platform.web.name',
     name: 'Web',
     ready: false,
   },
   {
-    icon: '🪟',
+    icon: FaWindows,
+    tone: 'windows',
     nameKey: 'home.platform.windows.name',
     name: 'Windows',
     ready: false,
   },
   {
-    icon: '🐧',
+    icon: FaLinux,
+    tone: 'linux',
     nameKey: 'home.platform.linux.name',
     name: 'Linux',
     ready: false,
   },
   {
-    icon: '🍎',
+    icon: SiApple,
+    tone: 'apple',
     nameKey: 'home.platform.macos.name',
     name: 'macOS',
     ready: false,
@@ -213,9 +250,9 @@ function Paths(): ReactNode {
               message: 'No coding needed',
             })}
           >
-            <div className={styles.pathCardIcon} aria-hidden="true">
-              🤖
-            </div>
+            <span className={clsx(styles.pathCardIcon, styles.toneAi)} aria-hidden="true">
+              <LuBot />
+            </span>
             <h3 className={styles.pathCardTitle}>
               <Translate id="home.paths.ai.title">AI Guide</Translate>
             </h3>
@@ -237,9 +274,9 @@ function Paths(): ReactNode {
           </div>
 
           <div className={styles.pathCard}>
-            <div className={styles.pathCardIcon} aria-hidden="true">
-              ⌨️
-            </div>
+            <span className={clsx(styles.pathCardIcon, styles.toneGuide)} aria-hidden="true">
+              <LuBookOpen />
+            </span>
             <h3 className={styles.pathCardTitle}>
               <Translate id="home.paths.manual.title">Guide</Translate>
             </h3>
@@ -261,8 +298,8 @@ function Paths(): ReactNode {
           </div>
         </div>
         <div className={styles.beginnerNote}>
-          <span className={styles.beginnerIcon} aria-hidden="true">
-            💡
+          <span className={clsx(styles.beginnerIcon, styles.toneTip)} aria-hidden="true">
+            <LuLightbulb />
           </span>
           <p>
             <Translate id="home.paths.beginner">
@@ -421,8 +458,13 @@ function Platforms(): ReactNode {
               )}
               key={target.nameKey}
             >
-              <span className={styles.platformIcon} aria-hidden="true">
-                {target.icon}
+              <span
+                className={clsx(
+                  styles.platformIcon,
+                  platformTones[target.tone],
+                )}
+              >
+                <target.icon aria-hidden="true" />
               </span>
               <span className={styles.platformMeta}>
                 <h3 className={styles.platformName}>

@@ -53,6 +53,8 @@
 
 .icon {
   flex-shrink: 0;
+  width: 1.15rem;
+  height: 1.15rem;
 }
 
 .label {
