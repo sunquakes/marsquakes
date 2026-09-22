@@ -114,7 +114,7 @@ clean checkout can build without a local toolchain.
 
 ## Documentation
 
-📖 **<https://sunquakes.github.io/marsquakes/>**
+📖 **<https://marsquakes.cc/>**
 
 ## License
 
