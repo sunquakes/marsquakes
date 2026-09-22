@@ -89,6 +89,7 @@ const LOCALES = {
     'platform-not-ready': '⏳ {{name}}: {{desc}} (directory not ready)',
     'platform-not-supported': '⏳ {{name}}: {{desc}} (not supported yet)',
     'toolchain-none': '🧰 No extra toolchain needed for the enabled platforms.',
+    'toolchain-registry': '🌐 Registry profile: {{profile}} (tool installs only)',
     'toolchain-scope': '🧰 Toolchain required by this project: {{list}}',
     'toolchain-derived': '   (derived from: {{list}})',
     'toolchain-ok': '✅ {{label}} {{version}}',
@@ -102,6 +103,7 @@ const LOCALES = {
     'toolchain-installing-official': '📥 Installing {{label}} with its official installer (user-scoped, no admin rights)...',
     'toolchain-install-failed': '❌ Failed to install {{label}}. Install it by hand — see .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-installed': '✅ Toolchain installed. Open a new shell so it lands on PATH.',
+    'registry-unknown': 'Unknown registry profile "{{profile}}". Use one of: default, cn',
     'android-cli-unsupported': 'ℹ️ Google publishes no Android CLI binary for {{host}}. Skipping — see .agents/skills/marsquakes-setup/references/install-matrix.md',
     'android-cli-download-failed': '❌ Could not download the Android CLI installer from {{url}}',
     'android-cli-windows-emulator': 'ℹ️ Note: `android emulator` is disabled on Windows by Google. Use Android Studio\'s Device Manager for emulators.',
@@ -190,6 +192,7 @@ const LOCALES = {
     'platform-not-ready': '⏳ {{name}}: {{desc}} (目录未就绪)',
     'platform-not-supported': '⏳ {{name}}: {{desc}} (待支持)',
     'toolchain-none': '🧰 已启用的平台不需要额外工具链。',
+    'toolchain-registry': '🌐 镜像配置: {{profile}}（仅用于安装工具）',
     'toolchain-scope': '🧰 本项目需要的工具链: {{list}}',
     'toolchain-derived': '   （来自: {{list}}）',
     'toolchain-ok': '✅ {{label}} {{version}}',
@@ -203,6 +206,7 @@ const LOCALES = {
     'toolchain-installing-official': '📥 正在用官方安装器安装 {{label}}（用户级，无需管理员权限）...',
     'toolchain-install-failed': '❌ {{label}} 安装失败，请手动安装，参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-installed': '✅ 工具链安装完成。请打开一个新终端，让它进入 PATH。',
+    'registry-unknown': '未知的镜像配置“{{profile}}”。可选值为: default、cn',
     'android-cli-unsupported': 'ℹ️ Google 未为 {{host}} 提供 Android CLI 二进制，已跳过。参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
     'android-cli-download-failed': '❌ 无法从 {{url}} 下载 Android CLI 安装脚本',
     'android-cli-windows-emulator': 'ℹ️ 注意：Google 已在 Windows 上停用 `android emulator`，模拟器请用 Android Studio 的 Device Manager。',
@@ -332,6 +336,9 @@ Options:
   --platform <platform>    (dev/build) Run only for specific platform
   --docker                 (dev/build) Run in Docker container
                            (init) The API runs in a container, so skip the host JDK/Maven
+  --registry <default|cn>  (init) Mirror used while installing tools only
+                           (cn = mainland-China mirrors for npm/Maven/rustup/Node;
+                           project dependencies are never redirected)
   --lang <en|zh>           Set language (default: en)
   --help                   Show this help message
 
@@ -345,6 +352,7 @@ Examples:
   mars build --platform android
   mars init
   mars init --docker                  # API runs in a container: no host JDK/Maven
+  mars init --registry cn             # Install tools from mainland-China mirrors
   mars clean
 `);
 }
@@ -439,10 +447,16 @@ function filterPlatformsByHost(platforms, platform) {
   return platforms.filter(p => p.hostSupported !== false);
 }
 
-function run(command, cwd, stdio = 'inherit') {
+// `extraEnv` is merged on top of the inherited environment for this single
+// subprocess only. It is how a registry profile reaches the tool installers
+// without leaking into the parent shell or into unrelated commands: the
+// override is passed at the call sites that actually download tools and goes
+// nowhere else.
+function run(command, cwd, stdio = 'inherit', extraEnv = null) {
   console.log(`\n> ${command}`);
   try {
-    execSync(command, { cwd, stdio, shell: true });
+    const env = extraEnv ? { ...process.env, ...extraEnv } : process.env;
+    execSync(command, { cwd, stdio, shell: true, env });
     return true;
   } catch (e) {
     return false;
@@ -1439,6 +1453,47 @@ const TOOL_SPECS = {
   },
 };
 
+// Registry profiles decide where the *tool installers* download from, and
+// nothing else. Each value is an environment block that is merged into the
+// subprocess only while a tool is being installed -- never into `pnpm
+// install`, never into the parent shell, never into the built project.
+//
+// `default` carries no overrides, so every installer uses its own upstream.
+// `cn` points the installers that accept a mirror at mainland-China mirrors;
+// every URL below was verified to answer before it was added.
+//
+// Not every tool can be mirrored, and the gaps are properties of the upstream
+// projects rather than oversights here:
+// - mise's Java core fetches its release metadata from a hardcoded
+//   mise-java.jdx.dev URL and exposes no mirror option, so the Temurin JDK
+//   tarball still comes from upstream.
+// - the mise-maven plugin hardcodes repo.maven.apache.org in bin/install and
+//   does not read MAVEN_MIRROR_URL, so the Maven distribution still comes
+//   from upstream; that variable does redirect Maven once it is running
+//   (dependency resolution inside the build).
+// - Google publishes no Android CLI/SDK mirror, so dl.google.com is used.
+const REGISTRY_PROFILES = {
+  default: {},
+  cn: {
+    // npm-based global installs (and any npm the installers shell out to).
+    npm_config_registry: 'https://registry.npmmirror.com',
+    NPM_REGISTRY: 'https://registry.npmmirror.com',
+    // mise core reads this for the Node runtime tarball.
+    MISE_NODE_MIRROR_URL: 'https://mirrors.cloud.tencent.com/nodejs-release',
+    // rustup (run by mise's Rust core) honors these for the toolchain and
+    // its own self-update.
+    RUSTUP_DIST_SERVER: 'https://mirrors.tuna.tsinghua.edu.cn/rustup',
+    RUSTUP_UPDATE_ROOT: 'https://mirrors.tuna.tsinghua.edu.cn/rustup/rustup',
+    // crates.io index used while Rust build tools fetch crates. Sparse, so no
+    // local git clone of the index is needed.
+    CARGO_REGISTRIES_CRATES_IO_PROTOCOL: 'sparse',
+    CARGO_REGISTRIES_CRATES_IO_INDEX: 'sparse+https://mirrors.aliyun.com/crates.io-index/',
+    // Maven dependency resolution at build time (see the note above about the
+    // distribution download).
+    MAVEN_MIRROR_URL: 'https://maven.aliyun.com/repository/public',
+  },
+};
+
 // Google publishes one binary per OS/arch triple under a fixed URL layout. These
 // four keys were verified to exist with HTTP HEAD; `linux_arm64`, `mac_arm64`
 // and `linux_aarch64` all return 404, so an unsupported host must say so rather
@@ -1677,12 +1732,19 @@ function hasMise() {
 // Installs only what the probes actually found missing or outdated. This is the
 // whole point of doing it here rather than up front: a web-only project never
 // triggers a JDK download, which is the largest install in the matrix.
-function ensureToolchain(platforms, apiInDocker) {
+function ensureToolchain(platforms, apiInDocker, installEnv = {}) {
   const tools = requiredTools(platforms);
   if (tools.length === 0) {
     console.log(`\n${t('toolchain-none')}`);
     return;
   }
+
+  // Name the active profile only when it actually changes anything, so a
+  // default run stays quiet instead of announcing that nothing is different.
+  const registryProfile = Object.keys(installEnv).length > 0
+    ? Object.keys(REGISTRY_PROFILES).find(name => REGISTRY_PROFILES[name] === installEnv)
+    : null;
+  if (registryProfile) console.log(`\n${t('toolchain-registry', { profile: registryProfile })}`);
 
   console.log(`\n${t('toolchain-scope', { list: toolLabels(tools).join(', ') })}`);
   console.log(`   ${t('toolchain-derived', { list: platforms.map(p => p.label).join(', ') })}`);
@@ -1755,7 +1817,7 @@ function ensureToolchain(platforms, apiInDocker) {
     } else {
       for (const r of viaMise) {
         console.log(`\n${t('toolchain-installing', { label: r.spec.label, pin: r.spec.pin })}`);
-        if (run(`mise use --global ${r.spec.pin}`, process.cwd())) installedAny = true;
+        if (run(`mise use --global ${r.spec.pin}`, process.cwd(), 'inherit', installEnv)) installedAny = true;
         else console.log(`   ${t('toolchain-install-failed', { label: r.spec.label })}`);
       }
     }
@@ -1774,6 +1836,22 @@ function initCommand(args = []) {
   // Opt-in, not detected: see the note in ensureToolchain about why a working
   // Docker is not evidence that the API runs inside it.
   const apiInDocker = args.includes('--docker');
+
+  // Registry profile for the tool installers only. Default when the flag is
+  // absent; an unknown value is a loud error rather than a silent fallback,
+  // because `--registry cnn` (a typo) would otherwise download from upstream
+  // while the user believes they are on a mirror.
+  const registryIndex = args.indexOf('--registry');
+  let registryName = 'default';
+  if (registryIndex > -1) {
+    registryName = args[registryIndex + 1];
+    if (!registryName || !Object.prototype.hasOwnProperty.call(REGISTRY_PROFILES, registryName)) {
+      console.error(`\n❌ ${t('registry-unknown', { profile: registryName })}`);
+      process.exit(1);
+    }
+  }
+  const installEnv = REGISTRY_PROFILES[registryName];
+
   const config = loadPlatformsConfig(rootDir);
   const enabledPlatforms = filterPlatformsByHost(getEnabledPlatforms(config), 'all');
 
@@ -1798,7 +1876,7 @@ function initCommand(args = []) {
     }
   }
 
-  ensureToolchain(enabledPlatforms, apiInDocker);
+  ensureToolchain(enabledPlatforms, apiInDocker, installEnv);
 
   // After ensureToolchain, not inside it: the SDK is installed *by* the Android
   // CLI, so it can only be attempted once that install has had its chance.
