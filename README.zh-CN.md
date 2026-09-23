@@ -24,7 +24,7 @@ mars dev
 包名是 `@marsquakes/cli`，但它安装的命令叫 `mars`。
 不想全局安装？`pnpm dlx @marsquakes/cli create my-app` 同样可用。
 
-📖 **[完整文档](https://sunquakes.github.io/marsquakes/zh-Hans/)**
+📖 **[完整文档](https://marsquakes.cc/zh-Hans/)**
 
 ## 你会得到什么
 
