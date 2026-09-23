@@ -8,8 +8,8 @@
     "npm_config_registry": "https://registry.npmmirror.com",
     "NPM_REGISTRY": "https://registry.npmmirror.com",
     "MISE_NODE_MIRROR_URL": "https://mirrors.cloud.tencent.com/nodejs-release",
-    "RUSTUP_DIST_SERVER": "https://mirrors.tuna.tsinghua.edu.cn/rustup",
-    "RUSTUP_UPDATE_ROOT": "https://mirrors.tuna.tsinghua.edu.cn/rustup/rustup",
+    "RUSTUP_DIST_SERVER": "https://rsproxy.cn",
+    "RUSTUP_UPDATE_ROOT": "https://rsproxy.cn/rustup",
     "CARGO_REGISTRIES_CRATES_IO_PROTOCOL": "sparse",
     "CARGO_REGISTRIES_CRATES_IO_INDEX": "sparse+https://mirrors.aliyun.com/crates.io-index/",
     "MAVEN_MIRROR_URL": "https://maven.aliyun.com/repository/public"
