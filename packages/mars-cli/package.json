@@ -8,6 +8,7 @@
   },
   "files": [
     "bin/",
+    "config/",
     "README.md",
     "LICENSE"
   ],
@@ -32,7 +33,7 @@
     "url": "git+https://github.com/sunquakes/marsquakes.git",
     "directory": "packages/mars-cli"
   },
-  "homepage": "https://sunquakes.github.io/marsquakes/",
+  "homepage": "https://marsquakes.cc/",
   "bugs": {
     "url": "https://github.com/sunquakes/marsquakes/issues"
   },

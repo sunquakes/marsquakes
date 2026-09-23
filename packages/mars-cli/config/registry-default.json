@@ -1,0 +1,8 @@
+{
+  "registry": "https://registry.npmjs.org",
+  "probes": {
+    "upstream": "https://registry.npmjs.org/",
+    "mirror": "https://registry.npmmirror.com/"
+  },
+  "env": {}
+}

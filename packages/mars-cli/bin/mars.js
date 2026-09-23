@@ -1464,16 +1464,16 @@ const TOOL_SPECS = {
 };
 
 // Registry profiles decide where the *tool installers* download from, and
-// nothing else. Each value is an environment block that is merged into the
-// subprocess only while a tool is being installed -- never into `pnpm
-// install`, never into the parent shell, never into the built project.
-//
-// `default` carries no overrides, so every installer uses its own upstream.
-// `cn` points the installers that accept a mirror at mainland-China mirrors;
-// every URL below was verified to answer before it was added.
+// nothing else. Every URL lives in its own config file rather than in this
+// script, so a mirror set can be audited or swapped without touching code:
+//   config/registry-default.json -- upstreams, env block is empty
+//   config/registry-cn.json      -- mainland-China mirrors
+// Each file's `env` is merged into the subprocess only while a tool is being
+// installed -- never into `pnpm install`, never into the parent shell, never
+// into the built project.
 //
 // Not every tool can be mirrored, and the gaps are properties of the upstream
-// projects rather than oversights here:
+// projects rather than oversights in the configs:
 // - mise's Java core fetches its release metadata from a hardcoded
 //   mise-java.jdx.dev URL and exposes no mirror option, so the Temurin JDK
 //   tarball still comes from upstream.
@@ -1482,27 +1482,21 @@ const TOOL_SPECS = {
 //   from upstream; that variable does redirect Maven once it is running
 //   (dependency resolution inside the build).
 // - Google publishes no Android CLI/SDK mirror, so dl.google.com is used.
-const REGISTRY_PROFILES = {
-  default: {},
-  cn: {
-    // npm-based global installs (and any npm the installers shell out to).
-    npm_config_registry: 'https://registry.npmmirror.com',
-    NPM_REGISTRY: 'https://registry.npmmirror.com',
-    // mise core reads this for the Node runtime tarball.
-    MISE_NODE_MIRROR_URL: 'https://mirrors.cloud.tencent.com/nodejs-release',
-    // rustup (run by mise's Rust core) honors these for the toolchain and
-    // its own self-update.
-    RUSTUP_DIST_SERVER: 'https://mirrors.tuna.tsinghua.edu.cn/rustup',
-    RUSTUP_UPDATE_ROOT: 'https://mirrors.tuna.tsinghua.edu.cn/rustup/rustup',
-    // crates.io index used while Rust build tools fetch crates. Sparse, so no
-    // local git clone of the index is needed.
-    CARGO_REGISTRIES_CRATES_IO_PROTOCOL: 'sparse',
-    CARGO_REGISTRIES_CRATES_IO_INDEX: 'sparse+https://mirrors.aliyun.com/crates.io-index/',
-    // Maven dependency resolution at build time (see the note above about the
-    // distribution download).
-    MAVEN_MIRROR_URL: 'https://maven.aliyun.com/repository/public',
-  },
-};
+const REGISTRY_NAMES = ['default', 'cn'];
+
+function loadRegistryConfig(name) {
+  const file = path.join(__dirname, '..', 'config', `registry-${name}.json`);
+  const config = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (!config || typeof config !== 'object' || !config.env || typeof config.env !== 'object') {
+    throw new Error(`Invalid registry config: ${file}`);
+  }
+  return config;
+}
+
+const REGISTRY_PROFILES = {};
+for (const name of REGISTRY_NAMES) {
+  REGISTRY_PROFILES[name] = loadRegistryConfig(name).env;
+}
 
 // Decide whether the machine is effectively in mainland China so the tool
 // installers can be sent at the cn mirrors automatically. No external service
@@ -1546,8 +1540,9 @@ function httpHeadResolves(url, timeoutMs) {
 }
 
 async function detectRegion() {
-  const upstreamReachable = await httpHeadResolves('https://registry.npmjs.org/', 2500);
-  const mirrorReachable = await httpHeadResolves('https://registry.npmmirror.com/', 2500);
+  const probes = loadRegistryConfig('default').probes;
+  const upstreamReachable = await httpHeadResolves(probes.upstream, 2500);
+  const mirrorReachable = await httpHeadResolves(probes.mirror, 2500);
 
   if (upstreamReachable) return { region: 'default', reason: 'upstream-reachable' };
   if (!upstreamReachable && mirrorReachable) return { region: 'cn', reason: 'mirror-reachable' };
