@@ -8,6 +8,7 @@
   },
   "files": [
     "bin/",
+    "config/",
     "README.md",
     "LICENSE"
   ],
