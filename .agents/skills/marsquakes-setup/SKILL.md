@@ -191,11 +191,22 @@ foreach ($tool in 'java','maven','rustc','cargo') {
 
 A pipeline that is meant to exercise this skill should play the same five steps
 rather than approximating them: detect on the clean runner, install the baseline
-exactly as the matrix says, gate the base scope, run `mars init`, then gate the
-project's scenario scope. A runner image that already carries the derived
+exactly as the matrix says, gate the base scope, run `mars region`, run
+`mars init` with an explicit registry profile, then gate the project's scenario
+scope. A runner
+image that already carries the derived
 toolchains hides failures in `mars init`'s own install path, so such a job has to
-hide them (sanitize `PATH`) before init; the workflow at
-`.github/workflows/mars-bootstrap.yml` is the reference implementation.
+hide them (sanitize `PATH`) before init. Two reference implementations ship in
+the repository, kept in lockstep:
+
+- `.github/workflows/mars-bootstrap.yml` — `mars init --registry default`,
+  pulling JDK / Maven / Rust from the upstream registries. Hosted runners sit
+  abroad, so its `mars region` step is gated and must report `region=default`.
+- `.github/workflows/mars-bootstrap-cn.yml` — `mars init --registry cn`,
+  forcing the same installs through the mainland-China mirrors. Its
+  `mars region` step is informational only and is not gated: the runners are
+  still abroad, so the detector honestly reports `default` even though the job
+  deliberately overrides it with `cn`.
 
 Stop there if there is no project yet. The machine being ready is this skill's
 whole deliverable, and the natural next step is the user's own:

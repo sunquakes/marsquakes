@@ -1,35 +1,21 @@
-# End-to-end test of the consumer journey the marsquakes-setup skill prescribes:
-# on a clean runner the workflow literally plays the skill's five-step playbook
-# (.agents/skills/marsquakes-setup/SKILL.md):
+# End-to-end test of the consumer journey the marsquakes-setup skill prescribes
+# on mainland-China mirrors. It plays the same five-step playbook as the default
+# workflow (.github/workflows/mars-bootstrap.yml), with exactly one difference:
 #
-#   1. detect the clean runner (baseline record, informational)
-#   2. install only the baseline tools -- mise, Node, pnpm, the mars CLI --
-#      using the exact commands in references/install-matrix.md
-#   3. re-run the skill's detect script as a hard gate (MISS/OLD must be gone)
-#   4. gate `mars region` (expect default on these abroad runners), then run
-#      `mars init --registry default`, which derives JDK / Maven / Rust from
-#      the scaffolded project's platforms.json and installs them itself via
-#      mise from the upstream registries
-#   5. detect again with --scenario api,desktop and require OK on every
-#      toolchain mars init was supposed to derive
+#   step 4 runs `mars init --registry cn`, so the JDK / Maven / Rust installs
+#   are forced through the cn mirrors instead of the upstream registries.
 #
-# This is deliberately NOT a build of the checked-out repository. The runner
-# images preinstall Temurin, Maven and Rust, which would let `mars init` skip
-# its mise installs and leave that whole code path untested -- so before init
-# the PATH is sanitized per-binary: a single shadow bin symlinks every
-# executable on PATH except java/mvn/rustc/cargo/rustup, and the mise shims
-# directory stays first. Per-directory removal is wrong on these images because
-# rustc/cargo live in /usr/bin alongside core tools (sed/tr); per-binary
-# hiding leaves the core tools intact. What remains is exactly what a brand-new
-# machine following the skill has.
+# The standalone `mars region` step is informational here and is NOT gated:
+# these runners sit abroad, so the detector honestly reports default even
+# though this job deliberately overrides it with cn. That is the point of an
+# explicit profile -- it overrides detection, the same way a user on a known
+# Chinese network (or an intranet that can only reach the mirrors) would.
 #
-# The scaffolded project enables exactly three platforms -- web-admin, desktop
-# and api (android is patched off in the template copy) -- so `mars init`
-# derives the full toolchain set: JDK, Maven and Rust.
-# A sibling workflow, mars-bootstrap-cn.yml, plays the same five steps but
-# forces `mars init --registry cn` so the mainland-China mirror path is
-# exercised too. Both are reference implementations of the skill.
-name: Mars bootstrap (create + init, default registry)
+# Everything below this comment is otherwise identical to the default workflow
+# on purpose. Divergence between the two files would mean one of them stops
+# representing the skill, so keep them in lockstep: a change to the shared
+# steps lands in both files in the same commit.
+name: Mars bootstrap (create + init, cn registry)
 
 on:
   push:
@@ -70,12 +56,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: mars-bootstrap-default-${{ github.ref }}
+  group: mars-bootstrap-cn-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   bootstrap:
-    name: Default registry on ${{ matrix.os }}
+    name: Cn registry on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -395,38 +381,31 @@ jobs:
           }
           Write-Host "java/mvn/rustc hidden; mise shims at $shims"
 
-      # Skill workflow: per-platform toolchains are derived here, not up front.
-      # First exercise the standalone region detector (skill: "check first"),
-      # and gate its machine-readable output. Hosted runners sit abroad, so the
-      # detector must resolve to default; a cn verdict here means a probe broke.
-      - name: mars region (macOS / Linux)
+      # Show the standalone detector's verdict but do not gate on it. These
+      # runners are abroad, so it says default; the explicit cn profile below
+      # is the deliberate override this workflow exists to test.
+      - name: mars region (informational, macOS / Linux)
         if: runner.os != 'Windows'
         working-directory: ${{ runner.temp }}/mars-e2e
         run: |
           out="$(mars region)"
           printf '%s\n' "$out"
-          printf '%s\n' "$out" | grep -Eq '^region=default ' \
-            || { echo "detector did not resolve to default on an abroad runner"; exit 1; }
 
-      - name: mars region (Windows)
+      - name: mars region (informational, Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         working-directory: ${{ runner.temp }}\mars-e2e
         run: |
           . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
-          $out = mars region
-          $out | ForEach-Object { Write-Host $_ }
-          if ($out -notmatch '^region=default ') {
-            throw "detector did not resolve to default on an abroad runner"
-          }
+          mars region
 
-      # `mars init --registry default` reads the scaffolded platforms.json and
-      # installs what the probes report missing -- now forced through mise by
-      # the PATH above, pulling JDK/Maven/Rust from the upstream registries.
+      # The one step that differs from the default workflow. `mars init
+      # --registry cn` reads the scaffolded platforms.json and installs the
+      # missing tools through the mainland-China mirrors.
       - name: mars init (macOS / Linux)
         if: runner.os != 'Windows'
         working-directory: ${{ runner.temp }}/mars-e2e
-        run: mars init --registry default
+        run: mars init --registry cn
 
       - name: mars init (Windows)
         if: runner.os == 'Windows'
@@ -434,7 +413,7 @@ jobs:
         working-directory: ${{ runner.temp }}\mars-e2e
         run: |
           . (Join-Path $env:USERPROFILE '.config\mise\activate.ps1')
-          mars init --registry default
+          mars init --registry cn
 
       # Skill step 5 (project half): re-detect with the api+desktop scenario and
       # require OK on the language toolchains mars init derives -- JDK, Maven,
