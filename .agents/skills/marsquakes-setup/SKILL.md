@@ -207,13 +207,46 @@ mars create my-app
 Inside a generated project, `mars init` finishes the job:
 
 ```bash
-mars init
+mars init --registry auto
 ```
 
 It installs the workspace dependencies, then reads `platforms.json` and installs
 the toolchains those platforms need — so the Rust or JDK this skill deliberately
 skipped arrives exactly when a project asks for it. Tell the user to run it; do
 not pre-empt it by installing those toolchains here.
+
+### Region detection: cn vs default
+
+`--registry auto` decides where the host effectively is instead of making the
+user know it:
+
+1. It probes the networks it cares about — a HEAD to `registry.npmjs.org` and to
+   `registry.npmmirror.com` with a short timeout. Upstream reachable means
+   `default`; upstream unreachable while the mirror resolves means `cn`.
+2. If neither probe is conclusive it falls back to the machine timezone
+   (`Asia/Shanghai` and friends) plus the `LANG`/`LC_ALL` locale, and reports
+   which fallback decided.
+
+The chosen profile and the reason are printed before any install. `mars region`
+runs the same detector on its own and changes nothing, so the decision can be
+checked first:
+
+```bash
+mars region            # prints: region=default|cn reason=<reason>
+```
+
+Pass the profile explicitly to override the detector — `mars init --registry cn`
+forces the mainland-China mirrors, `mars init --registry default` forces
+upstream. Do this on offline or intranet-only machines: with no network to
+probe, detection can only guess from locale, so whoever knows the environment
+should state it.
+
+The profile only sets mirrors for the **tool-install subprocesses** (npm, the
+Node/rustup/cargo/Maven download endpoints). Project dependencies still install
+with a plain `pnpm install` and are never redirected, and nothing is written to
+the parent shell. Some endpoints have no mainland mirror anyway — the JDK
+metadata, the Maven distribution download and `dl.google.com` always go
+upstream.
 
 ## Traps that produce misleading errors
 

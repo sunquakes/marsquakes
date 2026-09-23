@@ -2,6 +2,7 @@
 
 const fs = require('fs');
 const os = require('os');
+const https = require('https');
 const path = require('path');
 const readline = require('readline');
 const { execSync, spawn } = require('child_process');
@@ -90,6 +91,8 @@ const LOCALES = {
     'platform-not-supported': '⏳ {{name}}: {{desc}} (not supported yet)',
     'toolchain-none': '🧰 No extra toolchain needed for the enabled platforms.',
     'toolchain-registry': '🌐 Registry profile: {{profile}} (tool installs only)',
+    'region-detected': 'auto selected "{{profile}}" ({{reason}})',
+    'region-result': 'region={{profile}} reason={{reason}}',
     'toolchain-scope': '🧰 Toolchain required by this project: {{list}}',
     'toolchain-derived': '   (derived from: {{list}})',
     'toolchain-ok': '✅ {{label}} {{version}}',
@@ -103,7 +106,7 @@ const LOCALES = {
     'toolchain-installing-official': '📥 Installing {{label}} with its official installer (user-scoped, no admin rights)...',
     'toolchain-install-failed': '❌ Failed to install {{label}}. Install it by hand — see .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-installed': '✅ Toolchain installed. Open a new shell so it lands on PATH.',
-    'registry-unknown': 'Unknown registry profile "{{profile}}". Use one of: default, cn',
+    'registry-unknown': 'Unknown registry profile "{{profile}}". Use one of: default, cn, auto',
     'android-cli-unsupported': 'ℹ️ Google publishes no Android CLI binary for {{host}}. Skipping — see .agents/skills/marsquakes-setup/references/install-matrix.md',
     'android-cli-download-failed': '❌ Could not download the Android CLI installer from {{url}}',
     'android-cli-windows-emulator': 'ℹ️ Note: `android emulator` is disabled on Windows by Google. Use Android Studio\'s Device Manager for emulators.',
@@ -193,6 +196,8 @@ const LOCALES = {
     'platform-not-supported': '⏳ {{name}}: {{desc}} (待支持)',
     'toolchain-none': '🧰 已启用的平台不需要额外工具链。',
     'toolchain-registry': '🌐 镜像配置: {{profile}}（仅用于安装工具）',
+    'region-detected': '自动选择了“{{profile}}”（{{reason}}）',
+    'region-result': '地区={{profile}} 依据={{reason}}',
     'toolchain-scope': '🧰 本项目需要的工具链: {{list}}',
     'toolchain-derived': '   （来自: {{list}}）',
     'toolchain-ok': '✅ {{label}} {{version}}',
@@ -206,7 +211,7 @@ const LOCALES = {
     'toolchain-installing-official': '📥 正在用官方安装器安装 {{label}}（用户级，无需管理员权限）...',
     'toolchain-install-failed': '❌ {{label}} 安装失败，请手动安装，参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-installed': '✅ 工具链安装完成。请打开一个新终端，让它进入 PATH。',
-    'registry-unknown': '未知的镜像配置“{{profile}}”。可选值为: default、cn',
+    'registry-unknown': '未知的镜像配置“{{profile}}”。可选值为: default、cn、auto',
     'android-cli-unsupported': 'ℹ️ Google 未为 {{host}} 提供 Android CLI 二进制，已跳过。参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
     'android-cli-download-failed': '❌ 无法从 {{url}} 下载 Android CLI 安装脚本',
     'android-cli-windows-emulator': 'ℹ️ 注意：Google 已在 Windows 上停用 `android emulator`，模拟器请用 Android Studio 的 Device Manager。',
@@ -324,6 +329,7 @@ Commands:
   dev                      Start development server (default: all enabled platforms)
   build                    Build project (default: all enabled platforms)
   init                     Initialize project dependencies and check environment
+  region                   Detect whether this host should use cn or default
   clean                    Clean all build artifacts
 
 Platforms:
@@ -336,8 +342,10 @@ Options:
   --platform <platform>    (dev/build) Run only for specific platform
   --docker                 (dev/build) Run in Docker container
                            (init) The API runs in a container, so skip the host JDK/Maven
-  --registry <default|cn>  (init) Mirror used while installing tools only
-                           (cn = mainland-China mirrors for npm/Maven/rustup/Node;
+  --registry <profile>     (init) Mirror used while installing tools only
+                           (profiles: default, cn, auto;
+                           cn = mainland-China mirrors for npm/Maven/rustup/Node;
+                           auto = detect cn vs default from network and locale;
                            project dependencies are never redirected)
   --lang <en|zh>           Set language (default: en)
   --help                   Show this help message
@@ -353,6 +361,8 @@ Examples:
   mars init
   mars init --docker                  # API runs in a container: no host JDK/Maven
   mars init --registry cn             # Install tools from mainland-China mirrors
+  mars init --registry auto           # Detect cn vs default, then install
+  mars region                         # Show the detected region and reason
   mars clean
 `);
 }
@@ -1494,6 +1504,67 @@ const REGISTRY_PROFILES = {
   },
 };
 
+// Decide whether the machine is effectively in mainland China so the tool
+// installers can be sent at the cn mirrors automatically. No external service
+// is trusted to tell us: the primary signals are facts local to the machine
+// and facts about whether upstreams are actually reachable from here.
+//
+// Order of evidence, most reliable first:
+//   1. Probe the install sources themselves. Two small HTTPS requests race a
+//      short timeout -- one to an npm upstream, one to the npmmirror. A
+//      reachable fast upstream means abroad; a reachable mirror with a
+//      blocked/slow upstream means cn. This measures the thing that actually
+//      matters (can this host reach upstream?), not geography.
+//   2. Fall back to the configured timezone when the probes are inconclusive
+//      or there is no network yet. A machine on Asia/Shanghai/Urumqi with a
+//      Chinese-language preference is assumed cn.
+//
+// The return shape carries the answer plus why, so callers can show it.
+function httpHeadResolves(url, timeoutMs) {
+  return new Promise(resolve => {
+    let settled = false;
+    const done = ok => {
+      if (settled) return;
+      settled = true;
+      try { req.destroy(); } catch {}
+      resolve(ok);
+    };
+    let req;
+    try {
+      req = https.request(url, { method: 'HEAD', timeout: timeoutMs }, res => {
+        res.resume();
+        done(true);
+      });
+    } catch {
+      resolve(false);
+      return;
+    }
+    req.on('timeout', () => done(false));
+    req.on('error', () => done(false));
+    req.end();
+  });
+}
+
+async function detectRegion() {
+  const upstreamReachable = await httpHeadResolves('https://registry.npmjs.org/', 2500);
+  const mirrorReachable = await httpHeadResolves('https://registry.npmmirror.com/', 2500);
+
+  if (upstreamReachable) return { region: 'default', reason: 'upstream-reachable' };
+  if (!upstreamReachable && mirrorReachable) return { region: 'cn', reason: 'mirror-reachable' };
+
+  // Neither gave a usable answer (offline, captive portal, strict firewall).
+  // Use local configuration rather than guessing from a single weak signal:
+  // require a China timezone AND a Chinese-language preference together.
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  const lang = (process.env.LANG || process.env.LC_ALL || '').toLowerCase();
+  const chinaTz = /^Asia\/(Shanghai|Urumqi|Chongqing|Harbin|Kashgar)$/.test(tz);
+  if (chinaTz && (lang.includes('zh_cn') || lang.includes('zh-hans') || lang.startsWith('zh'))) {
+    return { region: 'cn', reason: 'locale-fallback' };
+  }
+  if (chinaTz) return { region: 'cn', reason: 'timezone-fallback' };
+  return { region: 'default', reason: 'default-fallback' };
+}
+
 // Google publishes one binary per OS/arch triple under a fixed URL layout. These
 // four keys were verified to exist with HTTP HEAD; `linux_arm64`, `mac_arm64`
 // and `linux_aarch64` all return 404, so an unsupported host must say so rather
@@ -1732,19 +1803,25 @@ function hasMise() {
 // Installs only what the probes actually found missing or outdated. This is the
 // whole point of doing it here rather than up front: a web-only project never
 // triggers a JDK download, which is the largest install in the matrix.
-function ensureToolchain(platforms, apiInDocker, installEnv = {}) {
+function ensureToolchain(platforms, apiInDocker, installEnv = {}, regionInfo = null) {
   const tools = requiredTools(platforms);
   if (tools.length === 0) {
     console.log(`\n${t('toolchain-none')}`);
     return;
   }
 
-  // Name the active profile only when it actually changes anything, so a
-  // default run stays quiet instead of announcing that nothing is different.
-  const registryProfile = Object.keys(installEnv).length > 0
-    ? Object.keys(REGISTRY_PROFILES).find(name => REGISTRY_PROFILES[name] === installEnv)
-    : null;
-  if (registryProfile) console.log(`\n${t('toolchain-registry', { profile: registryProfile })}`);
+  // Name the chosen profile. An explicit `cn` just says cn; an `auto` run also
+  // says why the detector picked what it did, so a surprising choice is
+  // legible instead of looking random. An explicit/implicit default with no
+  // overrides stays quiet -- announcing "nothing is different" is noise.
+  const isCn = Object.keys(installEnv).length > 0;
+  if (isCn) {
+    const profile = Object.keys(REGISTRY_PROFILES).find(name => REGISTRY_PROFILES[name] === installEnv);
+    console.log(`\n${t('toolchain-registry', { profile })}`);
+  }
+  if (regionInfo) {
+    console.log(`   ${t('region-detected', { profile: regionInfo.region, reason: regionInfo.reason })}`);
+  }
 
   console.log(`\n${t('toolchain-scope', { list: toolLabels(tools).join(', ') })}`);
   console.log(`   ${t('toolchain-derived', { list: platforms.map(p => p.label).join(', ') })}`);
@@ -1826,7 +1903,7 @@ function ensureToolchain(platforms, apiInDocker, installEnv = {}) {
   if (installedAny) console.log(`\n${t('toolchain-installed')}`);
 }
 
-function initCommand(args = []) {
+async function initCommand(args = []) {
   const rootDir = findProjectRoot();
   if (!rootDir) {
     console.error('\n❌ Error: Not in a Marsquakes project.');
@@ -1837,15 +1914,24 @@ function initCommand(args = []) {
   // Docker is not evidence that the API runs inside it.
   const apiInDocker = args.includes('--docker');
 
-  // Registry profile for the tool installers only. Default when the flag is
-  // absent; an unknown value is a loud error rather than a silent fallback,
-  // because `--registry cnn` (a typo) would otherwise download from upstream
-  // while the user believes they are on a mirror.
+  // Registry profile for the tool installers only.
+  // - no flag: default, unchanged from the original behavior, so existing
+  //   scripts and the CI reference keep working.
+  // - default | cn: the explicit choice.
+  // - auto: detect where this host actually is -- probe the sources, fall
+  //   back to timezone/locale -- and report the decision before installing.
+  // An unknown value is a loud error rather than a silent fallback, because
+  // `--registry cnn` (a typo) would otherwise download from upstream while
+  // the user believes they are on a mirror.
   const registryIndex = args.indexOf('--registry');
   let registryName = 'default';
+  let regionInfo = null;
   if (registryIndex > -1) {
     registryName = args[registryIndex + 1];
-    if (!registryName || !Object.prototype.hasOwnProperty.call(REGISTRY_PROFILES, registryName)) {
+    if (registryName === 'auto') {
+      regionInfo = await detectRegion();
+      registryName = regionInfo.region;
+    } else if (!registryName || !Object.prototype.hasOwnProperty.call(REGISTRY_PROFILES, registryName)) {
       console.error(`\n❌ ${t('registry-unknown', { profile: registryName })}`);
       process.exit(1);
     }
@@ -1876,7 +1962,7 @@ function initCommand(args = []) {
     }
   }
 
-  ensureToolchain(enabledPlatforms, apiInDocker, installEnv);
+  ensureToolchain(enabledPlatforms, apiInDocker, installEnv, regionInfo);
 
   // After ensureToolchain, not inside it: the SDK is installed *by* the Android
   // CLI, so it can only be attempted once that install has had its chance.
@@ -2056,6 +2142,14 @@ function copyDirRecursive(src, dest, skip, changes) {
   }
 }
 
+// Standalone check for the same detector `mars init --registry auto` uses.
+// Prints the chosen profile and the reason, so it can be inspected or gated
+// in a script before installing anything.
+async function regionCommand() {
+  const info = await detectRegion();
+  console.log(t('region-result', { profile: info.region, reason: info.reason }));
+}
+
 function main() {
   const args = process.argv.slice(2);
   parseLangArg(args);
@@ -2091,6 +2185,9 @@ function main() {
       break;
     case 'clean':
       cleanCommand();
+      break;
+    case 'region':
+      regionCommand();
       break;
     default:
       console.error(`\n❌ Unknown command: "${command}"`);
