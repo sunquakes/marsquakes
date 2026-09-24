@@ -173,8 +173,78 @@ Vite 7 的 `preprocessorMaxWorkers` 默认为 `true`，会启动
 `pnpm exec vite build --mode docker`。
 :::
 
-## 代理
+## 代理：在中国大陆拉取 Docker Hub
 
-直连时 `docker.io` 可能被 DNS 污染，此时 Docker daemon 需要配置 HTTP/HTTPS 代理
-（Docker Desktop → Settings → Resources → Proxies）。配好代理后所有官方镜像都能
-正常拉取 —— 不要替换成第三方镜像源。
+本仓库所有 Dockerfile 都使用 **Docker Hub 官方镜像**。在中国大陆直连
+`docker.io` / `registry-1.docker.io` 通常会被 DNS 污染或连接超时，`docker pull`
+常见报错包括：
+
+- `dial tcp: lookup registry-1.docker.io: no such host`
+- `net/http: TLS handshake timeout`
+- 一直卡在 `Pulling fs layer` 没有进度
+
+解决办法是**给 Docker daemon 配置 HTTP/HTTPS 代理**，而不是替换成第三方镜像源：
+第三方镜像源可用性不稳定，而本仓库锁定的 glibc 版本与镜像结构只在官方镜像上验证过
+（见上方的基础镜像约束）。
+
+### Docker Desktop（Windows / macOS）
+
+打开 **Settings → Resources → Proxies**，选择 **Manual proxy configuration**，
+填入本机代理客户端的地址（例如 Clash 默认的 `http://127.0.0.1:7890`，以你的客户端
+实际端口为准）：
+
+- **HTTP Proxy**：`http://127.0.0.1:7890`
+- **HTTPS Proxy**：`http://127.0.0.1:7890`
+- **No proxy**：`localhost,127.0.0.1,host.docker.internal`
+
+点击 **Apply & Restart**，等 daemon 重启完成即可。
+
+### Linux（systemd）
+
+Linux 上 Docker daemon 由 systemd 管理，需要通过 drop-in 文件给 daemon 服务
+注入代理环境变量：
+
+```bash
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo tee /etc/systemd/system/docker.service.d/http-proxy.conf <<'EOF'
+[Service]
+Environment="HTTP_PROXY=http://127.0.0.1:7890"
+Environment="HTTPS_PROXY=http://127.0.0.1:7890"
+Environment="NO_PROXY=localhost,127.0.0.1"
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+把 `127.0.0.1:7890` 换成你代理客户端实际监听的地址与端口。
+
+### 验证是否生效
+
+```bash
+docker info | grep -A 3 'HTTP Proxy'
+docker pull hello-world
+```
+
+`docker info` 能看到代理地址、`hello-world` 能拉取成功，说明 daemon 的网络已经
+走代理。
+
+### 构建镜像时的网络
+
+`docker build` 阶段容器内部访问网络使用的是另一套配置。Docker 23+ 会自动读取
+`~/.docker/config.json` 中的 `proxies` 段并注入构建参数：
+
+```json
+{
+  "proxies": {
+    "default": {
+      "httpProxy": "http://127.0.0.1:7890",
+      "httpsProxy": "http://127.0.0.1:7890",
+      "noProxy": "localhost,127.0.0.1"
+    }
+  }
+}
+```
+
+镜像构建过程中的 **npm / Maven 包下载不需要走代理**：使用 `.env.example.cn`
+模板（`NPM_REGISTRY` 指向 npmmirror、`MAVEN_MIRROR_URL` 指向阿里云 Maven）
+即可让这部分下载走国内源。代理只用于拉取 Docker Hub 基础镜像。
