@@ -619,6 +619,11 @@ see [docs/AGENTS.md](docs/AGENTS.md).
   - `chore:` for build/tooling changes
 - **Git Branches**: Main branch is `main`, feature branches named `feature/xxx`, fix branches `fix/xxx`
 - **Ignored Files**: `.idea/`, `.gradle/`, `local.properties`, build artifacts, `node_modules`, `.turbo/`, etc. are already added to `.gitignore`
+- **Restart services after a task**: after finishing any task that touches the
+  backend API or the web admin (code, config, dependencies, schema), restart
+  both the API (`apps/api`) and the web admin (`apps/web-admin`) before
+  finishing, so verification runs against fresh processes with the changes
+  actually loaded. Never leave a long-running service serving stale code.
 - **Platform-specific commands**: whenever an example differs per operating
   system, offer **every** supported platform side by side — never only the one
   the author happens to use. See the rules below.
