@@ -1,0 +1,109 @@
+# Publishes the @marsquakes/cli package to npm when a version tag is pushed,
+# then creates the matching GitHub Release. Adapted to this repo:
+#   - the published package is packages/mars-cli, a pure-JS CLI with no build
+#     step (its `files` allowlist already declares bin/ + config/), so there is
+#     no compile step
+#   - pnpm workspace at the repo root; the pnpm version comes from
+#     `packageManager` in the root package.json
+#   - the docs site is deployed by deploy-docs.yml on every push to main, so it
+#     is deliberately not rebuilt or redeployed here
+#
+# Cut a release with:
+#   pnpm -C packages/mars-cli version 1.2.3 --no-git-tag-version
+#   git commit -am "chore(release): v1.2.3"
+#   git tag v1.2.3 && git push origin v1.2.3
+name: Release
+
+on:
+  push:
+    tags:
+      # Accept both v1.2.3 and plain 1.2.3; pre-release tags (v1.2.3-rc.1)
+      # match as well and are flagged on the GitHub Release.
+      - 'v*.*.*'
+      - '*.*.*'
+  # Allows a manual re-run from the Actions tab; choose the release tag in the
+  # "Use workflow from" selector.
+  workflow_dispatch:
+
+# id-token: write is required for npm trusted publishing (OIDC); contents:
+# write lets the workflow create the GitHub Release. No long-lived npm token is
+# stored — GitHub issues a short-lived identity token on each run.
+permissions:
+  id-token: write
+  contents: write
+
+# A release must never be interrupted or superseded: two runs on the same tag
+# would double-publish and fight over the release notes.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Must run before setup-node: its pnpm cache resolves the store path by
+      # executing pnpm. No version pin on purpose — the action reads
+      # `packageManager` from the root package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          registry-url: 'https://registry.npmjs.org'
+          cache: 'pnpm'
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Derive version from tag
+        id: version
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          version="${tag#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::tag '$tag' is not a valid semver (expected v1.2.3 or 1.2.3)"
+            exit 1
+          fi
+          if printf '%s' "$version" | grep -q -- '-'; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Publishing @marsquakes/cli@$version"
+
+      # The CLI has no dependencies and no build step, but sync the workspace
+      # anyway so publish-time lockfile/workspace checks run against a complete
+      # checkout rather than a partial one.
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Update package version
+        run: pnpm version "$VERSION" --no-git-tag-version
+        working-directory: packages/mars-cli
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+
+      # Fail early if the packed tarball would miss bin/ or config/ instead of
+      # publishing a broken CLI.
+      - name: Inspect packed tarball
+        run: pnpm pack --dry-run
+        working-directory: packages/mars-cli
+
+      # Authentication uses npm trusted publishing (OIDC): configure the
+      # trusted publisher once on npmjs.com (repo sunquakes/marsquakes,
+      # workflow release.yml) and no secret is needed here. --provenance
+      # attests that this package was built by this exact workflow run.
+      - name: Publish to npm
+        run: pnpm publish --provenance --access public --no-git-checks
+        working-directory: packages/mars-cli
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.version }}
+          prerelease: ${{ steps.version.outputs.prerelease }}
+          generate_release_notes: true
