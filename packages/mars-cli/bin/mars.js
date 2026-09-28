@@ -2,10 +2,11 @@
 
 const fs = require('fs');
 const os = require('os');
+const net = require('net');
 const https = require('https');
 const path = require('path');
 const readline = require('readline');
-const { execSync, spawn } = require('child_process');
+const { execSync, spawn, spawnSync } = require('child_process');
 
 const pkg = require(path.join(__dirname, '..', 'package.json'));
 
@@ -116,6 +117,46 @@ const LOCALES = {
     'android-sdk-local-properties': '✅ Wrote sdk.dir into {{file}}',
     'android-sdk-cli-missing': 'ℹ️ Android CLI is not available yet, so the SDK packages were skipped. Run `mars init` again once it is installed.',
     'android-sdk-no-compilesdk': 'ℹ️ No compileSdk found in {{file}}, so no SDK package could be derived. Skipping.',
+    'dbw-intro': '🗄️  The admin system needs MySQL and Redis.',
+    'dbw-skip-noninteractive': '🗄️  Non-interactive terminal: skipping the MySQL/Redis setup wizard.',
+    'dbw-skip-env': '🗄️  .env already exists: skipping the MySQL/Redis setup wizard (existing config is never overwritten).',
+    'dbw-skip-hint': '   Edit .env by hand, or delete it and run `mars init` again to restart the wizard.',
+    'dbw-choose': 'Use containers for both, or connect to existing instances?',
+    'dbw-option-container': '1) Start MySQL + Redis in Docker (recommended)',
+    'dbw-option-external': '2) Connect to existing MySQL + Redis instances',
+    'dbw-enter': 'Enter 1 or 2 (default 1): ',
+    'dbw-invalid-choice': 'Please enter 1 or 2.',
+    'dbw-mysql-title': '--- MySQL connection ---',
+    'dbw-redis-title': '--- Redis connection ---',
+    'dbw-enter-host': 'Host (default {{def}}): ',
+    'dbw-enter-port': 'Port (default {{def}}): ',
+    'dbw-enter-database': 'Database (default {{def}}): ',
+    'dbw-enter-username': 'Username (default {{def}}): ',
+    'dbw-enter-password': 'Password (default {{def}}): ',
+    'dbw-enter-redis-password': 'Password (empty for none, default {{def}}): ',
+    'dbw-checking': 'Checking connectivity...',
+    'dbw-mysql-ok': '✅ MySQL reachable{{auth}}.',
+    'dbw-redis-ok': '✅ Redis reachable (PING -> PONG).',
+    'dbw-mysql-fail': '❌ Cannot reach MySQL at {{host}}:{{port}} ({{reason}}). Check the values and try again.',
+    'dbw-redis-fail': '❌ Cannot reach Redis at {{host}}:{{port}} ({{reason}}). Check the values and try again.',
+    'dbw-auth-ok': ', credentials accepted',
+    'dbw-docker-missing': '❌ Docker is not installed or its daemon is not running.',
+    'dbw-docker-hint': '   Install/start Docker (see .agents/skills/marsquakes-setup/references/install-matrix.md),',
+    'dbw-docker-hint2': '   then run `mars init` again. On a bad network configure the daemon proxy first.',
+    'dbw-port-busy': '⚠️  Host port {{port}} is already in use.',
+    'dbw-new-port': 'Publish {{service}} on which host port instead? (default {{def}}): ',
+    'dbw-bad-port': 'Please enter a free port number (1-65535).',
+    'dbw-storage': 'Where should the data be persisted?',
+    'dbw-storage-volume': '1) Docker named volume (recommended: faster, no permission issues)',
+    'dbw-storage-bind': '2) A directory on this machine under ./data (visible, backup-friendly)',
+    'dbw-storage-enter': 'Enter 1 or 2 (default 1): ',
+    'dbw-writing': 'Writing .env...',
+    'dbw-env-written': '✅ Wrote {{file}} (gitignored; passwords live only here).',
+    'dbw-starting': 'Starting MySQL + Redis containers...',
+    'dbw-waiting': 'Waiting for the containers to become healthy...',
+    'dbw-healthy': '✅ MySQL and Redis are healthy.',
+    'dbw-unhealthy': '❌ The containers did not become healthy in time. Inspect with `docker compose -f docker-compose.infra.yml logs`.',
+    'dbw-done-external': '✅ Database configuration saved. Start the API against these instances.',
   },
   zh: {
     'web-label': 'Web 用户端',
@@ -221,6 +262,46 @@ const LOCALES = {
     'android-sdk-local-properties': '✅ 已把 sdk.dir 写入 {{file}}',
     'android-sdk-cli-missing': 'ℹ️ 尚无可用的 Android CLI，已跳过 SDK 包安装。装好后再执行一次 `mars init` 即可。',
     'android-sdk-no-compilesdk': 'ℹ️ 未能从 {{file}} 中读到 compileSdk，无法推导要安装的 SDK 包，已跳过。',
+    'dbw-intro': '🗄️  后台管理系统需要 MySQL 和 Redis。',
+    'dbw-skip-noninteractive': '🗄️  当前为非交互终端：跳过 MySQL/Redis 配置向导。',
+    'dbw-skip-env': '🗄️  .env 已存在：跳过 MySQL/Redis 配置向导（绝不覆盖已有配置）。',
+    'dbw-skip-hint': '   可手动编辑 .env，或删除它后重新执行 `mars init` 再次进入向导。',
+    'dbw-choose': '是用容器运行两者，还是连接已有的实例？',
+    'dbw-option-container': '1) 用 Docker 启动 MySQL + Redis（推荐）',
+    'dbw-option-external': '2) 连接已有的 MySQL + Redis 实例',
+    'dbw-enter': '请输入 1 或 2（默认 1）: ',
+    'dbw-invalid-choice': '请输入 1 或 2。',
+    'dbw-mysql-title': '--- MySQL 连接信息 ---',
+    'dbw-redis-title': '--- Redis 连接信息 ---',
+    'dbw-enter-host': '主机地址（默认 {{def}}）: ',
+    'dbw-enter-port': '端口（默认 {{def}}）: ',
+    'dbw-enter-database': '数据库名（默认 {{def}}）: ',
+    'dbw-enter-username': '用户名（默认 {{def}}）: ',
+    'dbw-enter-password': '密码（默认 {{def}}）: ',
+    'dbw-enter-redis-password': '密码（无密码留空，默认 {{def}}）: ',
+    'dbw-checking': '正在检测连通性...',
+    'dbw-mysql-ok': '✅ MySQL 可连接{{auth}}。',
+    'dbw-redis-ok': '✅ Redis 可连接（PING -> PONG）。',
+    'dbw-mysql-fail': '❌ 无法连接 MySQL {{host}}:{{port}}（{{reason}}）。请检查输入后重试。',
+    'dbw-redis-fail': '❌ 无法连接 Redis {{host}}:{{port}}（{{reason}}）。请检查输入后重试。',
+    'dbw-auth-ok': '，账号密码验证通过',
+    'dbw-docker-missing': '❌ 未安装 Docker，或 Docker daemon 未运行。',
+    'dbw-docker-hint': '   请安装/启动 Docker（参见 .agents/skills/marsquakes-setup/references/install-matrix.md），',
+    'dbw-docker-hint2': '   然后重新执行 `mars init`。网络受限时请先为 daemon 配置代理。',
+    'dbw-port-busy': '⚠️  主机端口 {{port}} 已被占用。',
+    'dbw-new-port': '{{service}} 改用哪个主机端口发布？（默认 {{def}}）: ',
+    'dbw-bad-port': '请输入一个空闲的端口号（1-65535）。',
+    'dbw-storage': '数据要持久化到哪里？',
+    'dbw-storage-volume': '1) Docker 具名卷（推荐：更快，无权限问题）',
+    'dbw-storage-bind': '2) 本机 ./data 下的目录（可见，方便备份）',
+    'dbw-storage-enter': '请输入 1 或 2（默认 1）: ',
+    'dbw-writing': '正在写入 .env...',
+    'dbw-env-written': '✅ 已写入 {{file}}（已被 git 忽略；密码只保存在这里）。',
+    'dbw-starting': '正在启动 MySQL + Redis 容器...',
+    'dbw-waiting': '等待容器进入健康状态...',
+    'dbw-healthy': '✅ MySQL 和 Redis 均已健康。',
+    'dbw-unhealthy': '❌ 容器未能按时进入健康状态。可用 `docker compose -f docker-compose.infra.yml logs` 查看日志。',
+    'dbw-done-external': '✅ 数据库配置已保存。请基于这些实例启动 API。',
   },
 };
 
@@ -1134,8 +1215,8 @@ const DOCKER_BUILD_ARG_KEYS = ['NPM_REGISTRY', 'MAVEN_MIRROR_URL', 'HTTP_PROXY',
 // equivalent. Deliberately not a full dotenv implementation: this only needs to
 // handle the `KEY=value` lines, comments and optional quotes that .env.example
 // actually uses.
-function loadDotEnv(rootDir) {
-  const envPath = path.join(rootDir, '.env');
+function loadDotEnv(rootDir, fileName = '.env') {
+  const envPath = path.join(rootDir, fileName);
   if (!fs.existsSync(envPath)) return {};
 
   const result = {};
@@ -1898,6 +1979,447 @@ function ensureToolchain(platforms, apiInDocker, installEnv = {}, regionInfo = n
   if (installedAny) console.log(`\n${t('toolchain-installed')}`);
 }
 
+// ---------------------------------------------------------------------------
+// MySQL + Redis setup wizard (interactive `mars init` only).
+//
+// Skip rules, in order:
+//   - non-interactive terminal (stdin or stdout is not a TTY) -> skip silently
+//   - .env already exists -> skip; an existing configuration is never touched
+//   - neither api nor web-admin is enabled -> skip
+// The wizard offers two paths in one question: start both in Docker, or connect
+// to existing instances. Passwords are only written to the gitignored .env,
+// never logged and never placed in a compose file.
+// ---------------------------------------------------------------------------
+
+function dockerDaemonRunning() {
+  try {
+    execSync('docker info', { stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Resolves when a TCP server can bind 127.0.0.1:port, i.e. the port is free
+// from this host's point of view. Docker Desktop on Windows can still proxy a
+// bind through, so a busy answer here is best effort, not a guarantee.
+function isLocalPortFree(port) {
+  return new Promise(resolve => {
+    const tester = net.createServer();
+    tester.once('error', () => resolve(false));
+    tester.once('listening', () => tester.close(() => resolve(true)));
+    tester.listen(port, '127.0.0.1');
+  });
+}
+
+function networkErrorMessage(err) {
+  if (!err || !err.code) return (err && err.message) || 'unknown error';
+  const map = {
+    ECONNREFUSED: 'connection refused',
+    EHOSTUNREACH: 'host unreachable',
+    ENETUNREACH: 'network unreachable',
+    ETIMEDOUT: 'timed out',
+    EAI_AGAIN: 'hostname lookup failed',
+  };
+  return map[err.code] ? `${map[err.code]} (${err.code})` : err.code;
+}
+
+// Proves a MySQL server is answering at host:port. A MySQL server sends its
+// handshake greeting unauthenticated; reading the payload length plus the
+// protocol version is enough to identify it. Credential verification is only
+// possible when a `mysql` client exists on PATH: caching_sha2_password over a
+// raw non-TLS socket needs the full auth handshake, which is out of scope for a
+// zero-dependency CLI.
+function probeMysqlServer(host, port, timeoutMs = 5000) {
+  return new Promise(resolve => {
+    const socket = net.createConnection({ host, port });
+    let settled = false;
+    const finish = result => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(result);
+    };
+
+    socket.setTimeout(timeoutMs);
+    socket.once('timeout', () => finish({ ok: false, reason: 'timed out' }));
+    socket.once('error', err => finish({ ok: false, reason: networkErrorMessage(err) }));
+    socket.once('data', buffer => {
+      if (buffer.length >= 5 && buffer[4] === 10) {
+        finish({ ok: true, version: buffer.slice(5, buffer.indexOf(0, 5)).toString() });
+      } else {
+        finish({ ok: false, reason: 'not a MySQL server (unexpected greeting)' });
+      }
+    });
+  });
+}
+
+function mysqlClientAvailable() {
+  const probe = process.platform === 'win32' ? 'where mysql' : 'which mysql';
+  try {
+    execSync(probe, { stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Full credential check. argv is passed as an array so no shell quoting - and
+// therefore no shell injection - is involved; `--connect-timeout` keeps a
+// black-hole host from stalling the wizard.
+function verifyMysqlCredentials(host, port, username, password, database) {
+  const args = ['-h', host, '-P', String(port), '-u', username, `--connect-timeout=5`, '-e', 'SELECT 1'];
+  if (password) args.push(`-p${password}`);
+  if (database) args.push(database);
+  const result = spawnSync('mysql', args, { encoding: 'utf8' });
+  return result.status === 0;
+}
+
+// Redis speaks the inline RESP subset over a plain socket: AUTH (when a
+// password is set) then PING, expecting +PONG.
+function probeRedis(host, port, password, timeoutMs = 5000) {
+  return new Promise(resolve => {
+    const socket = net.createConnection({ host, port });
+    let settled = false;
+    let stage = 'greeting';
+    const finish = result => {
+      if (settled) return;
+      settled = true;
+      socket.destroy();
+      resolve(result);
+    };
+
+    socket.setTimeout(timeoutMs);
+    socket.once('timeout', () => finish({ ok: false, reason: 'timed out' }));
+    socket.once('error', err => finish({ ok: false, reason: networkErrorMessage(err) }));
+    socket.on('data', buffer => {
+      const reply = buffer.toString();
+      if (reply.startsWith('-ERR')) {
+        const text = reply.slice(4).trim();
+        if (/WRONGPASS|invalid password|NOAUTH|AUTH/i.test(text)) {
+          finish({ ok: false, reason: `authentication failed: ${text}` });
+        } else {
+          finish({ ok: false, reason: text });
+        }
+        return;
+      }
+      if (stage === 'auth' && reply.startsWith('+OK')) {
+        stage = 'ping';
+        socket.write('PING\r\n');
+        return;
+      }
+      if ((stage === 'ping' || (stage === 'greeting' && !password)) && reply.startsWith('+PONG')) {
+        finish({ ok: true });
+      }
+    });
+
+    if (password) {
+      stage = 'auth';
+      socket.write(`AUTH ${password}\r\n`);
+    } else {
+      stage = 'ping';
+      socket.write('PING\r\n');
+    }
+  });
+}
+
+// Prompts with a default: an empty answer returns the provided default as a
+// string. The visible default is masked for password fields.
+async function askWithDefault(key, def, mask = false, extraParams = {}) {
+  const shown = mask ? '*'.repeat(Math.min(String(def).length, 10)) : def;
+  const answer = (await prompt(t(key, { ...extraParams, def: shown }))).trim();
+  return answer === '' ? String(def) : answer;
+}
+
+async function askPort(key, def, params = {}) {
+  for (;;) {
+    const answer = await askWithDefault(key, def, false, params);
+    const port = Number(answer);
+    if (Number.isInteger(port) && port >= 1 && port <= 65535) return port;
+    console.log(t('dbw-bad-port'));
+  }
+}
+
+// External path: collect the MySQL values, verify reachability, then the Redis
+// values. Only the failing service is asked again, so a valid MySQL answer is
+// never re-entered after a wrong Redis password.
+async function collectExternalConfig(defaults) {
+  let mysql;
+  for (;;) {
+    console.log(`\n${t('dbw-mysql-title')}`);
+    const host = await askWithDefault('dbw-enter-host', defaults.MYSQL_HOST);
+    const port = await askPort('dbw-enter-port', defaults.MYSQL_PORT);
+    const database = await askWithDefault('dbw-enter-database', defaults.MYSQL_DATABASE);
+    const username = await askWithDefault('dbw-enter-username', defaults.MYSQL_USERNAME);
+    const password = await askWithDefault('dbw-enter-password', defaults.MYSQL_PASSWORD, true);
+    console.log(t('dbw-checking'));
+    const probeResult = await probeMysqlServer(host, port);
+    if (!probeResult.ok) {
+      console.log(t('dbw-mysql-fail', { host, port, reason: probeResult.reason }));
+      continue;
+    }
+    let auth = '';
+    if (mysqlClientAvailable()) {
+      if (verifyMysqlCredentials(host, port, username, password, database)) {
+        auth = t('dbw-auth-ok');
+      } else {
+        console.log(t('dbw-mysql-fail', { host, port, reason: 'credentials rejected' }));
+        continue;
+      }
+    }
+    console.log(t('dbw-mysql-ok', { auth }));
+    mysql = { host, port, database, username, password };
+    break;
+  }
+
+  let redis;
+  for (;;) {
+    console.log(`\n${t('dbw-redis-title')}`);
+    const host = await askWithDefault('dbw-enter-host', defaults.REDIS_HOST);
+    const port = await askPort('dbw-enter-port', defaults.REDIS_PORT);
+    const database = await askWithDefault('dbw-enter-database', defaults.REDIS_DATABASE);
+    const password = await askWithDefault('dbw-enter-redis-password', defaults.REDIS_PASSWORD, true);
+    console.log(t('dbw-checking'));
+    const result = await probeRedis(host, port, password);
+    if (!result.ok) {
+      console.log(t('dbw-redis-fail', { host, port, reason: result.reason }));
+      continue;
+    }
+    console.log(t('dbw-redis-ok'));
+    redis = { host, port, database, password };
+    break;
+  }
+
+  return { mysql, redis };
+}
+
+async function askFreePort(serviceKey, defaultPort) {
+  for (;;) {
+    const port = await askPort('dbw-new-port', defaultPort, { service: serviceKey });
+    // eslint-disable-next-line no-await-in-loop
+    if (await isLocalPortFree(port)) return port;
+    console.log(t('dbw-port-busy', { port }));
+  }
+}
+
+// Container path. Returns null when the daemon is unavailable: the wizard
+// stops there instead of installing Docker (a manual item everywhere).
+async function collectContainerConfig(defaults) {
+  if (!dockerDaemonRunning()) return null;
+
+  let mysqlHostPort = Number(defaults.MYSQL_HOST_PORT) || 3306;
+  if (!(await isLocalPortFree(mysqlHostPort))) {
+    console.log(t('dbw-port-busy', { port: mysqlHostPort }));
+    mysqlHostPort = await askFreePort('MySQL', 3306);
+  }
+
+  let redisHostPort = Number(defaults.REDIS_HOST_PORT) || 6379;
+  if (!(await isLocalPortFree(redisHostPort))) {
+    console.log(t('dbw-port-busy', { port: redisHostPort }));
+    redisHostPort = await askFreePort('Redis', 6379);
+  }
+
+  console.log(`\n${t('dbw-storage')}`);
+  console.log(t('dbw-storage-volume'));
+  console.log(t('dbw-storage-bind'));
+  let useBind = false;
+  for (;;) {
+    const answer = (await prompt(t('dbw-storage-enter'))).trim() || '1';
+    if (answer === '1') break;
+    if (answer === '2') {
+      useBind = true;
+      break;
+    }
+    console.log(t('dbw-invalid-choice'));
+  }
+
+  const mysqlPassword = defaults.MYSQL_PASSWORD;
+  const redisPassword = defaults.REDIS_PASSWORD;
+
+  return { mysqlHostPort, redisHostPort, useBind, mysqlPassword, redisPassword };
+}
+
+// Compose interpolation switches a bind mount vs a named volume: a bare
+// `mysql-data` key is treated as a named volume, while a relative `./data/...`
+// value is treated as a bind source. Only the bind choice writes these keys.
+function buildEnvValues(defaults, config, mode) {
+  const values = { ...defaults };
+  if (mode === 'external') {
+    values.MYSQL_HOST = config.mysql.host;
+    values.MYSQL_PORT = String(config.mysql.port);
+    values.MYSQL_DATABASE = config.mysql.database;
+    values.MYSQL_USERNAME = config.mysql.username;
+    values.MYSQL_PASSWORD = config.mysql.password;
+    values.REDIS_HOST = config.redis.host;
+    values.REDIS_PORT = String(config.redis.port);
+    values.REDIS_DATABASE = config.redis.database;
+    values.REDIS_PASSWORD = config.redis.password;
+  } else {
+    values.MYSQL_HOST = 'mysql';
+    values.MYSQL_PORT = '3306';
+    values.REDIS_HOST = 'redis';
+    values.REDIS_PORT = '6379';
+    values.MYSQL_HOST_PORT = String(config.mysqlHostPort);
+    values.REDIS_HOST_PORT = String(config.redisHostPort);
+    values.MYSQL_PASSWORD = config.mysqlPassword;
+    values.REDIS_PASSWORD = config.redisPassword;
+    if (config.useBind) {
+      values.MYSQL_DATA_SOURCE = './data/mysql';
+      values.REDIS_DATA_SOURCE = './data/redis';
+    }
+  }
+  return values;
+}
+
+// Serialises the example template, substituting values while keeping its
+// comments and order. Keys the template does not declare yet are appended so a
+// newly-added switch still reaches `docker compose`.
+function writeEnvFromTemplate(rootDir, templateName, values) {
+  const templatePath = path.join(rootDir, templateName);
+  let lines;
+  if (fs.existsSync(templatePath)) {
+    lines = fs.readFileSync(templatePath, 'utf8').split(/\r?\n/);
+  } else {
+    lines = Object.keys(values).map(key => `${key}=`);
+  }
+
+  const seen = new Set();
+  const output = lines.map(line => {
+    const match = /^([A-Za-z_][A-Za-z0-9_]*)=/.exec(line);
+    if (match && Object.prototype.hasOwnProperty.call(values, match[1])) {
+      seen.add(match[1]);
+      return `${match[1]}=${values[match[1]]}`;
+    }
+    return line;
+  });
+
+  const extras = Object.keys(values).filter(key => !seen.has(key));
+  if (extras.length) output.push(...extras.map(key => `${key}=${values[key]}`));
+
+  const envPath = path.join(rootDir, '.env');
+  fs.writeFileSync(envPath, `${output.join('\n').replace(/\n*$/, '')}\n`, { mode: 0o600 });
+  return envPath;
+}
+
+function containerHealthStatus(containerName) {
+  try {
+    const out = execSync(
+      `docker inspect -f "{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}" ${containerName}`,
+      { stdio: 'pipe' },
+    ).toString().trim();
+    return out;
+  } catch {
+    return 'missing';
+  }
+}
+
+// Polls both fixed container names until healthy. MySQL's first boot imports
+// the schema (start_period is 90s in the compose file), so the overall budget
+// is four minutes rather than the usual retry window.
+async function waitForHealthy(timeoutMs = 240000) {
+  const containers = ['jeecg-boot-mysql', 'jeecg-boot-redis'];
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const statuses = containers.map(containerHealthStatus);
+    if (statuses.every(status => status === 'healthy')) return true;
+    if (statuses.some(status => status === 'unhealthy' || status === 'exited' || status === 'dead')) return false;
+    // eslint-disable-next-line no-await-in-loop
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+  return false;
+}
+
+async function setupDatabaseWizard(rootDir, enabledPlatforms) {
+  const relevant = enabledPlatforms.some(p => p.name === 'api' || p.name === 'web-admin');
+  if (!relevant) return;
+
+  if (!(process.stdin.isTTY && process.stdout.isTTY)) {
+    console.log(`\n${t('dbw-skip-noninteractive')}`);
+    return;
+  }
+
+  const envPath = path.join(rootDir, '.env');
+  if (fs.existsSync(envPath)) {
+    console.log(`\n${t('dbw-skip-env')}`);
+    console.log(t('dbw-skip-hint'));
+    return;
+  }
+
+  const templateName = '.env.example';
+  const defaults = loadDotEnv(rootDir, templateName);
+  const fallback = {
+    COMPOSE_PROJECT_NAME: 'marsquakes',
+    MYSQL_HOST: 'host.docker.internal',
+    MYSQL_PORT: '3306',
+    MYSQL_DATABASE: 'jeecg-boot',
+    MYSQL_USERNAME: 'root',
+    MYSQL_PASSWORD: 'root',
+    REDIS_HOST: 'host.docker.internal',
+    REDIS_PORT: '6379',
+    REDIS_DATABASE: '0',
+    REDIS_PASSWORD: '',
+    WEB_ADMIN_PORT: '8807',
+    MYSQL_HOST_PORT: '3306',
+    REDIS_HOST_PORT: '6379',
+    NPM_REGISTRY: 'https://registry.npmjs.org',
+    MAVEN_MIRROR_URL: 'https://repo.maven.apache.org/maven2',
+  };
+  for (const key of Object.keys(fallback)) {
+    if (defaults[key] === undefined) defaults[key] = fallback[key];
+  }
+
+  console.log(`\n${t('dbw-intro')}`);
+  console.log(t('dbw-option-container'));
+  console.log(t('dbw-option-external'));
+
+  let mode;
+  for (;;) {
+    const answer = (await prompt(t('dbw-enter'))).trim() || '1';
+    if (answer === '1' || answer === '2') {
+      mode = answer === '1' ? 'container' : 'external';
+      break;
+    }
+    console.log(t('dbw-invalid-choice'));
+  }
+
+  let config;
+  if (mode === 'external') {
+    config = await collectExternalConfig(defaults);
+  } else {
+    config = await collectContainerConfig(defaults);
+    if (!config) {
+      console.log(`\n${t('dbw-docker-missing')}`);
+      console.log(t('dbw-docker-hint'));
+      console.log(t('dbw-docker-hint2'));
+      process.exit(1);
+    }
+  }
+
+  console.log(`\n${t('dbw-writing')}`);
+  const writtenPath = writeEnvFromTemplate(rootDir, templateName, buildEnvValues(defaults, config, mode));
+  console.log(t('dbw-env-written', { file: path.relative(rootDir, writtenPath) || '.env' }));
+
+  if (mode === 'external') {
+    console.log(`\n${t('dbw-done-external')}`);
+    return;
+  }
+
+  console.log(`\n${t('dbw-starting')}`);
+  const started = run('docker compose -f docker-compose.infra.yml up -d', rootDir);
+  if (!started) {
+    console.log(t('dbw-unhealthy'));
+    process.exit(1);
+  }
+
+  console.log(`\n${t('dbw-waiting')}`);
+  if (await waitForHealthy()) {
+    console.log(`\n${t('dbw-healthy')}`);
+  } else {
+    console.log(`\n${t('dbw-unhealthy')}`);
+    process.exit(1);
+  }
+}
+
 async function initCommand(args = []) {
   const rootDir = findProjectRoot();
   if (!rootDir) {
@@ -1964,6 +2486,10 @@ async function initCommand(args = []) {
   if (enabledPlatforms.some(p => p.name === 'android')) {
     ensureAndroidSdk(rootDir);
   }
+
+  // Interactive only. A non-TTY run (CI) and an existing .env skip it outright,
+  // so this cannot change the bootstrap reference or overwrite any config.
+  await setupDatabaseWizard(rootDir, enabledPlatforms);
 
   console.log('\n✅ Initialization complete!\n');
 }

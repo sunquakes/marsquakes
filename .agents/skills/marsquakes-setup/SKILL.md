@@ -226,6 +226,30 @@ the toolchains those platforms need — so the Rust or JDK this skill deliberate
 skipped arrives exactly when a project asks for it. Tell the user to run it; do
 not pre-empt it by installing those toolchains here.
 
+When the project enables `api` or `web-admin`, an **interactive** `mars init`
+also runs a MySQL/Redis setup wizard after the toolchain step. It asks one
+question — start both services in Docker, or connect to existing instances —
+and then:
+
+- **Existing instances:** prompts host/port/database/credentials with defaults
+  and verifies reachability before writing anything (a MySQL handshake probe;
+  Redis gets an AUTH + PING; full MySQL credential verification only when a
+  `mysql` client exists on PATH).
+- **Containers:** probes the daemon with `docker info` (a missing daemon prints
+  install guidance and stops; Docker is never auto-installed), asks for an
+  alternate `MYSQL_HOST_PORT`/`REDIS_HOST_PORT` when 3306/6379 are busy, offers
+  a named volume (default) or a host-directory bind mount under `./data`, writes
+  `.env` with the hosts switched to `mysql`/`redis`, runs
+  `docker compose -f docker-compose.infra.yml up -d`, and waits for both
+  healthchecks to pass.
+
+The wizard is part of the interactive path only. It skips when stdin or stdout
+is not a TTY (so CI, including the bootstrap workflows below, is unaffected) and
+skips — without ever overwriting — when `.env` already exists. Passwords are
+written solely to the gitignored `.env`; they are never logged and never placed
+in a compose file. A user who wants the infra containers in a non-interactive
+shell starts them with `docker compose -f docker-compose.infra.yml up -d`.
+
 ### Region detection: cn vs default
 
 `--registry auto` decides where the host effectively is instead of making the
