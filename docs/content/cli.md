@@ -273,8 +273,8 @@ to `dev` or `build` makes the CLI:
 
 4. Build `marsquakes/<platform>:<mode>` with the **repository root** as the
    build context.
-5. Run it as `marsquakes-<platform>-<mode>`, publishing port 3100 for
-   `web`/`web-admin` and 8080 for `api`.
+5. Run it as `marsquakes-<platform>-<mode>`, publishing port 3100 for `web`,
+   8807 for `web-admin` and 8080 for `api`.
 
 See [Docker](./docker.md) for the Dockerfile layout and the base-image
 constraints that matter.

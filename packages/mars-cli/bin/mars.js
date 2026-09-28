@@ -1233,7 +1233,7 @@ function dockerImageExists(imageName) {
 
 const DOCKER_PORTS = {
   web: '3100:3100',
-  'web-admin': '3100:3100',
+  'web-admin': '8807:8807',
   api: '8080:8080',
 };
 
@@ -2702,7 +2702,7 @@ async function initCommand(args = []) {
 
 // The closing hand-off: a zero-experience user should leave `mars init` knowing
 // exactly what to type next and what address to open. Only mention the admin
-// when web-admin is enabled; the Vite dev server always runs on port 3100 here,
+// when web-admin is enabled; the Vite dev server always runs on port 8807 here,
 // both natively and in the dev container.
 function printNextSteps(enabledPlatforms, apiInDocker) {
   console.log(`\n${t('init-complete')}`);
@@ -2710,7 +2710,7 @@ function printNextSteps(enabledPlatforms, apiInDocker) {
   console.log(apiInDocker ? t('next-step-dev-docker') : t('next-step-dev'));
   console.log(t('next-step-wait'));
   if (enabledPlatforms.some(p => p.name === 'web-admin')) {
-    console.log(t('next-step-admin', { port: '3100' }));
+    console.log(t('next-step-admin', { port: '8807' }));
     console.log(t('next-step-login'));
   }
   console.log(t('next-step-note'));

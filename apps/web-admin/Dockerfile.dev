@@ -33,5 +33,5 @@ ENV NODE_OPTIONS=--max-old-space-size=8192
 # strips the outer brackets and wrapperEnv's JSON.parse fails at container start.
 ENV VITE_PROXY='[["/jeecgboot","http://jeecg-boot-system:8080/jeecg-boot"]]'
 
-EXPOSE 3100
-CMD ["pnpm", "dev", "--host", "0.0.0.0", "--port", "3100"]
+EXPOSE 8807
+CMD ["pnpm", "dev", "--host", "0.0.0.0", "--port", "8807"]

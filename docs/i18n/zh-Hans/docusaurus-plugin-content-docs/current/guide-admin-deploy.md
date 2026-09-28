@@ -27,7 +27,7 @@ mars build --platform web-admin --docker
 ```
 
 容器在 `${WEB_ADMIN_PORT:-8807}` 端口（默认 8807，映射到容器内 nginx 的 80 端口）
-提供应用，这与开发服务器的 3100 刻意不同。Dockerfile 变体和网络慢时要紧的
+提供应用，与开发服务器的 8807 保持一致。Dockerfile 变体和网络慢时要紧的
 `NPM_REGISTRY` 构建参数见 [Docker](./docker.md)。
 
 ## 第 2 步 —— 在容器里构建并运行 API

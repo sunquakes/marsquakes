@@ -262,7 +262,7 @@ jeecg:
   uploadType: local
   # 前端访问地址
   domainUrl:
-    pc: http://localhost:3100
+    pc: http://localhost:8807
     app: http://localhost:8051
   path:
     #文件上传根目录 设置

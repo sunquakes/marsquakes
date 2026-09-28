@@ -28,9 +28,9 @@ mars build --platform web-admin --docker
 ```
 
 The container publishes the app on port `${WEB_ADMIN_PORT:-8807}` (8807 by
-default, mapped to port 80 inside nginx), which is deliberately different from
-the dev server's 3100. See [Docker](./docker.md) for the Dockerfile variants
-and the `NPM_REGISTRY` build argument that matters on a slow network.
+default, mapped to port 80 inside nginx), matching the dev server's 8807. See
+[Docker](./docker.md) for the Dockerfile variants and the `NPM_REGISTRY` build
+argument that matters on a slow network.
 
 ## Step 2 — Build and run the API in a container
 

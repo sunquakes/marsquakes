@@ -252,8 +252,8 @@ MySQL 和 Redis —— 见[开始一个项目](./ai-start.md)。
    | `build` | `Dockerfile.build` → `Dockerfile` |
 
 4. 以**仓库根目录**为构建上下文，构建 `marsquakes/<platform>:<mode>` 镜像。
-5. 以 `marsquakes-<platform>-<mode>` 运行容器，`web`/`web-admin` 暴露 3100
-   端口，`api` 暴露 8080 端口。
+5. 以 `marsquakes-<platform>-<mode>` 运行容器，`web` 暴露 3100 端口，
+   `web-admin` 暴露 8807 端口，`api` 暴露 8080 端口。
 
 Dockerfile 的组织方式以及那些关键的基础镜像约束，见 [Docker](./docker.md)。
 

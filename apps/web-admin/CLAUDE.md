@@ -9,7 +9,7 @@ JeecgBoot Vue3 frontend — an enterprise low-code platform built with Vue 3 + V
 ## Common Commands
 
 ```bash
-pnpm dev              # Start dev server (port 3100, mock enabled)
+pnpm dev              # Start dev server (port 8807, mock enabled)
 pnpm build            # Production build (output: dist/)
 pnpm build:docker     # Docker production build
 pnpm build:dockercloud # Docker cloud production build
@@ -125,7 +125,7 @@ Three icon approaches:
 
 ### Environment Variables
 
-- `.env` — base config (port 3100, app title, SSO/qiankun flags)
+- `.env` — base config (port 8807, app title, SSO/qiankun flags)
 - `.env.development` — mock enabled, proxy to `localhost:8080/jeecg-boot`
 - `.env.production` — mock disabled, gzip compression
 - `.env.docker` — Docker production build config

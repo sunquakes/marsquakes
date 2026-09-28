@@ -5,7 +5,7 @@ title: 如何开发
 
 # 后台管理系统：如何开发
 
-两半分开运行：Vite 在 **3100** 端口提供带热更新的前端，并把 API 调用代理到
+两半分开运行：Vite 在 **8807** 端口提供带热更新的前端，并把 API 调用代理到
 **8080** 端口的后端。按顺序执行下面的步骤。
 
 ## 第 1 步 —— 启动依赖
@@ -22,8 +22,8 @@ pnpm dev --filter=web-admin
 pnpm dev:web-admin
 ```
 
-Vite 开发服务器监听 **3100** 端口（由 `apps/web-admin/.env` 中的 `VITE_PORT`
-设定），打开 `http://localhost:3100`。CLI 只是对同一条命令的封装：
+Vite 开发服务器监听 **8807** 端口（由 `apps/web-admin/.env` 中的 `VITE_PORT`
+设定），打开 `http://localhost:8807`。CLI 只是对同一条命令的封装：
 
 ```bash
 mars dev --platform web-admin
@@ -79,7 +79,7 @@ mock 数据在 `mock/`。改前端代码前先读 `apps/web-admin/AGENTS.md`。�
 
 1. 先确认本页讲的两个半端都在运行。
 2. 粘贴下面的提示词，然后**等方案出来**，批准之前什么都别动。
-3. 完成后按它的建议重启，刷新 `http://localhost:3100`，亲手把每个按钮都点一遍。
+3. 完成后按它的建议重启，刷新 `http://localhost:8807`，亲手把每个按钮都点一遍。
 
 ```text
 我想要一个新功能来管理文章。动任何东西之前，先读 `apps/api/AGENTS.md` 和

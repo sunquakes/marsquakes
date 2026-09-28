@@ -6,7 +6,7 @@ title: Develop
 # Admin System: Develop
 
 The two halves run separately: Vite serves the frontend with hot reload on port
-**3100** and proxies its API calls to the backend on **8080**. Follow the steps
+**8807** and proxies its API calls to the backend on **8080**. Follow the steps
 in order.
 
 ## Step 1 — Start the dependencies
@@ -24,8 +24,8 @@ pnpm dev --filter=web-admin
 pnpm dev:web-admin
 ```
 
-The Vite dev server listens on port **3100** (set by `VITE_PORT` in
-`apps/web-admin/.env`), so open `http://localhost:3100`. The CLI just wraps the
+The Vite dev server listens on port **8807** (set by `VITE_PORT` in
+`apps/web-admin/.env`), so open `http://localhost:8807`. The CLI just wraps the
 same command:
 
 ```bash
@@ -86,7 +86,7 @@ track: [Admin System: Create a Feature](./ai-admin-module.md). The short version
 
 1. Make sure both halves from this page are running.
 2. Paste the prompt below, then **wait for the plan** before approving anything.
-3. When it is done, restart as it suggests, reload `http://localhost:3100`, and
+3. When it is done, restart as it suggests, reload `http://localhost:8807`, and
    press every button yourself.
 
 ```text

@@ -263,7 +263,7 @@ non-interactive shell starts them with
 ### Starting the app after init
 
 `mars init` ends with printed next steps (`mars dev`, wait for the API, then open
-the web admin at `http://localhost:3100` and log in as `admin / 123456`). The
+the web admin at `http://localhost:8807` and log in as `admin / 123456`). The
 CLI can actually start the whole stack itself, including the Java API:
 
 - **Native:** when `api` is enabled, `mars dev` runs
