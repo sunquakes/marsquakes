@@ -117,20 +117,20 @@ const LOCALES = {
     'android-sdk-local-properties': '✅ Wrote sdk.dir into {{file}}',
     'android-sdk-cli-missing': 'ℹ️ Android CLI is not available yet, so the SDK packages were skipped. Run `mars init` again once it is installed.',
     'android-sdk-no-compilesdk': 'ℹ️ No compileSdk found in {{file}}, so no SDK package could be derived. Skipping.',
-    'dbw-intro': '🗄️  The admin system needs MySQL and Redis.',
+    'dbw-intro': '🗄️  The admin system needs two supporting programs:\n        MySQL (the database: where all data is stored)\n        Redis (the cache: a fast temporary store for logins and sessions)',
     'dbw-skip-noninteractive': '🗄️  Non-interactive terminal: skipping the MySQL/Redis setup wizard.',
     'dbw-skip-env': '🗄️  .env already exists: skipping the MySQL/Redis setup wizard (existing config is never overwritten).',
     'dbw-skip-hint': '   Edit .env by hand, or delete it and run `mars init` again to restart the wizard.',
-    'dbw-choose': 'Use containers for both, or connect to existing instances?',
-    'dbw-option-container': '1) Start MySQL + Redis in Docker (recommended)',
-    'dbw-option-external': '2) Connect to existing MySQL + Redis instances',
+    'dbw-choose': 'How should these two programs be provided?',
+    'dbw-option-container': '1) Let Docker download and run them for you (recommended: nothing to install by hand)',
+    'dbw-option-external': '2) I already run MySQL and Redis myself, connect to them',
     'dbw-enter': 'Enter 1 or 2 (default 1): ',
     'dbw-invalid-choice': 'Please enter 1 or 2.',
     'dbw-mysql-title': '--- MySQL connection ---',
     'dbw-redis-title': '--- Redis connection ---',
-    'dbw-enter-host': 'Host (default {{def}}): ',
-    'dbw-enter-port': 'Port (default {{def}}): ',
-    'dbw-enter-database': 'Database (default {{def}}): ',
+    'dbw-enter-host': 'Host - the computer running it, often 127.0.0.1 for this machine (default {{def}}): ',
+    'dbw-enter-port': 'Port - the "door number" the program listens on (default {{def}}): ',
+    'dbw-enter-database': 'Database name (default {{def}}): ',
     'dbw-enter-username': 'Username (default {{def}}): ',
     'dbw-enter-password': 'Password (default {{def}}): ',
     'dbw-enter-redis-password': 'Password (empty for none, default {{def}}): ',
@@ -146,9 +146,9 @@ const LOCALES = {
     'dbw-port-busy': '⚠️  Host port {{port}} is already in use.',
     'dbw-new-port': 'Publish {{service}} on which host port instead? (default {{def}}): ',
     'dbw-bad-port': 'Please enter a free port number (1-65535).',
-    'dbw-storage': 'Where should the data be persisted?',
-    'dbw-storage-volume': '1) Docker named volume (recommended: faster, no permission issues)',
-    'dbw-storage-bind': '2) A directory on this machine under ./data (visible, backup-friendly)',
+    'dbw-storage': 'Where should the database files be kept on disk?',
+    'dbw-storage-volume': '1) Docker manages the storage (recommended: faster, no permission problems)',
+    'dbw-storage-bind': '2) In a ./data folder inside this project (you can see and copy the files)',
     'dbw-storage-enter': 'Enter 1 or 2 (default 1): ',
     'dbw-writing': 'Writing .env...',
     'dbw-env-written': '✅ Wrote {{file}} (gitignored; passwords live only here).',
@@ -157,6 +157,22 @@ const LOCALES = {
     'dbw-healthy': '✅ MySQL and Redis are healthy.',
     'dbw-unhealthy': '❌ The containers did not become healthy in time. Inspect with `docker compose -f docker-compose.infra.yml logs`.',
     'dbw-done-external': '✅ Database configuration saved. Start the API against these instances.',
+    'api-starting': '🔌 Starting API (Spring Boot) in {{dir}}...',
+    'api-env-loaded': '   Loaded database settings from .env.',
+    'api-env-missing': '   No .env found; using the built-in defaults (127.0.0.1, root/root).',
+    'api-host-remap': '   .env points at the in-container name "{{from}}"; reaching it via 127.0.0.1:{{port}} on this host instead.',
+    'api-mvn-missing': '❌ Maven (mvn) was not found on PATH. Run `mars init` to install the API toolchain.',
+    'api-docker-network': '   Joining the "jeecg_boot" network so the container can reach MySQL and Redis.',
+    'api-docker-network-hint': '   Start the databases first: docker compose -f docker-compose.infra.yml up -d',
+    'init-complete': '✅ Initialization complete!',
+    'next-steps-title': '👉 Next steps:',
+    'next-step-dev': '   1. Start the app:   mars dev',
+    'next-step-dev-docker': '   1. Start the app:   mars dev --docker',
+    'next-step-wait': '   2. Wait until you see "Started" in the API logs (first start takes longer).',
+    'next-step-admin': '   3. Open the admin:   http://localhost:{{port}}',
+    'next-step-login': '      Default login: admin / 123456',
+    'next-step-note': '   Keep this terminal open; press Ctrl+C to stop everything.',
+    'mock-disabled': '✅ Turned off the built-in mock data in web-admin (it will use the real API).',
   },
   zh: {
     'web-label': 'Web 用户端',
@@ -262,19 +278,19 @@ const LOCALES = {
     'android-sdk-local-properties': '✅ 已把 sdk.dir 写入 {{file}}',
     'android-sdk-cli-missing': 'ℹ️ 尚无可用的 Android CLI，已跳过 SDK 包安装。装好后再执行一次 `mars init` 即可。',
     'android-sdk-no-compilesdk': 'ℹ️ 未能从 {{file}} 中读到 compileSdk，无法推导要安装的 SDK 包，已跳过。',
-    'dbw-intro': '🗄️  后台管理系统需要 MySQL 和 Redis。',
+    'dbw-intro': '🗄️  后台管理系统需要两个配套程序：\n        MySQL（数据库：所有数据都存在这里）\n        Redis（缓存：临时存登录状态等，速度很快）',
     'dbw-skip-noninteractive': '🗄️  当前为非交互终端：跳过 MySQL/Redis 配置向导。',
     'dbw-skip-env': '🗄️  .env 已存在：跳过 MySQL/Redis 配置向导（绝不覆盖已有配置）。',
     'dbw-skip-hint': '   可手动编辑 .env，或删除它后重新执行 `mars init` 再次进入向导。',
-    'dbw-choose': '是用容器运行两者，还是连接已有的实例？',
-    'dbw-option-container': '1) 用 Docker 启动 MySQL + Redis（推荐）',
-    'dbw-option-external': '2) 连接已有的 MySQL + Redis 实例',
+    'dbw-choose': '这两个程序要怎么准备？',
+    'dbw-option-container': '1) 让 Docker 自动下载并运行它们（推荐：不用自己动手装）',
+    'dbw-option-external': '2) 我自己已经装了 MySQL 和 Redis，直接连接它们',
     'dbw-enter': '请输入 1 或 2（默认 1）: ',
     'dbw-invalid-choice': '请输入 1 或 2。',
     'dbw-mysql-title': '--- MySQL 连接信息 ---',
     'dbw-redis-title': '--- Redis 连接信息 ---',
-    'dbw-enter-host': '主机地址（默认 {{def}}）: ',
-    'dbw-enter-port': '端口（默认 {{def}}）: ',
+    'dbw-enter-host': '主机地址（程序在哪台电脑上，本机通常填 127.0.0.1；默认 {{def}}）: ',
+    'dbw-enter-port': '端口（程序对外的“门牌号”；默认 {{def}}）: ',
     'dbw-enter-database': '数据库名（默认 {{def}}）: ',
     'dbw-enter-username': '用户名（默认 {{def}}）: ',
     'dbw-enter-password': '密码（默认 {{def}}）: ',
@@ -291,9 +307,9 @@ const LOCALES = {
     'dbw-port-busy': '⚠️  主机端口 {{port}} 已被占用。',
     'dbw-new-port': '{{service}} 改用哪个主机端口发布？（默认 {{def}}）: ',
     'dbw-bad-port': '请输入一个空闲的端口号（1-65535）。',
-    'dbw-storage': '数据要持久化到哪里？',
-    'dbw-storage-volume': '1) Docker 具名卷（推荐：更快，无权限问题）',
-    'dbw-storage-bind': '2) 本机 ./data 下的目录（可见，方便备份）',
+    'dbw-storage': '数据库文件放在磁盘的什么位置？',
+    'dbw-storage-volume': '1) 交给 Docker 保管（推荐：更快，不会有权限问题）',
+    'dbw-storage-bind': '2) 项目里的 ./data 文件夹（能直接看到、拷贝文件）',
     'dbw-storage-enter': '请输入 1 或 2（默认 1）: ',
     'dbw-writing': '正在写入 .env...',
     'dbw-env-written': '✅ 已写入 {{file}}（已被 git 忽略；密码只保存在这里）。',
@@ -302,6 +318,22 @@ const LOCALES = {
     'dbw-healthy': '✅ MySQL 和 Redis 均已健康。',
     'dbw-unhealthy': '❌ 容器未能按时进入健康状态。可用 `docker compose -f docker-compose.infra.yml logs` 查看日志。',
     'dbw-done-external': '✅ 数据库配置已保存。请基于这些实例启动 API。',
+    'api-starting': '🔌 正在 {{dir}} 启动 API（Spring Boot）...',
+    'api-env-loaded': '   已从 .env 读取数据库配置。',
+    'api-env-missing': '   未找到 .env，使用内置默认值（127.0.0.1，root/root）。',
+    'api-host-remap': '   .env 里写的是容器内名称“{{from}}”，本机改为通过 127.0.0.1:{{port}} 访问。',
+    'api-mvn-missing': '❌ PATH 中未找到 Maven（mvn）。请先执行 `mars init` 安装 API 所需工具链。',
+    'api-docker-network': '   将加入“jeecg_boot”网络，以便容器访问 MySQL 和 Redis。',
+    'api-docker-network-hint': '   请先启动数据库：docker compose -f docker-compose.infra.yml up -d',
+    'init-complete': '✅ 初始化完成！',
+    'next-steps-title': '👉 下一步：',
+    'next-step-dev': '   1. 启动程序：mars dev',
+    'next-step-dev-docker': '   1. 启动程序：mars dev --docker',
+    'next-step-wait': '   2. 等到 API 日志中出现“Started”（第一次启动会慢一些）。',
+    'next-step-admin': '   3. 打开后台：http://localhost:{{port}}',
+    'next-step-login': '      默认账号：admin / 123456',
+    'next-step-note': '   请保持这个终端开着；按 Ctrl+C 可停止全部服务。',
+    'mock-disabled': '✅ 已关闭 web-admin 内置的模拟数据（将使用真实接口）。',
   },
 };
 
@@ -323,7 +355,42 @@ function tOptional(key) {
   return locales[key] || LOCALES.en[key];
 }
 
+// Infer the language from the host so a zero-experience user never has to know
+// about --lang: POSIX exposes LANG/LC_ALL, while Windows exposes its UI language
+// through env vars or PowerShell's Get-UICulture. An explicit --lang flag still
+// wins because it is parsed afterwards.
+function detectSystemLang() {
+  const posixLocale = (process.env.LANG || process.env.LC_ALL || '').toLowerCase();
+  if (posixLocale) {
+    if (posixLocale.startsWith('zh') || posixLocale.includes('zh_')) return 'zh';
+    if (posixLocale.startsWith('en')) return 'en';
+  }
+
+  const winLocale = (process.env.LANGUAGE || process.env.LANG_OVERRIDE || '').toLowerCase();
+  if (winLocale.startsWith('zh')) return 'zh';
+
+  if (process.platform === 'win32') {
+    try {
+      const out = execSync('powershell -NoProfile -Command "(Get-UICulture).Name"', {
+        stdio: 'pipe',
+        shell: true,
+      }).toString().trim().toLowerCase();
+      if (out.startsWith('zh')) return 'zh';
+      if (out.startsWith('en')) return 'en';
+    } catch {
+      // Fall through to the timezone heuristic below.
+    }
+  }
+
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  if (/^Asia\/(Shanghai|Urumqi|Chongqing|Harbin|Kashgar|Taipei|Hong_Kong|Macau)$/.test(tz)) return 'zh';
+
+  return 'en';
+}
+
 function parseLangArg(args) {
+  CURRENT_LANG = detectSystemLang();
+
   const langIndex = args.indexOf('--lang');
   if (langIndex > -1 && args[langIndex + 1]) {
     const lang = args[langIndex + 1].toLowerCase();
@@ -428,7 +495,7 @@ Options:
                            cn = mainland-China mirrors for npm/Maven/rustup/Node;
                            auto = detect cn vs default from network and locale;
                            project dependencies are never redirected)
-  --lang <en|zh>           Set language (default: en)
+  --lang <en|zh>           Set language (default: auto-detected)
   --help                   Show this help message
 
 Examples:
@@ -566,11 +633,12 @@ function gradlew(task) {
     : `./gradlew ${task}`;
 }
 
-function spawnProcess(command, args, cwd) {
+function spawnProcess(command, args, cwd, extraEnv = null) {
   const child = spawn(command, args, {
     cwd,
     stdio: 'inherit',
     shell: true,
+    env: extraEnv ? { ...process.env, ...extraEnv } : process.env,
   });
   child.on('exit', (code) => {
     if (code !== 0 && code !== null) {
@@ -1282,7 +1350,7 @@ function runDocker(rootDir, platform, mode) {
 
   // Dockerfiles live in each platform's own directory, but the build context
   // is still the repository root.
-  const { dockerfile, relativePath } = resolveDockerfile(rootDir, targetPlatform, mode);
+  const { platformDir, dockerfile, relativePath } = resolveDockerfile(rootDir, targetPlatform, mode);
 
   if (!fs.existsSync(dockerfile)) {
     console.error(`\n❌ Dockerfile not found for platform "${targetPlatform}" (mode: ${mode})`);
@@ -1315,12 +1383,37 @@ function runDocker(rootDir, platform, mode) {
   const dockerArgs = ['run', '--rm', '--name', containerName];
 
   if (mode === 'dev') {
-    dockerArgs.push('-it');
-    dockerArgs.push('-v', `${rootDir}:/app`);
+    if (process.stdout.isTTY && process.stdin.isTTY) {
+      dockerArgs.push('-it');
+    }
+    const mountSource = path.join(rootDir, platformDir);
+    dockerArgs.push('-v', `${mountSource}:/app`);
+    // The source mount shadows the image's /app/node_modules (and the host may
+    // not have installed them at all, or for a different platform). An anonymous
+    // volume keeps the image-built dependencies while sources stay hot-reloaded.
+    if (targetPlatform === 'web-admin' || targetPlatform === 'web') {
+      dockerArgs.push('-v', '/app/node_modules');
+    }
   }
 
   if (DOCKER_PORTS[targetPlatform]) {
     dockerArgs.push('-p', DOCKER_PORTS[targetPlatform]);
+  }
+
+  // The API dev image runs the docker Maven profile, whose application-docker.yml
+  // reaches the databases by their fixed names jeecg-boot-mysql / jeecg-boot-redis.
+  // Those names only resolve on the user-defined network created by
+  // docker-compose.infra.yml, so the container has to join it explicitly. The
+  // web-admin dev container joins too, so its Vite proxy can reach the API.
+  if (mode === 'dev' && (targetPlatform === 'api' || targetPlatform === 'web-admin')) {
+    dockerArgs.push('--network', 'jeecg_boot');
+    if (targetPlatform === 'api') {
+      // The web-admin proxy targets this fixed name (see its Dockerfile.dev),
+      // so alias the API container to it on the shared network.
+      dockerArgs.push('--network-alias', 'jeecg-boot-system');
+      console.log(t('api-docker-network'));
+      console.log(t('api-docker-network-hint'));
+    }
   }
 
   dockerArgs.push(imageName);
@@ -1358,6 +1451,90 @@ const PLATFORM_COMMANDS = {
   },
 };
 
+// The API is a Maven multi-module project rather than a pnpm workspace member,
+// so it cannot go through `pnpm dev --filter`. Resolve the exact Maven command
+// here and derive its environment from the wizard-written .env.
+//
+// spring-boot:run cannot be combined with -am: the goal then executes on every
+// upstream project in the reactor as well, and fails on the parent pom, which
+// has no main class (and no pinned plugin version, so Maven even resolves the
+// latest 4.x). Install the upstream modules first, then run the goal inside the
+// start module only.
+const API_INSTALL_ARGS = ['install', '-DskipTests'];
+const API_RUN_ARGS = ['spring-boot:run'];
+const API_START_MODULE = 'jeecg-module-system/jeecg-system-start';
+const IN_CONTAINER_DB_NAMES = ['mysql', 'redis', 'jeecg-boot-mysql', 'jeecg-boot-redis'];
+
+function commandAvailable(command) {
+  try {
+    execSync(process.platform === 'win32' ? `where ${command}` : `command -v ${command}`, {
+      stdio: 'pipe',
+      shell: true,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Builds the environment for a host-run API process. The container wizard writes
+// MYSQL_HOST=mysql / REDIS_HOST=redis, names that only resolve inside the
+// jeecg_boot Docker network; on the host those services are reached through
+// their published ports instead, so remap both the host name and the port.
+function buildApiDevEnv(rootDir) {
+  const envFile = loadDotEnv(rootDir);
+  const hasEnv = Object.keys(envFile).length > 0;
+  const env = {};
+
+  if (!hasEnv) {
+    console.log(t('api-env-missing'));
+    return env;
+  }
+
+  console.log(t('api-env-loaded'));
+
+  for (const key of ['MYSQL_DATABASE', 'MYSQL_USERNAME', 'MYSQL_PASSWORD', 'REDIS_DATABASE', 'REDIS_PASSWORD']) {
+    if (envFile[key] !== undefined) env[key] = envFile[key];
+  }
+
+  if (IN_CONTAINER_DB_NAMES.includes(envFile.MYSQL_HOST)) {
+    const hostPort = envFile.MYSQL_HOST_PORT || '3306';
+    env.MYSQL_HOST = '127.0.0.1';
+    env.MYSQL_PORT = hostPort;
+    console.log(t('api-host-remap', { from: envFile.MYSQL_HOST, port: hostPort }));
+  } else {
+    if (envFile.MYSQL_HOST) env.MYSQL_HOST = envFile.MYSQL_HOST;
+    if (envFile.MYSQL_PORT) env.MYSQL_PORT = envFile.MYSQL_PORT;
+  }
+
+  if (IN_CONTAINER_DB_NAMES.includes(envFile.REDIS_HOST)) {
+    const hostPort = envFile.REDIS_HOST_PORT || '6379';
+    env.REDIS_HOST = '127.0.0.1';
+    env.REDIS_PORT = hostPort;
+    console.log(t('api-host-remap', { from: envFile.REDIS_HOST, port: hostPort }));
+  } else {
+    if (envFile.REDIS_HOST) env.REDIS_HOST = envFile.REDIS_HOST;
+    if (envFile.REDIS_PORT) env.REDIS_PORT = envFile.REDIS_PORT;
+  }
+
+  return env;
+}
+
+function spawnApi(rootDir, apiPlatform, children) {
+  if (!commandAvailable('mvn')) {
+    console.log(t('api-mvn-missing'));
+    return;
+  }
+
+  const apiDir = path.join(rootDir, apiPlatform.dir);
+  console.log(t('api-starting', { dir: apiPlatform.dir }));
+
+  const apiEnv = buildApiDevEnv(rootDir);
+  const chainedArgs = [...API_INSTALL_ARGS, '&&', 'cd', API_START_MODULE, '&&', 'mvn', ...API_RUN_ARGS];
+  const child = spawnProcess('mvn', chainedArgs, apiDir, apiEnv);
+  children.push(child);
+}
+
 function devCommand(args) {
   const rootDir = findProjectRoot();
   if (!rootDir) {
@@ -1371,8 +1548,9 @@ function devCommand(args) {
 
   const config = loadPlatformsConfig(rootDir);
   const enabledPlatforms = filterPlatformsByHost(getEnabledPlatforms(config), platform);
-  const workspacePlatforms = enabledPlatforms.filter(p => !['android', 'ios', 'windows', 'linux', 'macos'].includes(p.name));
+  const workspacePlatforms = enabledPlatforms.filter(p => !['android', 'ios', 'windows', 'linux', 'macos', 'api'].includes(p.name));
   const nativePlatforms = enabledPlatforms.filter(p => ['android', 'ios', 'windows', 'linux', 'macos'].includes(p.name));
+  const apiPlatform = enabledPlatforms.find(p => p.name === 'api');
 
   if (useDocker) {
     runDocker(rootDir, platform, 'dev');
@@ -1395,6 +1573,10 @@ function devCommand(args) {
     }
   }
 
+  if (platform === 'all' || platform === 'api') {
+    if (apiPlatform) spawnApi(rootDir, apiPlatform, children);
+  }
+
   const nativeTargets = platform === 'all'
     ? nativePlatforms
     : (nativePlatforms.some(p => p.name === platform) ? nativePlatforms.filter(p => p.name === platform) : []);
@@ -1415,7 +1597,7 @@ function devCommand(args) {
   }
 
   if (children.length === 0) {
-    if (platform !== 'all') {
+    if (platform !== 'all' && !enabledPlatforms.some(p => p.name === platform)) {
       console.error(`\n❌ Unknown platform: "${platform}"`);
       console.log(`Enabled platforms: ${enabledPlatforms.map(p => p.name).join(', ') || 'none'}`);
     } else {
@@ -2329,6 +2511,28 @@ async function waitForHealthy(timeoutMs = 240000) {
   return false;
 }
 
+// Once the wizard points the project at a real backend, web-admin's built-in
+// mock data would shadow every real API response. Disable it through Vite's
+// per-developer override file: .env.development.local is not committed
+// (.gitignore: *.local) and is never read in production builds.
+function disableWebAdminMock(rootDir, enabledPlatforms) {
+  if (!enabledPlatforms.some(p => p.name === 'web-admin')) return;
+
+  const webAdminDir = getPlatformDir(rootDir, 'web-admin');
+  const localEnvPath = path.join(rootDir, webAdminDir, '.env.development.local');
+
+  let existing = {};
+  if (fs.existsSync(localEnvPath)) existing = loadDotEnv(rootDir, path.join(webAdminDir, '.env.development.local'));
+  if (existing.VITE_USE_MOCK === 'false') return;
+
+  const lines = ['VITE_USE_MOCK=false'];
+  for (const [key, value] of Object.entries(existing)) {
+    if (key !== 'VITE_USE_MOCK') lines.push(`${key}=${value}`);
+  }
+  fs.writeFileSync(localEnvPath, `${lines.join('\n')}\n`);
+  console.log(t('mock-disabled'));
+}
+
 async function setupDatabaseWizard(rootDir, enabledPlatforms) {
   const relevant = enabledPlatforms.some(p => p.name === 'api' || p.name === 'web-admin');
   if (!relevant) return;
@@ -2369,6 +2573,7 @@ async function setupDatabaseWizard(rootDir, enabledPlatforms) {
   }
 
   console.log(`\n${t('dbw-intro')}`);
+  console.log(`\n${t('dbw-choose')}`);
   console.log(t('dbw-option-container'));
   console.log(t('dbw-option-external'));
 
@@ -2398,6 +2603,7 @@ async function setupDatabaseWizard(rootDir, enabledPlatforms) {
   console.log(`\n${t('dbw-writing')}`);
   const writtenPath = writeEnvFromTemplate(rootDir, templateName, buildEnvValues(defaults, config, mode));
   console.log(t('dbw-env-written', { file: path.relative(rootDir, writtenPath) || '.env' }));
+  disableWebAdminMock(rootDir, enabledPlatforms);
 
   if (mode === 'external') {
     console.log(`\n${t('dbw-done-external')}`);
@@ -2491,7 +2697,24 @@ async function initCommand(args = []) {
   // so this cannot change the bootstrap reference or overwrite any config.
   await setupDatabaseWizard(rootDir, enabledPlatforms);
 
-  console.log('\n✅ Initialization complete!\n');
+  printNextSteps(enabledPlatforms, apiInDocker);
+}
+
+// The closing hand-off: a zero-experience user should leave `mars init` knowing
+// exactly what to type next and what address to open. Only mention the admin
+// when web-admin is enabled; the Vite dev server always runs on port 3100 here,
+// both natively and in the dev container.
+function printNextSteps(enabledPlatforms, apiInDocker) {
+  console.log(`\n${t('init-complete')}`);
+  console.log(t('next-steps-title'));
+  console.log(apiInDocker ? t('next-step-dev-docker') : t('next-step-dev'));
+  console.log(t('next-step-wait'));
+  if (enabledPlatforms.some(p => p.name === 'web-admin')) {
+    console.log(t('next-step-admin', { port: '3100' }));
+    console.log(t('next-step-login'));
+  }
+  console.log(t('next-step-note'));
+  console.log();
 }
 
 function cleanCommand() {

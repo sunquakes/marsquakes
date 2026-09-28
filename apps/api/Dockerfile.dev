@@ -49,4 +49,8 @@ RUN mvn -B -P docker dependency:go-offline -DskipTests || true
 COPY apps/api/ ./
 
 EXPOSE 8080
-CMD ["mvn", "-B", "-P", "docker", "-pl", "jeecg-module-system/jeecg-system-start", "-am", "spring-boot:run"]
+# spring-boot:run cannot be combined with -am: it then runs on every reactor
+# project, including the parent pom which has no main class. Install upstream
+# modules first, then run inside the start module only. Shell form is required
+# for the && chaining.
+CMD mvn -B -P docker install -DskipTests && cd jeecg-module-system/jeecg-system-start && mvn -B -P docker spring-boot:run
