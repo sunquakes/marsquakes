@@ -586,7 +586,7 @@ The project defines enabled platforms through `platforms.json`. When AI initiali
 }
 ```
 
-When adding a new platform: Update `platforms.json` → Create corresponding directory under `apps/` → Create AGENTS.md → Update the platform table in this file.
+When adding a new platform: Update `platforms.json` → Create corresponding directory under `apps/` → Create AGENTS.md → Update the platform table in this file → Register it in the docs platform matrix and the landing page platform strip (see `docs/AGENTS.md` for when an icon is lit as Ready).
 
 ## Platform-specific AGENTS.md
 

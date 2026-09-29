@@ -100,6 +100,9 @@ sidebar_position: 4
 2. 在 `apps/` 下创建目录。
 3. 在该目录内添加 `AGENTS.md`，记录平台专属规范。
 4. 更新根 `AGENTS.md` 里的平台表格。
+5. 在本页矩阵和首页（`docs/src/pages/index.tsx`）的平台栏中加入新目标。
+   起始状态为"Scaffold only"、`ready: false`；等应用可以开箱构建运行的那天，
+   在同一次改动里把两处一起改成 Ready / `ready: true`。
 
 ## 平台专属规范
 

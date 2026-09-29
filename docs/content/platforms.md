@@ -105,10 +105,14 @@ appear.
 
 ## Adding a new platform
 
-1. Add the entry to `platforms.json` under the right category.
+1. Add the entry to platforms.json under the right category.
 2. Create the directory under `apps/`.
 3. Add an `AGENTS.md` inside it with the platform-specific rules.
 4. Update the platform table in the root `AGENTS.md`.
+5. Add the new target to the matrix on this page and to the platform strip on
+   the landing page (`docs/src/pages/index.tsx`). Start it as "Scaffold only"
+   with `ready: false`; the day the app builds and runs out of the box, change
+   both to Ready / `ready: true` in the same change.
 
 ## Per-platform rules
 
