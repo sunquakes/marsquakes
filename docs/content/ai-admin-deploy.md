@@ -45,8 +45,8 @@ check there are exactly four:
 | ----- | ----------------------------------------------- |
 | Data store | 3306 |
 | Cache | 6379 |
-| Behind-the-scenes service (`jeecg-boot-system`) | 8817 |
-| Admin website (`jeecg-boot-web-admin`) | 8807 |
+| Behind-the-scenes service (`marsquakes-api`) | 8817 |
+| Admin website (`marsquakes-web-admin`) | internal only |
 
 The first packaging takes several minutes — programming tools download inside
 the package as it builds. A long silent stretch is normal; an error is not.
@@ -94,19 +94,9 @@ on their own internal network, so there is nothing to configure.
 "On your computer" only you can open it. A cloud server is simply another
 computer that is always on and has a public address.
 
-**Rent a server with Docker already installed (AWS Lightsail):**
-
-1. Open the Lightsail product page and sign in: [aws.amazon.com/lightsail](https://aws.amazon.com/lightsail/)
-2. In the [Lightsail console](https://lightsail.aws.amazon.com/), choose **Create instance**.
-3. Pick the AWS Region nearest the people using the admin and choose the **Linux/Unix** platform.
-4. For the image choose **Apps + OS** (not **OS Only**) and select the **Docker** blueprint. It starts with Docker and Docker Compose already installed, so nothing has to be set up later.
-5. Choose a plan with at least 2 GB of memory, give the instance a name, and choose **Create instance**.
-6. From the instance page, copy its public IP address, and set the login details — an SSH key, or the password you get from **Connect using SSH**.
-
-Detailed screenshots for every step are in the official guide:
-[Create a Linux/Unix instance in Lightsail](https://docs.aws.amazon.com/lightsail/latest/userguide/getting-started-with-amazon-lightsail.html),
-and the Docker blueprint is described in
-[Docker in Lightsail](https://docs.aws.amazon.com/lightsail/latest/userguide/docker-in-lightsail.html).
+Need a server or a domain? See the [Server and Domain Setup](./appendix.md)
+appendix first — it also gives the order: open over the IP, then add the domain,
+then the padlock.
 
 Once you have the public address and login details, tell the agent and paste:
 
@@ -126,8 +116,9 @@ the website's door is open.
 
 :::note A domain and the padlock come after it works
 First confirm the IP address opens from another device — say your phone on
-mobile data, not your home Wi-Fi. Only then add a domain and ask the agent to put
-HTTPS (the padlock) on it. Doing both at once mixes two problems into one error.
+mobile data, not your home Wi-Fi. Only then follow the same
+[appendix](./appendix.md) for the domain, and ask the agent to put HTTPS (the
+padlock) on it. Doing both at once mixes two problems into one error.
 :::
 
 ## When it goes wrong

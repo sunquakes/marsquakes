@@ -9,6 +9,9 @@ Each half is packaged its own way: the Web Admin is a static build that nginx
 serves, and the API is a Spring Boot jar that runs in a JRE container. Follow
 the steps in order.
 
+Need a server or a domain before you start? See the
+[Server and Domain Setup](./appendix.md) appendix.
+
 ## Step 1 — Build the Web Admin
 
 ```bash
@@ -27,10 +30,10 @@ To build and serve the result inside a container instead of on the host:
 mars build --platform web-admin --docker
 ```
 
-The container publishes the app on port `${WEB_ADMIN_PORT:-8807}` (8807 by
-default, mapped to port 80 inside nginx), matching the dev server's 8807. See
-[Docker](./docker.md) for the Dockerfile variants and the `NPM_REGISTRY` build
-argument that matters on a slow network.
+In the compose stack the container is internal-only; the edge nginx publishes
+the app on port `${NGINX_HOST_PORT:-80}` (80 by default). The dev server still
+uses 8807. See [Docker](./docker.md) for the Dockerfile variants, the edge nginx
+proxy and the `NPM_REGISTRY` build argument that matters on a slow network.
 
 ## Step 2 — Build and run the API in a container
 

@@ -17,7 +17,7 @@ cp .env.example .env         # 官方源（默认）
 cp .env.example.cn .env      # 国内镜像源
 ```
 
-复制完再改 `MYSQL_*` / `REDIS_*` / `WEB_ADMIN_PORT`。两份模板声明的键和值完全一致，
+复制完再改 `MYSQL_*` / `REDIS_*` / `NGINX_HOST_PORT`。两份模板声明的键和值完全一致，
 只有 `NPM_REGISTRY` 和 `MAVEN_MIRROR_URL` 不同，所以之后想换源，改两行就够，不用重新
 复制。改完任意一份之后跑 `pnpm check:env`，两份一旦不一致它会以非零退出码报错。
 
@@ -43,10 +43,17 @@ docker compose up -d
 点击运行任意一个。它们都把 MySQL 与 Redis 当作**外部服务**，通过
 `host.docker.internal` 访问。
 
-| 服务        | 镜像                         | 端口                         |
-| ----------- | ---------------------------- | ---------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8817:8817`                  |
-| `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80` |
+| 服务        | 镜像                         | 主机端口（对外发布）          |
+| ----------- | ---------------------------- | ----------------------------- |
+| `api`       | `marsquakes/api:3.9.3`       | 仅内网（`8817`）              |
+| `web-admin` | `marsquakes/web-admin:3.9.3` | 仅内网（`80`）                |
+| `nginx`     | `nginx:stable-alpine`        | `${NGINX_HOST_PORT:-80}:80`   |
+
+`nginx` 是边缘反向代理，也是**唯一**对外发布的服务：`/` 转发到 `web-admin`
+容器，`/marsquakes-api/` 转发到 API（重写为 `/marsquakes-api` 上下文路径），并处理
+WebSocket 升级。它的配置是 `apps/web-admin/edge-nginx.conf`，以只读方式挂载进
+官方镜像，无需自建镜像。只有当主机 80 端口被占用时才需要改 `NGINX_HOST_PORT`；
+内网端口始终不变。
 
 `docker-compose.build.yml` 通过服务级的 `extends` 继承 `docker-compose.yml`，
 只覆盖 `build.dockerfile` 一项。
@@ -172,6 +179,101 @@ Vite 7 的 `preprocessorMaxWorkers` 默认为 `true`，会启动
 空错误。想看到真实原因，可以构建一个停在 build 步骤之前的镜像，进去手动执行
 `pnpm exec vite build --mode docker`。
 :::
+
+## 域名解析与 HTTPS
+
+由于边缘 `nginx` 是唯一对外发布的服务，域名只需解析到运行该容器的主机公网
+IP 即可；`api` 与 `web-admin` 始终不对公网暴露。下文示例统一使用
+`admin.example.com`，请替换成你自己的域名。
+
+还没有服务器或域名，或者不确定下面该填哪个 IP？见[服务器与域名准备](./appendix.md)附录。
+
+### 域名解析（阿里云云解析 DNS）
+
+1. 域名在阿里云注册时会自动开通云解析 DNS。如果域名在其他注册商处，先在
+   阿里云 **云解析 DNS** 控制台添加域名，再到原注册商把 NS 修改为阿里云
+   分配的 DNS 服务器，完成解析托管。
+2. 进入该域名的解析设置，添加指向本套服务的记录：
+
+| 记录                      | 类型   | 记录值                                  |
+| ------------------------- | ------ | --------------------------------------- |
+| `admin.example.com`       | `A`    | 运行边缘 `nginx` 的主机公网 IP |
+| `api.example.com`（可选） | `A`    | 同一公网 IP（已有 `/marsquakes-api/` 前缀，无需单独域名） |
+
+3. 等待解析生效（默认记录 TTL 通常为 10 分钟），然后验证：
+
+```bash
+dig +short admin.example.com
+nslookup admin.example.com
+```
+
+:::warning
+服务器位于**中国大陆**时，域名必须先完成 **ICP 备案**，否则云解析会拦截、
+网站无法通过 80/443 端口对外访问。备案主体需与云服务器（如阿里云 ECS）
+对应，备案通过通常需要若干个工作日。服务器位于中国香港或海外则无需备案。
+:::
+
+### HTTPS 证书
+
+有两条证书路径，区别在于 **TLS 在哪一层终结**。
+
+**阿里云 SSL 证书（终结在 SLB / CDN）。** 在阿里云数字证书管理服务（SSL
+证书）申请免费证书（DigiCert 单域名 DV，有效期按当前免费额度规则），通过
+DNS 自动验证后，把证书部署到 **SLB 监听**或 **CDN**。由 SLB / CDN 负责
+HTTPS 卸载，再以 HTTP 回源到边缘 nginx，nginx 现有配置无需改动。
+
+**Let's Encrypt（终结在边缘 nginx）。** 当客户端直接访问 nginx 容器时，用
+certbot 申请免费证书并挂载进容器：
+
+```bash
+certbot certonly --standalone -d admin.example.com
+```
+
+通过覆盖 `nginx` 服务发布 443 端口并挂载证书目录（项目层面合并，原 compose
+文件不用改）：
+
+```yaml
+# docker-compose.override.yml
+services:
+  nginx:
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./apps/web-admin/edge-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt/live/admin.example.com:/etc/nginx/certs:ro
+```
+
+在 `edge-nginx.conf` 中让同样的路由走 TLS，并把 HTTP 跳转到 HTTPS：
+
+```nginx
+server {
+    listen 80;
+    server_name admin.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name admin.example.com;
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+    # 此处保留与 :80 server 相同的 /marsquakes-api/ 与 / location 配置
+}
+```
+
+校验并重载，再检查线上证书：
+
+```bash
+docker compose exec nginx nginx -t
+docker compose exec nginx nginx -s reload
+curl -I https://admin.example.com
+```
+
+Let's Encrypt 证书有效期为 90 天，请安排 `certbot renew`（例如定时任务或
+certbot sidecar），续期后 reload nginx。
 
 ## 代理：在中国大陆拉取 Docker Hub
 

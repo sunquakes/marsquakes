@@ -19,7 +19,7 @@ cp .env.example .env         # official registries (default)
 cp .env.example.cn .env      # mainland-China mirrors
 ```
 
-Then edit `MYSQL_*` / `REDIS_*` / `WEB_ADMIN_PORT`. Both templates declare the
+Then edit `MYSQL_*` / `REDIS_*` / `NGINX_HOST_PORT`. Both templates declare the
 same keys with the same values — only `NPM_REGISTRY` and `MAVEN_MIRROR_URL`
 differ — so switching sources later is a two-line edit rather than a re-copy.
 Run `pnpm check:env` after editing either one; it exits non-zero if the two ever
@@ -49,10 +49,18 @@ Both files are complete and standalone-runnable with a single `-f`, so the
 VS Code Docker extension can run either directly. Both treat MySQL and Redis as
 **external** dependencies, reached through `host.docker.internal`.
 
-| Service     | Image                        | Port                         |
-| ----------- | ---------------------------- | ---------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8817:8817`                  |
-| `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80` |
+| Service     | Image                        | Host port (published)         |
+| ----------- | ---------------------------- | ------------------------------ |
+| `api`       | `marsquakes/api:3.9.3`       | internal only (`8817`)         |
+| `web-admin` | `marsquakes/web-admin:3.9.3` | internal only (`80`)           |
+| `nginx`     | `nginx:stable-alpine`        | `${NGINX_HOST_PORT:-80}:80`    |
+
+`nginx` is an edge reverse proxy and the **only** service published to the host:
+`/` is proxied to the `web-admin` container and `/marsquakes-api/` to the API
+(rewritten to the `/marsquakes-api` context path), with WebSocket upgrade handled.
+Its config is `apps/web-admin/edge-nginx.conf`, mounted read-only into the
+official image — no custom image is built. Change `NGINX_HOST_PORT` only when
+host port 80 is already taken; the in-network ports never change.
 
 `docker-compose.build.yml` inherits from `docker-compose.yml` through the
 service-level `extends` keyword, so it overrides only `build.dockerfile`.
@@ -197,6 +205,102 @@ empty error in the build log. To see the actual cause, build an image that stops
 before the build step and run `pnpm exec vite build --mode docker` manually
 inside it.
 :::
+
+## Domain and HTTPS
+
+Because the edge `nginx` is the only service published to the host, the domain
+only needs to resolve to the public IP of the machine running that container;
+`api` and `web-admin` stay unreachable from the Internet. The examples below use
+`admin.example.com` — replace it with your own domain.
+
+Need a server or a domain, or unsure which IP to paste below? See the
+[Server and Domain Setup](./appendix.md) appendix.
+
+### DNS resolution (AWS Route 53)
+
+1. Open Route 53 and create a **public hosted zone** for `example.com` (this
+   works even if the domain itself was registered with another registrar).
+2. Copy the four `NS` records Route 53 assigns to the hosted zone and configure
+   them as the nameservers at your registrar, so DNS is delegated to Route 53.
+3. Add records that point at the stack:
+
+| Record                | Type   | Value                                              |
+| --------------------- | ------ | -------------------------------------------------- |
+| `admin.example.com`   | `A`    | public IP of the host running the edge `nginx` |
+| `api.example.com` *(optional)* | `A` | same public IP (the `/marsquakes-api/` prefix makes a separate name unnecessary) |
+
+If the stack runs behind an AWS **ALB** or **CloudFront**, use an **Alias**
+record targeting that resource instead of an `A` record with a raw IP — Alias
+records follow the resource automatically and alias queries are free.
+4. Wait for propagation, then verify:
+
+```bash
+dig +short admin.example.com
+nslookup admin.example.com
+```
+
+### HTTPS certificates
+
+There are two certificate paths. They differ in *where* TLS is terminated.
+
+**AWS ACM (terminate TLS on ALB / CloudFront).** Request a free ACM certificate
+for the domain, validate it with the DNS records Route 53 suggests, and attach
+it to the ALB listener or CloudFront. ACM certificates cannot be exported, so
+they cannot be mounted into the nginx container — the ALB handles HTTPS and
+forwards plain HTTP to the edge nginx, which keeps its current config unchanged.
+
+**Let's Encrypt (terminate TLS on the edge nginx).** When clients reach the
+nginx container directly, issue a free certificate with certbot and mount it in:
+
+```bash
+certbot certonly --standalone -d admin.example.com
+```
+
+Publish 443 and mount the certificate directory by overriding the `nginx`
+service (a project-level merge, so the original compose file is untouched):
+
+```yaml
+# docker-compose.override.yml
+services:
+  nginx:
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./apps/web-admin/edge-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt/live/admin.example.com:/etc/nginx/certs:ro
+```
+
+In `edge-nginx.conf`, serve the same locations over TLS and redirect plain HTTP:
+
+```nginx
+server {
+    listen 80;
+    server_name admin.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name admin.example.com;
+
+    ssl_certificate     /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+
+    # Keep the same /marsquakes-api/ and / location blocks as the :80 server.
+}
+```
+
+Validate and reload, then check the cert over the wire:
+
+```bash
+docker compose exec nginx nginx -t
+docker compose exec nginx nginx -s reload
+curl -I https://admin.example.com
+```
+
+Let's Encrypt certificates expire after 90 days — schedule `certbot renew` (for
+example with a cron job or a certbot sidecar) and reload nginx after each renew.
 
 ## Proxy
 

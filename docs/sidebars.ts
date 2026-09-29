@@ -34,6 +34,9 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 // entry rather than a one-item category, because a category of one renders as a
 // folder the reader has to open to find its only child. After that the
 // Applications category splits by platform.
+// Buying a server and a domain happens outside the repository, and the reader
+// does it by talking to the agent, so those walkthroughs close aiSidebar in
+// their own Appendices category; the deploy pages and docker.md link to them.
 //
 // Category labels are user-facing strings, so each one generates an i18n key
 // (`sidebar.<sidebarId>.category.<Label>`) in
@@ -141,6 +144,12 @@ const sidebars: SidebarsConfig = {
           ],
         },
       ],
+    },
+    {
+      type: 'category',
+      label: 'Appendices',
+      collapsed: false,
+      items: ['appendix'],
     },
   ],
 };

@@ -38,5 +38,9 @@
   "sidebar.aiSidebar.category.Android App": {
     "message": "Android 应用",
     "description": "The label for category Android App in sidebar aiSidebar"
+  },
+  "sidebar.aiSidebar.category.Appendices": {
+    "message": "附录",
+    "description": "The label for category Appendices in sidebar aiSidebar"
   }
 }
