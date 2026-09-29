@@ -18,3 +18,5 @@ dist/
 .env
 *.local
 /data
+# Runtime-extracted Online code-generation templates when launched from repo root
+/config

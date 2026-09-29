@@ -7,6 +7,10 @@ rebel.xml
 **/target
 **/logs
 
+## runtime-extracted code-generation templates (CodeTemplateInitListener)
+## canonical templates live in jeecg-system-biz/src/main/resources/jeecg
+**/config/
+
 ## front
 **/*.lock
 os_del.cmd
