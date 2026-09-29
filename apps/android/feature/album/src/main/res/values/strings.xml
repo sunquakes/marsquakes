@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="album_count">%1$d albums</string>
+    <string name="album_refresh">Refresh</string>
+    <string name="album_subtitle">%1$s · %2$d tracks · %3$d</string>
+    <string name="album_empty_title">No albums yet</string>
+    <string name="album_empty_message">Albums will show up here after the first successful sync.</string>
+</resources>

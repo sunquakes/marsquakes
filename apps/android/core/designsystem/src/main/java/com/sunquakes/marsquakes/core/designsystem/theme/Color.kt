@@ -1,4 +1,4 @@
-package com.sunquakes.marsquakes.ui.theme
+package com.sunquakes.marsquakes.core.designsystem.theme
 
 import androidx.compose.ui.graphics.Color
 
