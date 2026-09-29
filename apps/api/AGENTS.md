@@ -27,9 +27,10 @@ jeecg-boot-parent (apps/api/pom.xml, packaging=pom)
 │   │   └── jeecg-system-cloud-api  # Feign clients for microservices
 │   ├── jeecg-system-biz            # System business logic (depends on airag)
 │   └── jeecg-system-start          # Main entry, configs, Flyway, executable jar
-└── jeecg-boot-module (pom)         # Business / extension modules
-    ├── jeecg-module-demo           # Minimal business-module template
-    ├── jeecg-boot-module-airag      # AI / RAG (LangChain4j, MCP, knowledge base)
+├── jeecg-boot-module (pom)         # Upstream business / extension modules
+│   ├── jeecg-module-demo           # Minimal business-module template
+│   └── jeecg-boot-module-airag      # AI / RAG (LangChain4j, MCP, knowledge base)
+└── marsquakes-module (pom)         # Project-owned modules (all new modules live here)
     └── jeecg-module-agenttest       # End-to-end Online-generation verified module
 ```
 
@@ -40,15 +41,22 @@ monolith workflow.
 Module directory names use two upstream prefixes side by side —
 `jeecg-module-*` (`demo`, `agenttest`) and `jeecg-boot-module-*` (`airag`).
 This is an upstream inconsistency, not a typo; never rename existing
-directories to "fix" it. For new modules prefer `jeecg-module-<name>`, matching
-the demo template, and always use the literal directory name in POM paths and
-dependencies.
+directories to "fix" it, and always use the literal directory name in POM
+paths and dependencies.
+
+**Where new modules go.** Keep upstream code untouched: never add a new module
+under `jeecg-boot-module/` or modify upstream module directories. Every module
+created for this project lives under
+[marsquakes-module/](marsquakes-module), whose aggregator POM is
+[marsquakes-module/pom.xml](marsquakes-module/pom.xml). Name a new child
+`jeecg-module-<name>` (matching the demo/agenttest convention), register it in
+the aggregator's `<modules>`, and set its `<parent>` to `marsquakes-module`.
 
 Runtime dependency chains already in use — follow the matching one:
 
-- `jeecg-system-start → jeecg-module-demo` for a standalone business module.
-- `jeecg-system-start → jeecg-module-agenttest` for an Online-generated CRUD
-  module (the pattern proven by the end-to-end run below).
+- `jeecg-system-start → jeecg-module-demo` for the upstream template module.
+- `jeecg-system-start → marsquakes-module/jeecg-module-agenttest` for an
+  Online-generated CRUD module (the pattern proven by the end-to-end run below).
 - `jeecg-system-start → jeecg-system-biz → jeecg-boot-module-airag` for a module
   that system business logic also needs to call.
 
@@ -97,11 +105,14 @@ the root AGENTS.md.
 
 ## Adding a Business Module
 
-1. Create `jeecg-boot-module/jeecg-boot-module-<name>/pom.xml` with
-   `<parent>` pointing at `jeecg-boot-module` (copy
-   [jeecg-module-demo/pom.xml](jeecg-boot-module/jeecg-module-demo/pom.xml)).
-2. Register it in [jeecg-boot-module/pom.xml](jeecg-boot-module/pom.xml)
-   under `<modules>`.
+1. Create `marsquakes-module/jeecg-module-<name>/pom.xml` with
+   `<parent>` pointing at `marsquakes-module` (copy
+   [jeecg-module-agenttest/pom.xml](marsquakes-module/jeecg-module-agenttest/pom.xml)
+   as the project-owned example). Never create new modules under
+   `jeecg-boot-module/`.
+2. Register it in [marsquakes-module/pom.xml](marsquakes-module/pom.xml)
+   under `<modules>`. The aggregator is already registered in the root
+   [pom.xml](pom.xml), so no root `<modules>` edit is needed.
 3. Put it on the runtime classpath: add the dependency to
    [jeecg-system-start/pom.xml](jeecg-module-system/jeecg-system-start/pom.xml)
    (standalone), or to
@@ -229,7 +240,7 @@ Examples use `BASE=http://localhost:8817/jeecg-boot` and the header
    `service/impl`; the front end lands in a `vue3/` directory together with a
    `V1.menu_insert_<Entity>.sql` reference file.
 7. **Place the backend files.** Copy the generated Java tree into the owning
-   module under `jeecg-boot-module/` (create and register it per
+   module under `marsquakes-module/` (create and register it per
    [Adding a Business Module](#adding-a-business-module)), keeping the
    `org.jeecg.modules.<entityPackage>` path so component scanning picks it up.
    Rebuild with a targeted reactor, not a root-wide build — a bare
@@ -310,7 +321,7 @@ HTTP, not the database.
    rollback.
 
 Keep (do not delete) when the module is a real deliverable: the generated
-module directory under `jeecg-boot-module/`, its two POM registrations, the
+module directory under `marsquakes-module/`, its POM registrations, the
 seven permission rows, and the five front-end files under
 `apps/web-admin/src/views/`.
 
