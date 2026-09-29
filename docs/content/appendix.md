@@ -19,7 +19,6 @@ every later step obvious:
 7. Deploy the system and confirm it opens over the name.
 8. Get the **padlock**: a certificate that makes the address start with
    `https://`.
-9. Then go back and finish.
 
 Everything here is clicking through a website and pasting a sentence to your
 agent — there is nothing to install and no code to write. The examples use AWS:
@@ -167,12 +166,41 @@ refuse to send passwords.
 
 A certificate is only possible at this point — after the site opens over the
 domain — because the issuer proves ownership by visiting that very name on this
-very server. Two sources are common:
+very server. You can let the agent get one from Let's Encrypt, or download one
+yourself from the cloud console. The two consoles offer different products, and
+only some of them can leave the cloud for your edge nginx:
 
-| Source | Cost | How ownership is proved | Notes |
-| ------ | ---- | ----------------------- | ----- |
-| **Let's Encrypt** | free | the issuer reaches the domain over port 80 on this server | lasts 90 days, so it must be set to renew itself automatically |
-| A certificate bought from a cloud or certificate seller | paid | usually by a DNS record or an email | lasts up to a year; the AWS certificate service (ACM) only works with an AWS load balancer or CDN — its certificate cannot be placed on the edge nginx |
+**Alibaba Cloud — Certificate Management Service (CAS)**
+
+| Product | Type | Cost | Lifetime | Format you can download |
+| ------- | ---- | ---- | -------- | ----------------------- |
+| Personal test certificate (formerly the free certificate) | DV | free | 90 days, renewed by hand | Nginx = PEM: `domain.pem` + `domain.key` |
+| Paid official certificate | DV / OV / EV | paid | 1 year | PEM (Nginx), PFX/PKCS12 (Tomcat, IIS), JKS, CRT (Apache) |
+
+**AWS — AWS Certificate Manager (ACM)**
+
+| Product | Type | Cost | Lifetime | Can it leave AWS? |
+| ------- | ---- | ---- | -------- | ----------------- |
+| Standard public certificate | DV | free | managed and renewed automatically | no export — attach it only to an ALB, CloudFront or API Gateway, which then run HTTPS themselves |
+| Exportable public certificate (new certificates requested after June 17, 2025) | DV | charged at issue and renewal | 395 days | yes — exported as PEM, with the private key encrypted by a passphrase you set |
+
+### What format the edge nginx needs
+
+The edge server does not care who issued the certificate; it wants two
+**PEM** files — plain Base64 text starting with `-----BEGIN ...-----` — mounted
+into the container at the paths in `edge-nginx.ssl.conf`:
+
+- `fullchain.pem` — your certificate followed by the issuer's intermediate
+  certificate (the full chain), used for `ssl_certificate`.
+- `privkey.pem` — the unencrypted private key, used for `ssl_certificate_key`.
+
+Rename what you downloaded to those two names. An Alibaba Cloud Nginx download
+already gives you `domain.pem` (the chain) and `domain.key` (the key), so it is
+PEM with no conversion. A PFX or JKS download is a keystore, not PEM — either
+download the PEM option instead or have the agent convert it; likewise an
+exported ACM certificate needs its encrypted key decrypted before nginx can use
+it. Let's Encrypt produces PEM directly. Do not upload the certificate back
+into any console; the files only need to sit in the mounted directory.
 
 The certificate is no good as a file on its own: the edge nginx has to be shown
 where it is, publish port 443, and send plain visitors to `https://`. A complete
@@ -190,16 +218,32 @@ Give the domain to your agent and say:
 > automatically before it expires. Do not change how the pages and the backend
 > work. Tell me when a fresh visitor sees the padlock.
 
-**What you should see:** the agent reporting the certificate is installed, and
-opening the domain yourself showing `https://` with a closed padlock and no
-warning. If the page shows a warning or the padlock never appears, say: "The
-padlock is not showing for a fresh visitor — check whether the certificate
-failed to be issued, is not where the edge server looks for it, or has expired,
-and tell me which."
+### If you already downloaded the certificate
 
-## 9. Go back and finish
+You may instead have obtained the certificate yourself from a cloud console
+(such as a free Aliyun DV certificate). Do not paste its contents into the
+chat — the key file is a secret, and anything pasted in can end up in a log.
+Place the two files the issuer gave you into a directory on the machine, named
+exactly as the edge config expects:
 
-With the server ready, the name pointing at it, and the padlock in place, return
-to the deployment page you came from. The [Docker](./docker.md) page lists the
-exact files and ports behind the steps above, including the certificate's
-90-day lifetime and the reload after each automatic renewal.
+- `fullchain.pem` — the certificate
+- `privkey.pem` — the private key
+
+Keep that directory out of version control. Then give your agent only the
+domain and the directory path, and say:
+
+> **Say this**
+>
+> I already have an HTTPS certificate for my domain at `<directory>` — the
+> certificate is `fullchain.pem` and the private key is `privkey.pem`. Make the
+> edge server use them on port 443, redirect plain addresses to https, and tell
+> me before the certificate expires so it can be renewed. Do not change how the
+> pages and the backend work, and do not put the key into version control. Tell
+> me when a fresh visitor sees the padlock.
+
+**What you should see:** in both cases, the agent reporting the certificate is
+installed, and opening the domain yourself showing `https://` with a closed
+padlock and no warning. If the page shows a warning or the padlock never
+appears, say: "The padlock is not showing for a fresh visitor — check whether
+the certificate failed to be issued, is not where the edge server looks for it,
+or has expired, and tell me which."
