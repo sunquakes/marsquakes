@@ -53,9 +53,11 @@ cd apps/android
 
 ## 项目结构
 
-应用代码位于 `app/src/main/java/com/sunquakes/marsquakes/`，资源在
-`app/src/main/res/`，JVM 单元测试在 `app/src/test/`，插桩测试在
-`app/src/androidTest/`。依赖版本集中在 `gradle/libs.versions.toml`；仓库只允许
+应用代码按模块拆分在 `apps/android/` 下。`app/` 只是一个壳——里面只有 `MainActivity`、
+Application 类和导航宿主。界面在 `feature/*` 模块里，界面所依赖的能力在 `core/*` 模块里
+（model、data、database、datastore、network、designsystem、ui）。资源放在用到它的模块里，
+JVM 单元测试放在该模块的 `src/test/`，插桩测试放在 `src/androidTest/`。所有模块共用的
+Gradle 约定插件在 `build-logic/` 中。依赖版本集中在 `gradle/libs.versions.toml`；仓库只允许
 使用 `google()` 和 `mavenCentral()` 作为仓库源。动手改平台代码之前，先读
 `apps/android/AGENTS.md` 了解编码规范和仓库规则。
 
