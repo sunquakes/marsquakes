@@ -24,7 +24,7 @@
     "message": "一个用于生成多端 monorepo 的 npm 包。装一次，运行 mars create，勾选需要的端 —— 后端 API、管理后台、桌面端与移动端已经串联好，开箱可跑。"
   },
   "home.hero.primaryCta": {
-    "message": "阅读简介"
+    "message": "从 AI 指南开始"
   },
   "home.hero.secondaryCta": {
     "message": "在 GitHub 上查看"

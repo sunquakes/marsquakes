@@ -216,8 +216,8 @@ function Hero(): ReactNode {
             </Translate>
           </p>
           <div className={styles.heroActions}>
-            <Link className="button button--primary button--lg" to="/docs/">
-              <Translate id="home.hero.primaryCta">Read the Introduction</Translate>
+            <Link className="button button--primary button--lg" to="/docs/ai-intro">
+              <Translate id="home.hero.primaryCta">Start with the AI Guide</Translate>
             </Link>
             <Link
               className="button button--secondary button--lg"
@@ -461,7 +461,7 @@ function Platforms(): ReactNode {
               <span
                 className={clsx(
                   styles.platformIcon,
-                  platformTones[target.tone],
+                  target.ready && platformTones[target.tone],
                 )}
               >
                 <target.icon aria-hidden="true" />

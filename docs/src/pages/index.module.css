@@ -649,10 +649,11 @@
   border-color: var(--ifm-color-primary);
 }
 
-/* Every target's mark is drawn on the same rounded chip. Each tone sets the
-   glyph ink and the brand-coloured wash behind it; the wash is faint so the
-   nine cards still read as one family, while the ink keeps every brand mark
-   legible at 1.15rem. */
+/* Every target's mark is drawn on the same rounded chip. By default the mark
+   stays neutral grey; the tone classes below set the glyph ink and the
+   brand-coloured wash, but they are only applied to ready ("lit") targets so
+   an unlit platform reads as grey. The wash is faint so the nine cards still
+   read as one family, while the ink keeps every brand mark legible. */
 .platformIcon {
   --mq-icon-ink: var(--ifm-color-emphasis-700);
   --mq-icon-tint: var(--ifm-color-emphasis-100);
