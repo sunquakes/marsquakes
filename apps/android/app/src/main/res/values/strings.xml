@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">Ruby Album</string>
+    <string name="app_name">Marsquakes</string>
+    <string name="home_placeholder">Home screen placeholder</string>
     <string name="appearance">Appearance</string>
     <string name="appearance_dynamic_color">Dynamic color</string>
     <string name="appearance_theme">Theme</string>

@@ -243,8 +243,8 @@ The **project name is pinned to `marsquakes`** via `COMPOSE_PROJECT_NAME` in `.e
 (shipped in `.env.example`, and rewritten by `mars create` to the new project's name).
 It must be set through the environment, not the YAML: compose v2.0.0 rejects the top-level
 `name:` key with `(root) Additional property name is not allowed`. Leaving it unset makes
-compose fall back to the lower-cased directory name, so a checkout in `RubyAlbum/` silently
-produces a project called `rubyalbum` — which then diverges from the containers a colleague
+compose fall back to the lower-cased directory name, so a checkout in `MyApp/` silently
+produces a project called `myapp` — which then diverges from the containers a colleague
 started from a differently named folder. Project names must be lower-case.
 
 Renaming the project is safe for state here **only because** every volume and network sets an
@@ -590,7 +590,8 @@ When adding a new platform: Update `platforms.json` → Create corresponding dir
 
 ## Platform-specific AGENTS.md
 
-Each platform directory has its own `AGENTS.md`, containing coding standards, build commands, notes, etc. When AI processes specific platform code, it should refer to the AGENTS.md in the corresponding directory:
+Each platform directory has its own `AGENTS.md`. When AI works in a platform,
+it must read that platform's file together with this root file:
 
 | Platform | AGENTS.md Path |
 |----------|----------------|
@@ -606,6 +607,20 @@ Each platform directory has its own `AGENTS.md`, containing coding standards, bu
 
 The documentation site is not a platform, but it follows the same convention:
 see [docs/AGENTS.md](docs/AGENTS.md).
+
+### Layering rule: one source of truth, root overridable
+
+To keep guidance from drifting, the files are layered rather than duplicated:
+
+- This root file holds **cross-platform** rules only (pnpm-only, English commit
+  messages, documentation placement, restart-after-change, command formatting).
+- A platform `AGENTS.md` holds **platform-specific** rules and explicitly
+  inherits the root. It must not restate the cross-platform rules.
+- When a platform file and the root ever conflict, the **root wins**; fix the
+  platform file rather than forking the rule.
+- `AGENTS.md` is the vendor-neutral single source of truth. Tool-specific files
+  such as `CLAUDE.md` stay one-line pointers to the sibling `AGENTS.md`; never
+  maintain a second full copy of the guidance.
 
 ## Global Coding Standards
 

@@ -5,10 +5,10 @@ plugins {
 }
 
 android {
-    namespace = "com.sunquakes.marsquakes"
+    namespace = "cc.marsquakes"
 
     defaultConfig {
-        applicationId = "com.sunquakes.marsquakes"
+        applicationId = "cc.marsquakes"
         versionCode = 1
         versionName = "1.0"
     }
@@ -34,12 +34,9 @@ dependencies {
     implementation(project(":core:common"))
     implementation(project(":core:model"))
     implementation(project(":core:data"))
-    implementation(project(":core:database"))
     implementation(project(":core:datastore"))
-    implementation(project(":core:network"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:ui"))
-    implementation(project(":feature:album"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

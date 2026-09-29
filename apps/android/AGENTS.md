@@ -5,8 +5,8 @@ This file holds the **Android-specific** rules and inherits the root
 
 ## Module Overview
 
-- **Application ID / Namespace**: `com.sunquakes.marsquakes`
-- **Tech Stack**: Android / Kotlin / Jetpack Compose / Hilt / Room / Retrofit + OkHttp / DataStore
+- **Application ID / Namespace**: `cc.marsquakes`
+- **Tech Stack**: Android / Kotlin / Jetpack Compose / Hilt / DataStore
 - **minSdk**: 33 / **targetSdk**: 36 / **compileSdk**: 36
 - **Build Tool**: Gradle 8.13 (Kotlin DSL) / AGP 8.13.2 / Kotlin 2.0.21 / KSP 2.0.21-1.0.28
 - **JVM Target**: Java 11
@@ -21,23 +21,23 @@ downward only** — a `core:*` module never depends on a `feature:*` or on `app`
 
 ```
 app ──> feature:* ──> core:ui ──> core:designsystem
-                 └──> core:data ──> core:database / core:datastore / core:network ──> core:model
-                                                                                 └─> core:common
+                 └──> core:data ──> core:datastore ──> core:model
+                                                          └─> core:common
 ```
 
 | Module | Purpose |
 |--------|---------|
-| `:app` | Shell only: `MainActivity`, `@HiltAndroidApp` Application, theme wiring, `NavHost` and the top app bar. Owns no screen content |
-| `:feature:album` | The album feature: `AlbumRoute` (stateful) + `AlbumScreen` (stateless) + `AlbumViewModel`, and its own `navigation/` graph extension |
+| `:app` | Shell only: `MainActivity`, `@HiltAndroidApp` Application, theme wiring, `NavHost`, the top app bar and a home placeholder. Owns no feature content |
 | `:core:common` | Cross-cutting utilities. Holds the `@Dispatcher` qualifier and its module |
-| `:core:model` | Pure Kotlin models (`Album`, `UserPreferences`). No Android, Room or Retrofit annotations — that is what keeps the other layers free to map into it |
-| `:core:data` | Repositories. The only layer features talk to. `OfflineFirstAlbumRepository` keeps the DB as the source of truth and treats the network as a refresh |
-| `:core:database` | Room: `MarsquakesDatabase`, entities, DAOs, `schemaDirectory("$projectDir/schemas")` |
+| `:core:model` | Pure Kotlin models (`UserPreferences`, `DarkThemeMode`). No Android, Room or network annotations — that is what keeps the other layers free to map into it |
+| `:core:data` | Repositories. The only layer features talk to. `DefaultUserDataRepository` exposes the user settings as a `Flow<UserPreferences>` |
 | `:core:datastore` | Proto-free Preferences DataStore (`MarsquakesPreferencesDataSource`) for user settings |
-| `:core:network` | Retrofit + OkHttp + kotlinx-serialization. DTOs live here and are mapped to `core:model` types |
 | `:core:designsystem` | Theme (`MarsquakesTheme`), colour and typography. The only place Material theming is configured |
 | `:core:ui` | Reusable composables shared by features (`LoadingWheel`, `MarsquakesTopAppBar`) |
 | `build-logic` | Convention plugins. A separate included build, so editing it never invalidates the app build |
+
+This is a **blank architecture template**: the `feature/` directory is intentionally empty. Login,
+home, profile and any other screens belong in new `feature:*` modules.
 
 ### Route / Screen split
 
@@ -48,7 +48,7 @@ and testable without Hilt. Do not collapse the two.
 ### Navigation
 
 A feature contributes its destinations through a `NavGraphBuilder` extension in its own
-`navigation/` package (e.g. `albumScreen()`), and `app` only calls it. Adding a feature must
+`navigation/` package (e.g. `loginScreen()`), and `app` only calls it. Adding a feature must
 never require editing the body of the nav graph.
 
 ## Build-logic Convention Plugins
@@ -63,7 +63,7 @@ configure SDK levels, Java/Kotlin language levels or Compose by hand.
 | `marsquakes.android.library.compose` | Compose libraries | the library plugin plus Compose build feature and the Compose BOM |
 | `marsquakes.android.feature` | `feature:*` | the Compose library plugin, Hilt, and the `core:*` UI stack |
 | `marsquakes.android.hilt` | modules using DI | KSP + Hilt and the Hilt compiler |
-| `marsquakes.android.room` | `:core:database` | Room plugin + KSP, schema directory, Room runtime and compiler |
+| `marsquakes.android.room` | modules using Room | Room plugin + KSP, schema directory, Room runtime and compiler. Kept available for new modules even though the template ships no database |
 
 Two rules keep this working:
 
@@ -81,18 +81,15 @@ Two rules keep this working:
 ```
 apps/android/
 ├── app/                                 # Application shell module
-│   └── src/main/java/com/sunquakes/marsquakes/
+│   └── src/main/java/cc/marsquakes/
 ├── core/
 │   ├── common/                          # @Dispatcher qualifier, shared utilities
 │   ├── model/                           # Pure Kotlin models
-│   ├── data/                            # Repositories (offline-first)
-│   ├── database/                        # Room database, entities, DAOs, schemas
+│   ├── data/                            # Repositories
 │   ├── datastore/                       # Preferences DataStore
-│   ├── network/                         # Retrofit API, DTOs, OkHttp
 │   ├── designsystem/                    # Theme, colour, typography
 │   └── ui/                              # Shared composables
-├── feature/
-│   └── album/                           # Album screen, ViewModel, nav graph
+├── feature/                             # Add feature:* modules here (blank by default)
 ├── build-logic/                         # Convention plugins (included build)
 │   ├── settings.gradle.kts
 │   └── convention/                      # Plugin implementations
@@ -115,6 +112,21 @@ apps/android/
 - **Commit Messages**: English only, conventional commits format
 - **One module per capability**: add a `core:*` module for shared capability and a `feature:*`
   module for a screen; never put feature code in `:app`
+
+## Package Identity
+
+- **Source packages are fixed at `cc.marsquakes`** (`cc.marsquakes.core.*`,
+  `cc.marsquakes.feature.*`, `cc.marsquakes.buildlogic`). Do not rename them per project.
+- **`applicationId` is the only per-project value.** This template ships
+  `applicationId = "cc.marsquakes"` so it builds as-is; when `mars create` scaffolds a new
+  project, the CLI rewrites that single line to `cc.marsquakes.<code>`.
+- Keeping `applicationId` separate from the source package means generated projects can be
+  installed side by side on one device, and scaffolding never has to move directories or
+  rewrite imports.
+- `<code>` is an 8-character timestamp-derived base-36 segment: a fixed `a` prefix (a JVM
+  segment cannot start with a digit), 3 base-36 chars taken from the millisecond timestamp,
+  and 4 random base-36 chars to break same-millisecond ties. It is short and effectively
+  collision-free without exposing the project name.
 
 ## Build Commands
 

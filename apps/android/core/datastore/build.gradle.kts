@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.sunquakes.marsquakes.core.datastore"
+    namespace = "cc.marsquakes.core.datastore"
 }
 
 dependencies {

@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.sunquakes.marsquakes.core.common"
+    namespace = "cc.marsquakes.core.common"
 }
 
 dependencies {

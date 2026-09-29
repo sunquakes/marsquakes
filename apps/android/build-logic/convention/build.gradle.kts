@@ -4,7 +4,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "com.sunquakes.marsquakes.buildlogic"
+group = "cc.marsquakes.buildlogic"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -28,27 +28,27 @@ gradlePlugin {
     plugins {
         register("androidApplication") {
             id = "marsquakes.android.application"
-            implementationClass = "com.sunquakes.marsquakes.buildlogic.AndroidApplicationConventionPlugin"
+            implementationClass = "cc.marsquakes.buildlogic.AndroidApplicationConventionPlugin"
         }
         register("androidLibrary") {
             id = "marsquakes.android.library"
-            implementationClass = "com.sunquakes.marsquakes.buildlogic.AndroidLibraryConventionPlugin"
+            implementationClass = "cc.marsquakes.buildlogic.AndroidLibraryConventionPlugin"
         }
         register("androidLibraryCompose") {
             id = "marsquakes.android.library.compose"
-            implementationClass = "com.sunquakes.marsquakes.buildlogic.AndroidLibraryComposeConventionPlugin"
+            implementationClass = "cc.marsquakes.buildlogic.AndroidLibraryComposeConventionPlugin"
         }
         register("androidFeature") {
             id = "marsquakes.android.feature"
-            implementationClass = "com.sunquakes.marsquakes.buildlogic.AndroidFeatureConventionPlugin"
+            implementationClass = "cc.marsquakes.buildlogic.AndroidFeatureConventionPlugin"
         }
         register("androidHilt") {
             id = "marsquakes.android.hilt"
-            implementationClass = "com.sunquakes.marsquakes.buildlogic.AndroidHiltConventionPlugin"
+            implementationClass = "cc.marsquakes.buildlogic.AndroidHiltConventionPlugin"
         }
         register("androidRoom") {
             id = "marsquakes.android.room"
-            implementationClass = "com.sunquakes.marsquakes.buildlogic.AndroidRoomConventionPlugin"
+            implementationClass = "cc.marsquakes.buildlogic.AndroidRoomConventionPlugin"
         }
     }
 }

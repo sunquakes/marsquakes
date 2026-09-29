@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "com.sunquakes.marsquakes.core.designsystem"
+    namespace = "cc.marsquakes.core.designsystem"
 }
 
 dependencies {
