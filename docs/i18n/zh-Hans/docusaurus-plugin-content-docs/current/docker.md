@@ -240,29 +240,15 @@ services:
       - '80:80'
       - '443:443'
     volumes:
-      - ./apps/web-admin/edge-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./apps/web-admin/edge-nginx.ssl.conf:/etc/nginx/conf.d/default.conf:ro
       - /etc/letsencrypt/live/admin.example.com:/etc/nginx/certs:ro
 ```
 
-在 `edge-nginx.conf` 中让同样的路由走 TLS，并把 HTTP 跳转到 HTTPS：
-
-```nginx
-server {
-    listen 80;
-    server_name admin.example.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name admin.example.com;
-
-    ssl_certificate     /etc/nginx/certs/fullchain.pem;
-    ssl_certificate_key /etc/nginx/certs/privkey.pem;
-
-    # 此处保留与 :80 server 相同的 /marsquakes-api/ 与 / location 配置
-}
-```
+完整的 TLS server 配置——同样的 `/` 和 `/marsquakes-api/` 路由，加上
+HTTP 到 HTTPS 的跳转和 `ssl_certificate` 行——已在仓库中提供：
+`apps/web-admin/edge-nginx.ssl.conf.example`。把它复制为
+`apps/web-admin/edge-nginx.ssl.conf`，将 `admin.example.com` 替换成你的
+域名，再按上面挂载即可。
 
 校验并重载，再检查线上证书：
 

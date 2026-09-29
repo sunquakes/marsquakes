@@ -267,29 +267,15 @@ services:
       - '80:80'
       - '443:443'
     volumes:
-      - ./apps/web-admin/edge-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./apps/web-admin/edge-nginx.ssl.conf:/etc/nginx/conf.d/default.conf:ro
       - /etc/letsencrypt/live/admin.example.com:/etc/nginx/certs:ro
 ```
 
-In `edge-nginx.conf`, serve the same locations over TLS and redirect plain HTTP:
-
-```nginx
-server {
-    listen 80;
-    server_name admin.example.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name admin.example.com;
-
-    ssl_certificate     /etc/nginx/certs/fullchain.pem;
-    ssl_certificate_key /etc/nginx/certs/privkey.pem;
-
-    # Keep the same /marsquakes-api/ and / location blocks as the :80 server.
-}
-```
+A complete TLS server block — the same `/` and `/marsquakes-api/` locations,
+plus the HTTP-to-HTTPS redirect and the `ssl_certificate` lines — is provided in
+the repository at `apps/web-admin/edge-nginx.ssl.conf.example`. Copy it to
+`apps/web-admin/edge-nginx.ssl.conf`, replace `admin.example.com` with your
+domain, and mount it as shown above.
 
 Validate and reload, then check the cert over the wire:
 

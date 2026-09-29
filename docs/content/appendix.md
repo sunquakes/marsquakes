@@ -16,7 +16,10 @@ every later step obvious:
 4. Register a domain.
 5. Hand DNS to one provider and add the record using that IP.
 6. Confirm the name really points at the server.
-7. Then go back and deploy.
+7. Deploy the system and confirm it opens over the name.
+8. Get the **padlock**: a certificate that makes the address start with
+   `https://`.
+9. Then go back and finish.
 
 Everything here is clicking through a website and pasting a sentence to your
 agent — there is nothing to install and no code to write. The examples use AWS:
@@ -155,9 +158,48 @@ Later, once the system is deployed, do the real-world test yourself: open the
 domain on a phone using mobile data (not the local Wi-Fi) — proving the name,
 the firewall and the server all work for an actual visitor.
 
-## 8. Go back and deploy
+## 8. Get the padlock (HTTPS certificate)
 
-With the server ready and the name pointing at it, return to the deployment page
-you came from. Remember the order: make it work over the IP first, then the
-domain, then add the padlock. The [Docker](./docker.md) page explains the two
-padlock options and the renewal every three months that has to be arranged.
+A **certificate** is a small file the edge server shows to every visitor to
+prove the site is really yours; browsers answer with the padlock and the
+`https://` prefix. Without one, browsers label the page "Not secure" and may
+refuse to send passwords.
+
+A certificate is only possible at this point — after the site opens over the
+domain — because the issuer proves ownership by visiting that very name on this
+very server. Two sources are common:
+
+| Source | Cost | How ownership is proved | Notes |
+| ------ | ---- | ----------------------- | ----- |
+| **Let's Encrypt** | free | the issuer reaches the domain over port 80 on this server | lasts 90 days, so it must be set to renew itself automatically |
+| A certificate bought from a cloud or certificate seller | paid | usually by a DNS record or an email | lasts up to a year; the AWS certificate service (ACM) only works with an AWS load balancer or CDN — its certificate cannot be placed on the edge nginx |
+
+The certificate is no good as a file on its own: the edge nginx has to be shown
+where it is, publish port 443, and send plain visitors to `https://`. A complete
+ready-made configuration — the same routing as today plus the redirect and the
+`ssl_certificate` lines — is the file `apps/web-admin/edge-nginx.ssl.conf.example`
+inside the project repository (copy it to `edge-nginx.ssl.conf`, replace the
+example domain, and mount it). The firewall already has 443 open from step 3.
+Give the domain to your agent and say:
+
+> **Say this**
+>
+> My website now opens at my domain over plain HTTP. Get a free trusted HTTPS
+> certificate for that domain, make the edge server use it on port 443, redirect
+> plain addresses to https, and arrange for the certificate to renew itself
+> automatically before it expires. Do not change how the pages and the backend
+> work. Tell me when a fresh visitor sees the padlock.
+
+**What you should see:** the agent reporting the certificate is installed, and
+opening the domain yourself showing `https://` with a closed padlock and no
+warning. If the page shows a warning or the padlock never appears, say: "The
+padlock is not showing for a fresh visitor — check whether the certificate
+failed to be issued, is not where the edge server looks for it, or has expired,
+and tell me which."
+
+## 9. Go back and finish
+
+With the server ready, the name pointing at it, and the padlock in place, return
+to the deployment page you came from. The [Docker](./docker.md) page lists the
+exact files and ports behind the steps above, including the certificate's
+90-day lifetime and the reload after each automatic renewal.
