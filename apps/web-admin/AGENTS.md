@@ -33,8 +33,9 @@ There is no aggregate `lint` script and no `test` script; Jest is configured for
 the `tests/` directory and is run manually if needed (`pnpm exec jest`).
 
 The dev server port is **8807** in every environment — set by `VITE_PORT` in
-[.env](.env), mirrored by `Dockerfile.dev` and the production nginx
-`WEB_ADMIN_PORT`. Do not reintroduce a separate per-environment port.
+[.env](.env) and mirrored by `Dockerfile.dev`. Do not reintroduce a separate
+per-environment port. In the compose stack the published port is the edge nginx
+entry point `NGINX_HOST_PORT` (default 80), not this dev server port.
 
 ## Adding a Business Feature
 
@@ -95,8 +96,8 @@ src/views/<entityPackagePath>/
 2. **Apply necessary adjustments only.** In practice the generated code already
    matches this project, so most files need no edits:
    - imports use the `/@/` alias and requests use `defHttp` — do **not** change
-     them or hard-code a base URL (the `/jeecgboot` proxy and the Docker alias
-     `jeecg-boot-system` already resolve them);
+     them or hard-code a base URL (the `/marsquakes-api` proxy and the Docker alias
+     `marsquakes-api` already resolve them);
    - no router edit is needed — routing is resolved from the backend menu and
      `dynamicPages`;
    - standard CRUD endpoints need no Shiro whitelist entry.
@@ -135,9 +136,9 @@ src/views/<entityPackagePath>/
 - **HTTP layer:** custom Axios wrapper in `src/utils/http/axios/` (`defHttp`).
   Requests are MD5-signed; tenant header is injected when tenant mode is on.
   Response shape is `{ code, result, message, success }`, success when
-  `code === 200`. Dev proxy forwards `/jeecgboot` to
-  `http://localhost:8817/jeecg-boot` (see [.env.development](.env.development));
-  in Docker the target is the network alias `jeecg-boot-system`.
+  `code === 200`. Dev proxy forwards `/marsquakes-api` to
+  `http://localhost:8817/marsquakes-api` (see [.env.development](.env.development));
+  in Docker the target is the network alias `marsquakes-api`.
 - **Components:** Ant Design Vue components are auto-imported
   (`unplugin-vue-components`). Global manual components are registered in
   [src/components/registerGlobComp.ts](src/components/registerGlobComp.ts).
@@ -164,20 +165,20 @@ src/views/<entityPackagePath>/
 **Mock is enabled by default in development.** To exercise the real API, create
 a gitignored `.env.development.local` (covered by `.env.*.local` in
 [.gitignore](.gitignore)) — do not commit it. The verified-working template
-below disables mock, retargets the `/jeecgboot` proxy at the API port actually
-in use, and sets the runtime domain:
+below disables mock, retargets the `/marsquakes-api` proxy at the API port
+actually in use, and sets the runtime domain:
 
 ```text
 # Local dev overrides (gitignored): hit the real API, no mock
 VITE_USE_MOCK = false
 
-VITE_PROXY = [["/jeecgboot","http://localhost:8817/jeecg-boot"],["/upload","http://localhost:3300/upload"]]
+VITE_PROXY = [["/marsquakes-api","http://localhost:8817/marsquakes-api"],["/upload","http://localhost:3300/upload"]]
 
-VITE_GLOB_DOMAIN_URL=http://localhost:8817/jeecg-boot
+VITE_GLOB_DOMAIN_URL=http://localhost:8817/marsquakes-api
 ```
 
 Port `8817` matches the dev backend port set in the API `application-dev.yml`;
-keep the `/jeecg-boot` context path. Restart Vite after editing this file —
+keep the `/marsquakes-api` context path. Restart Vite after editing this file —
 Vite does not hot-reload env changes. `VITE_GLOB_*` values are emitted to
 `dist/_app.config.js` and can be changed post-build.
 

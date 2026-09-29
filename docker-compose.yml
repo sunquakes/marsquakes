@@ -8,12 +8,15 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     image: marsquakes/api:3.9.3
-    # Container name / hostname MUST be jeecg-boot-system:
-    # both the web-admin nginx reverse proxy and .env.docker hard-code this address
-    container_name: jeecg-boot-system
-    hostname: jeecg-boot-system
-    ports:
-      - '8817:8817'
+    # Container name / hostname MUST be marsquakes-api:
+    # the edge nginx config, the web-admin nginx proxy and .env.docker
+    # hard-code this address
+    container_name: marsquakes-api
+    hostname: marsquakes-api
+    # Not published to the host: reachable only inside the Docker network via
+    # the edge nginx service (public entry point on port 80).
+    expose:
+      - '8817'
     # To override the config bundled in the jar, create apps/api/config first, then uncomment
     # volumes:
     #   - ./apps/api/config:/jeecg-boot/config
@@ -37,18 +40,39 @@ services:
     restart: on-failure
 
   # Admin frontend (JeecgBoot Vue3 / Vite); the build output is served by nginx.
-  # nginx proxies /jeecgboot/ to http://jeecg-boot-system:8817/jeecg-boot/
+  # Its nginx proxies /marsquakes-api/ to
+  # http://marsquakes-api:8817/marsquakes-api/, but traffic now reaches it
+  # through the edge nginx service below.
   web-admin:
     build:
       context: .
       dockerfile: apps/web-admin/Dockerfile
     image: marsquakes/web-admin:3.9.3
-    container_name: jeecg-boot-web-admin
-    hostname: jeecg-boot-web-admin
-    ports:
-      - '${WEB_ADMIN_PORT:-8807}:80'
+    container_name: marsquakes-web-admin
+    hostname: marsquakes-web-admin
+    # Not published to the host: reachable only inside the Docker network via
+    # the edge nginx service (public entry point on port 80).
+    expose:
+      - '80'
     depends_on:
       - api
+    networks:
+      - jeecg-boot
+    restart: on-failure
+
+  # Edge reverse proxy: the only service published to the host.
+  # Listens on port 80; / goes to the frontend and /marsquakes-api/ goes to the API.
+  nginx:
+    image: nginx:stable-alpine
+    container_name: marsquakes-nginx
+    hostname: marsquakes-nginx
+    ports:
+      - '${NGINX_HOST_PORT:-80}:80'
+    volumes:
+      - ./apps/web-admin/edge-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+      - web-admin
     networks:
       - jeecg-boot
     restart: on-failure

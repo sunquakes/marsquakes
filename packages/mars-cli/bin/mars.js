@@ -1433,7 +1433,7 @@ function runDocker(rootDir, platform, mode) {
   }
 
   // The API dev image runs the docker Maven profile, whose application-docker.yml
-  // reaches the databases by their fixed names jeecg-boot-mysql / jeecg-boot-redis.
+  // reaches the databases by their fixed names marsquakes-mysql / marsquakes-redis.
   // Those names only resolve on the user-defined network created by
   // docker-compose.infra.yml, so the container has to join it explicitly. The
   // web-admin dev container joins too, so its Vite proxy can reach the API.
@@ -1442,7 +1442,7 @@ function runDocker(rootDir, platform, mode) {
     if (targetPlatform === 'api') {
       // The web-admin proxy targets this fixed name (see its Dockerfile.dev),
       // so alias the API container to it on the shared network.
-      dockerArgs.push('--network-alias', 'jeecg-boot-system');
+      dockerArgs.push('--network-alias', 'marsquakes-api');
       console.log(t('api-docker-network'));
       console.log(t('api-docker-network-hint'));
     }
@@ -1495,7 +1495,14 @@ const PLATFORM_COMMANDS = {
 const API_INSTALL_ARGS = ['install', '-DskipTests'];
 const API_RUN_ARGS = ['spring-boot:run'];
 const API_START_MODULE = 'jeecg-module-system/jeecg-system-start';
-const IN_CONTAINER_DB_NAMES = ['mysql', 'redis', 'jeecg-boot-mysql', 'jeecg-boot-redis'];
+const IN_CONTAINER_DB_NAMES = [
+  'mysql',
+  'redis',
+  'marsquakes-mysql',
+  'marsquakes-redis',
+  'jeecg-boot-mysql',
+  'jeecg-boot-redis',
+];
 
 function commandAvailable(command) {
   try {
@@ -2531,7 +2538,7 @@ function containerHealthStatus(containerName) {
 // the schema (start_period is 90s in the compose file), so the overall budget
 // is four minutes rather than the usual retry window.
 async function waitForHealthy(timeoutMs = 240000) {
-  const containers = ['jeecg-boot-mysql', 'jeecg-boot-redis'];
+  const containers = ['marsquakes-mysql', 'marsquakes-redis'];
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const statuses = containers.map(containerHealthStatus);
@@ -2594,7 +2601,7 @@ async function setupDatabaseWizard(rootDir, enabledPlatforms) {
     REDIS_PORT: '6379',
     REDIS_DATABASE: '0',
     REDIS_PASSWORD: '',
-    WEB_ADMIN_PORT: '8807',
+    NGINX_HOST_PORT: '80',
     MYSQL_HOST_PORT: '3306',
     REDIS_HOST_PORT: '6379',
     NPM_REGISTRY: 'https://registry.npmjs.org',

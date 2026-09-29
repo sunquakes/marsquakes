@@ -97,7 +97,7 @@ export function configPwaPlugin(isBuild: boolean): PluginOption | PluginOption[]
           },
         },
         //update-begin---author:scott ---date:20260417  for：[issues/9564]PWA图片规则过宽导致/filereview/等业务接口走缓存-----------
-        // 图片资源（仅缓存构建产物，避免命中 /filereview/、/jeecgboot/ 等业务接口返回的图片）
+        // 图片资源（仅缓存构建产物，避免命中 /filereview/、/marsquakes-api/ 等业务接口返回的图片）
         {
           urlPattern: /\/(?:assets|img|static|resource)\/.*\.(?:png|jpg|jpeg|svg|gif|webp)$/i,
           handler: 'CacheFirst',
@@ -109,9 +109,9 @@ export function configPwaPlugin(isBuild: boolean): PluginOption | PluginOption[]
             },
           },
         },
-        // API 请求（JeecgBoot 实际前缀是 /jeecgboot/，原 /api/ 规则未生效）
+        // API 请求（实际前缀是 /marsquakes-api/，原 /api/ 规则未生效）
         {
-          urlPattern: /\/jeecgboot\/.*/i,
+          urlPattern: /\/marsquakes-api\/.*/i,
           handler: 'NetworkOnly',
         },
         //update-end---author:scott ---date:20260417  for：[issues/9564]PWA图片规则过宽导致/filereview/等业务接口走缓存-----------

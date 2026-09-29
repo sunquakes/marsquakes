@@ -284,10 +284,10 @@ CLI can actually start the whole stack itself, including the Java API:
   `Dockerfile.dev` and attaches the container to the user-defined `jeecg_boot`
   network with `--network jeecg_boot`; `application-docker.yml` reaches the
   databases by their fixed container names, which only resolve on that network.
-  The API container also takes the network alias `jeecg-boot-system`, the name
+  The API container also takes the network alias `marsquakes-api`, the name
   the web-admin Vite proxy targets. The web-admin dev container joins the same
   network, so a plain `mars dev --docker` (or starting both platforms) gives a
-  fully containerized stack with the browser hitting web-admin and its `/jeecgboot`
+  fully containerized stack with the browser hitting web-admin and its `/marsquakes-api`
   proxy reaching the API. Start the infra containers first
   (`docker compose -f docker-compose.infra.yml up -d`); the CLI prints this
   reminder when launching the API container.

@@ -43,6 +43,12 @@ services:
       args:
         NPM_REGISTRY: ${NPM_REGISTRY:-https://registry.npmjs.org}
 
+  # Edge nginx needs no build; reuse the service definition as-is.
+  nginx:
+    extends:
+      file: docker-compose.yml
+      service: nginx
+
 networks:
   jeecg-boot:
     name: jeecg_boot

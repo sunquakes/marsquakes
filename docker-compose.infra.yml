@@ -18,8 +18,8 @@
 # IMPORTANT: when stacking this file with the application stack, point the app
 # at the in-network service names instead of the host, otherwise api keeps
 # talking to host.docker.internal and ignores the containers started here:
-#     MYSQL_HOST=mysql
-#     REDIS_HOST=redis
+#     MYSQL_HOST=marsquakes-mysql
+#     REDIS_HOST=marsquakes-redis
 #     MYSQL_PORT=3306
 #     REDIS_PORT=6379
 # An interactive `mars init` writes these automatically via its setup wizard;
@@ -41,8 +41,8 @@ services:
       context: .
       dockerfile: apps/api/db/Dockerfile
     image: marsquakes/mysql:8.0.36
-    container_name: jeecg-boot-mysql
-    hostname: mysql
+    container_name: marsquakes-mysql
+    hostname: marsquakes-mysql
     # A sequence rather than a single string: YAML forbids comments inside a
     # multi-line plain scalar. The entrypoint prepends `mysqld` on its own
     # because the first argument starts with a dash.
@@ -90,8 +90,8 @@ services:
     # Official image, alpine tag: unaffected by the glibc 2.31 / clone3 seccomp
     # constraint documented in AGENTS.md.
     image: redis:7-alpine
-    container_name: jeecg-boot-redis
-    hostname: redis
+    container_name: marsquakes-redis
+    hostname: marsquakes-redis
     # REDIS_PASSWORD is passed in as an env var and the `:+` expansion is left
     # to the container's shell, hence `$$` and the `sh -c` wrapper. Compose
     # v2.0.0 rejects `${VAR:+...}` at parse time ("invalid interpolation
