@@ -165,42 +165,32 @@ prove the site is really yours; browsers answer with the padlock and the
 refuse to send passwords.
 
 A certificate is only possible at this point — after the site opens over the
-domain — because the issuer proves ownership by visiting that very name on this
-very server. You can let the agent get one from Let's Encrypt, or download one
-yourself from the cloud console. The two consoles offer different products, and
-only some of them can leave the cloud for your edge nginx:
+domain — because by now the name resolves to this server and is yours to
+control, which is exactly what proving ownership requires. In AWS you obtain a
+certificate from **AWS Certificate Manager (ACM)**. It offers a free and a
+paid public certificate, and only the paid one can reach your edge nginx:
 
-**Alibaba Cloud — Certificate Management Service (CAS)**
-
-| Product | Type | Cost | Lifetime | Format you can download |
-| ------- | ---- | ---- | -------- | ----------------------- |
-| Personal test certificate (formerly the free certificate) | DV | free | 90 days, renewed by hand | Nginx = PEM: `domain.pem` + `domain.key` |
-| Paid official certificate | DV / OV / EV | paid | 1 year | PEM (Nginx), PFX/PKCS12 (Tomcat, IIS), JKS, CRT (Apache) |
-
-**AWS — AWS Certificate Manager (ACM)**
-
-| Product | Type | Cost | Lifetime | Can it leave AWS? |
-| ------- | ---- | ---- | -------- | ----------------- |
-| Standard public certificate | DV | free | managed and renewed automatically | no export — attach it only to an ALB, CloudFront or API Gateway, which then run HTTPS themselves |
-| Exportable public certificate (new certificates requested after June 17, 2025) | DV | charged at issue and renewal | 395 days | yes — exported as PEM, with the private key encrypted by a passphrase you set |
+| Certificate | Cost | Type | Lifetime | Use for this project |
+| ----------- | ---- | ---- | -------- | -------------------- |
+| Standard public certificate | free | DV | renewed automatically by ACM | cannot be exported — attach it only to an ALB, CloudFront or API Gateway, which run HTTPS themselves |
+| Exportable public certificate (requested after June 17, 2025) | charged at issue and renewal | DV | 395 days | exported as PEM, the private key encrypted under a passphrase you choose — this is the kind the edge nginx needs |
 
 ### What format the edge nginx needs
 
-The edge server does not care who issued the certificate; it wants two
-**PEM** files — plain Base64 text starting with `-----BEGIN ...-----` — mounted
-into the container at the paths in `edge-nginx.ssl.conf`:
+The edge server wants two **PEM** files — plain Base64 text starting with
+`-----BEGIN ...-----` — mounted into the container at the paths in
+`edge-nginx.ssl.conf`:
 
 - `fullchain.pem` — your certificate followed by the issuer's intermediate
   certificate (the full chain), used for `ssl_certificate`.
 - `privkey.pem` — the unencrypted private key, used for `ssl_certificate_key`.
 
-Rename what you downloaded to those two names. An Alibaba Cloud Nginx download
-already gives you `domain.pem` (the chain) and `domain.key` (the key), so it is
-PEM with no conversion. A PFX or JKS download is a keystore, not PEM — either
-download the PEM option instead or have the agent convert it; likewise an
-exported ACM certificate needs its encrypted key decrypted before nginx can use
-it. Let's Encrypt produces PEM directly. Do not upload the certificate back
-into any console; the files only need to sit in the mounted directory.
+The ACM export gives you the certificate chain, the certificate and an
+encrypted private key. Rename the chain to `fullchain.pem`, and decrypt the
+exported private key into `privkey.pem` before nginx can use it — give your
+agent the passphrase in that one step rather than storing it anywhere. The
+files only need to sit in the mounted directory; never upload them back into a
+console.
 
 The certificate is no good as a file on its own: the edge nginx has to be shown
 where it is, publish port 443, and send plain visitors to `https://`. A complete
@@ -212,34 +202,35 @@ Give the domain to your agent and say:
 
 > **Say this**
 >
-> My website now opens at my domain over plain HTTP. Get a free trusted HTTPS
-> certificate for that domain, make the edge server use it on port 443, redirect
-> plain addresses to https, and arrange for the certificate to renew itself
-> automatically before it expires. Do not change how the pages and the backend
+> My website now opens at my domain over plain HTTP. Request an exportable
+> public certificate for that domain in AWS Certificate Manager, export it, and
+> put the chain at `fullchain.pem` and the decrypted private key at
+> `privkey.pem` where the edge server reads them. Make the edge server use them
+> on port 443, redirect plain addresses to https, and renew the certificate
+> before its 395 days run out. Do not change how the pages and the backend
 > work. Tell me when a fresh visitor sees the padlock.
 
-### If you already downloaded the certificate
+### If you already exported the certificate
 
-You may instead have obtained the certificate yourself from a cloud console
-(such as a free Aliyun DV certificate). Do not paste its contents into the
-chat — the key file is a secret, and anything pasted in can end up in a log.
-Place the two files the issuer gave you into a directory on the machine, named
-exactly as the edge config expects:
+You may instead have requested and exported the certificate yourself in the ACM
+console. Do not paste its contents into the chat — the key file is a secret, and
+anything pasted in can end up in a log. Place the files the export gave you
+into a directory on the machine, named exactly as the edge config expects:
 
-- `fullchain.pem` — the certificate
-- `privkey.pem` — the private key
+- `fullchain.pem` — the certificate chain
+- `privkey.pem` — the private key, decrypted from the exported encrypted key
 
 Keep that directory out of version control. Then give your agent only the
 domain and the directory path, and say:
 
 > **Say this**
 >
-> I already have an HTTPS certificate for my domain at `<directory>` — the
-> certificate is `fullchain.pem` and the private key is `privkey.pem`. Make the
-> edge server use them on port 443, redirect plain addresses to https, and tell
-> me before the certificate expires so it can be renewed. Do not change how the
-> pages and the backend work, and do not put the key into version control. Tell
-> me when a fresh visitor sees the padlock.
+> I already exported an HTTPS certificate for my domain from ACM to
+> `<directory>` — the chain is `fullchain.pem` and the private key is
+> `privkey.pem`. Make the edge server use them on port 443, redirect plain
+> addresses to https, and renew the certificate before its 395 days run out. Do
+> not change how the pages and the backend work, and do not put the key into
+> version control. Tell me when a fresh visitor sees the padlock.
 
 **What you should see:** in both cases, the agent reporting the certificate is
 installed, and opening the domain yourself showing `https://` with a closed
