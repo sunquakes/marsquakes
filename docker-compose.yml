@@ -13,7 +13,7 @@ services:
     container_name: jeecg-boot-system
     hostname: jeecg-boot-system
     ports:
-      - '8080:8080'
+      - '8817:8817'
     # To override the config bundled in the jar, create apps/api/config first, then uncomment
     # volumes:
     #   - ./apps/api/config:/jeecg-boot/config
@@ -37,7 +37,7 @@ services:
     restart: on-failure
 
   # Admin frontend (JeecgBoot Vue3 / Vite); the build output is served by nginx.
-  # nginx proxies /jeecgboot/ to http://jeecg-boot-system:8080/jeecg-boot/
+  # nginx proxies /jeecgboot/ to http://jeecg-boot-system:8817/jeecg-boot/
   web-admin:
     build:
       context: .

@@ -252,7 +252,7 @@ MySQL 镜像内置了 `apps/api/db/jeecgboot-mysql-5.7.sql` 里的 JeecgBoot 表
 
 | 服务        | 镜像                         | 端口                            |
 | ----------- | ---------------------------- | ------------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                     |
+| `api`       | `marsquakes/api:3.9.3`       | `8817:8817`                     |
 | `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80`    |
 | `mysql`     | `marsquakes/mysql:8.0.36`    | `${MYSQL_HOST_PORT:-3306}:3306` |
 | `redis`     | `redis:7-alpine`             | `${REDIS_HOST_PORT:-6379}:6379` |

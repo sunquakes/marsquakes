@@ -45,7 +45,7 @@ docker compose up -d
 
 | 服务        | 镜像                         | 端口                         |
 | ----------- | ---------------------------- | ---------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                  |
+| `api`       | `marsquakes/api:3.9.3`       | `8817:8817`                  |
 | `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80` |
 
 `docker-compose.build.yml` 通过服务级的 `extends` 继承 `docker-compose.yml`，

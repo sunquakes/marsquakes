@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * 这是一个符合 MCP 协议的服务端实现，支持 SSE 传输。
  * 
- * 连接地址: http://你的服务器:8080/jeecg-boot/demo/mcp/sse
+ * 连接地址: http://你的服务器:8817/jeecg-boot/demo/mcp/sse
  * 
  * 提供的工具:
  * - hello: 打招呼工具

@@ -6,7 +6,7 @@ title: Develop
 # Admin System: Develop
 
 The two halves run separately: Vite serves the frontend with hot reload on port
-**8807** and proxies its API calls to the backend on **8080**. Follow the steps
+**8807** and proxies its API calls to the backend on **8817**. Follow the steps
 in order.
 
 ## Step 1 — Start the dependencies
@@ -44,7 +44,7 @@ cd apps/api && mvn -pl jeecg-module-system/jeecg-system-start -am spring-boot:ru
 ```
 
 `-pl` selects the starter module and `-am` builds its dependencies. The service
-listens on `http://localhost:8080`, where the Web Admin dev server proxies its
+listens on `http://localhost:8817`, where the Web Admin dev server proxies its
 API calls. Keep it in a terminal you own (`mars dev` deliberately does not wrap
 it) so you can read the logs and stop it with `Ctrl+C`.
 
@@ -61,7 +61,7 @@ docker compose up -d
 docker compose -f docker-compose.build.yml up -d
 ```
 
-Both publish port `8080:8080`. The CLI equivalent of the build-and-run path is
+Both publish port `8817:8817`. The CLI equivalent of the build-and-run path is
 `mars build --platform api --docker`, covered in [Deploy](./guide-admin-deploy.md).
 See [Docker](./docker.md) for the Dockerfile variants, `.env` build arguments
 (`MAVEN_MIRROR_URL`) and the base-image pins that matter on a slow network or an

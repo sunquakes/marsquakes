@@ -85,5 +85,5 @@ WORKDIR /jeecg-boot
 RUN mkdir -p /jeecg-boot/config
 COPY --from=builder /build/jeecg-module-system/jeecg-system-start/target/jeecg-system-start-3.9.3.jar ./app.jar
 
-EXPOSE 8080
+EXPOSE 8817
 CMD ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

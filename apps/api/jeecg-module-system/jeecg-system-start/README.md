@@ -2,8 +2,8 @@
 - 项目： jeecg-module-system/jeecg-system-start
 - 启动类：jeecg-module-system/jeecg-system-start/src/main/java/org/jeecg/JeecgSystemApplication.java
 
-- 端口：8080
-- 访问地址：http://localhost:8080/jeecg-boot
+- 端口：8817
+- 访问地址：http://localhost:8817/jeecg-boot
 - 账号密码：admin/123456
 
 

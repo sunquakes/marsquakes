@@ -136,7 +136,7 @@ src/views/<entityPackagePath>/
   Requests are MD5-signed; tenant header is injected when tenant mode is on.
   Response shape is `{ code, result, message, success }`, success when
   `code === 200`. Dev proxy forwards `/jeecgboot` to
-  `http://localhost:8080/jeecg-boot` (see [.env.development](.env.development));
+  `http://localhost:8817/jeecg-boot` (see [.env.development](.env.development));
   in Docker the target is the network alias `jeecg-boot-system`.
 - **Components:** Ant Design Vue components are auto-imported
   (`unplugin-vue-components`). Global manual components are registered in

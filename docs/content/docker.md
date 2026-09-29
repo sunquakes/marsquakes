@@ -51,7 +51,7 @@ VS Code Docker extension can run either directly. Both treat MySQL and Redis as
 
 | Service     | Image                        | Port                         |
 | ----------- | ---------------------------- | ---------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                  |
+| `api`       | `marsquakes/api:3.9.3`       | `8817:8817`                  |
 | `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80` |
 
 `docker-compose.build.yml` inherits from `docker-compose.yml` through the

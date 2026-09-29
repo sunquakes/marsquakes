@@ -44,7 +44,7 @@ mars build --platform api --docker
 docker compose -f docker-compose.build.yml up -d
 ```
 
-两者都发布 `8080:8080` 端口，并且都要求 MySQL 和 Redis 已经在运行 —— 用
+两者都发布 `8817:8817` 端口，并且都要求 MySQL 和 Redis 已经在运行 —— 用
 `docker compose -f docker-compose.infra.yml up -d` 启动（见
 [环境准备](./guide-admin-env.md#start-the-dependencies)）。[Docker](./docker.md)
 页面介绍了 Dockerfile 变体、`.env` 构建参数（`MAVEN_MIRROR_URL`）以及在网络慢或

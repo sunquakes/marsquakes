@@ -180,7 +180,7 @@ public class CommonController {
 
     /**
      * 预览图片&下载文件
-     * 请求地址：http://localhost:8080/common/static/{user/20190119/e1fe9925bc315c60addea1b98eb1cb1349547719_1547866868179.jpg}
+     * 请求地址：http://localhost:8817/common/static/{user/20190119/e1fe9925bc315c60addea1b98eb1cb1349547719_1547866868179.jpg}
      *
      * @param request
      * @param response
@@ -233,7 +233,7 @@ public class CommonController {
 
 //	/**
 //	 * 下载文件
-//	 * 请求地址：http://localhost:8080/common/download/{user/20190119/e1fe9925bc315c60addea1b98eb1cb1349547719_1547866868179.jpg}
+//	 * 请求地址：http://localhost:8817/common/download/{user/20190119/e1fe9925bc315c60addea1b98eb1cb1349547719_1547866868179.jpg}
 //	 *
 //	 * @param request
 //	 * @param response

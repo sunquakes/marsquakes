@@ -54,10 +54,10 @@ Runtime dependency chains already in use — follow the matching one:
 
 ## Build & Run
 
-The application uses context path `/jeecg-boot`. The **dev profile is pinned
-to port 8817** (`server.port` in `application-dev.yml`) to avoid the frequently
-contended 8080; other profiles still default to 8080, and any port can be
-overridden with `--server.port=<n>`. Dev requires reachable MySQL and Redis
+The application uses context path `/jeecg-boot`. **All profiles are pinned
+to port 8817** (`server.port` in every `application-*.yml`) to avoid the
+frequently contended 8080; it can still be overridden with
+`--server.port=<n>`. Dev requires reachable MySQL and Redis
 (see root `docker-compose.infra.yml`).
 
 `spring-boot:run` cannot be combined with `-am` in this multi-module build, so

@@ -1266,7 +1266,7 @@ function dockerImageExists(imageName) {
 const DOCKER_PORTS = {
   web: '3100:3100',
   'web-admin': '8807:8807',
-  api: '8080:8080',
+  api: '8817:8817',
 };
 
 // Dockerfile variants are named after who produces the artifact, not after a

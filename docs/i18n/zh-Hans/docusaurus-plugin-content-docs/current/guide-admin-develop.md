@@ -6,7 +6,7 @@ title: 如何开发
 # 后台管理系统：如何开发
 
 两半分开运行：Vite 在 **8807** 端口提供带热更新的前端，并把 API 调用代理到
-**8080** 端口的后端。按顺序执行下面的步骤。
+**8817** 端口的后端。按顺序执行下面的步骤。
 
 ## 第 1 步 —— 启动依赖
 
@@ -40,7 +40,7 @@ Maven；启用 `api` 时 `mars init` 会安装它们（除非你传了 `--docker
 cd apps/api && mvn -pl jeecg-module-system/jeecg-system-start -am spring-boot:run
 ```
 
-`-pl` 选中启动模块，`-am` 构建它依赖的模块。服务监听 `http://localhost:8080`，
+`-pl` 选中启动模块，`-am` 构建它依赖的模块。服务监听 `http://localhost:8817`，
 Web Admin 的开发服务器会把 API 调用代理到这里。把它放在你自己掌控的终端里
 （`mars dev` 刻意没有封装它），方便查看日志、用 `Ctrl+C` 停止。
 
@@ -57,7 +57,7 @@ docker compose up -d
 docker compose -f docker-compose.build.yml up -d
 ```
 
-两者都发布 `8080:8080` 端口。构建并运行这条路径的 CLI 等价命令是
+两者都发布 `8817:8817` 端口。构建并运行这条路径的 CLI 等价命令是
 `mars build --platform api --docker`，在[部署](./guide-admin-deploy.md)一节介绍。
 Dockerfile 变体、`.env` 构建参数（`MAVEN_MIRROR_URL`）以及网络慢或 Docker 守护
 进程较旧时要紧的基础镜像锁定，见 [Docker](./docker.md)。

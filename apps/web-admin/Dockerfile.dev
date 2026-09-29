@@ -31,7 +31,7 @@ ENV NODE_OPTIONS=--max-old-space-size=8192
 # Inside the container localhost points at the container itself, so the proxy
 # must target the api service name. Quotes are required: without them the shell
 # strips the outer brackets and wrapperEnv's JSON.parse fails at container start.
-ENV VITE_PROXY='[["/jeecgboot","http://jeecg-boot-system:8080/jeecg-boot"]]'
+ENV VITE_PROXY='[["/jeecgboot","http://jeecg-boot-system:8817/jeecg-boot"]]'
 
 EXPOSE 8807
 CMD ["pnpm", "dev", "--host", "0.0.0.0", "--port", "8807"]

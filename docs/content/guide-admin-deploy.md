@@ -47,7 +47,7 @@ JDK or Maven:
 docker compose -f docker-compose.build.yml up -d
 ```
 
-Both publish port `8080:8080` and expect MySQL and Redis to already be running —
+Both publish port `8817:8817` and expect MySQL and Redis to already be running —
 start them with `docker compose -f docker-compose.infra.yml up -d` (see
 [Environment Setup](./guide-admin-env.md#start-the-dependencies)). The
 [Docker](./docker.md) page covers the Dockerfile variants, `.env` build

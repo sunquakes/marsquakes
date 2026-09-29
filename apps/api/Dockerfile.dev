@@ -48,7 +48,7 @@ RUN mvn -B -P docker dependency:go-offline -DskipTests || true
 
 COPY apps/api/ ./
 
-EXPOSE 8080
+EXPOSE 8817
 # spring-boot:run cannot be combined with -am: it then runs on every reactor
 # project, including the parent pom which has no main class. Install upstream
 # modules first, then run inside the start module only. Shell form is required

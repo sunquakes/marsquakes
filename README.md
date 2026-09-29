@@ -276,7 +276,7 @@ modules.
 
 | Service     | Image                        | Port                          |
 | ----------- | ---------------------------- | ----------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                   |
+| `api`       | `marsquakes/api:3.9.3`       | `8817:8817`                   |
 | `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80`  |
 | `mysql`     | `marsquakes/mysql:8.0.36`    | `${MYSQL_HOST_PORT:-3306}:3306` |
 | `redis`     | `redis:7-alpine`             | `${REDIS_HOST_PORT:-6379}:6379` |

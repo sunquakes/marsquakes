@@ -6,7 +6,8 @@ title: Deploy It
 # Building an Admin System: Deploy It
 
 Once the system from [Create a Feature](./ai-admin-module.md) works on your
-computer, two prompts finish the job.
+computer, three prompts finish the job — package it, check it, and put it on a
+real server people can reach over the internet.
 
 Until now most of the system ran directly on your computer and only the data
 store ran in its box. Deployment packages the **whole system** — data store,
@@ -44,7 +45,7 @@ check there are exactly four:
 | ----- | ----------------------------------------------- |
 | Data store | 3306 |
 | Cache | 6379 |
-| Behind-the-scenes service (`jeecg-boot-system`) | 8080 |
+| Behind-the-scenes service (`jeecg-boot-system`) | 8817 |
 | Admin website (`jeecg-boot-web-admin`) | 8807 |
 
 The first packaging takes several minutes — programming tools download inside
@@ -74,7 +75,7 @@ running — the packaged system simply adopts it.
 
 ## Step 2 — Open it and check it works
 
-The finished website is at `http://localhost:8807`. The address ending in 8080
+The finished website is at `http://localhost:8807`. The address ending in 8817
 belongs to the behind-the-scenes service and is not meant for browsers — the
 website is the only page you ever use.
 
@@ -88,10 +89,46 @@ website is the only page you ever use.
 development, including your new column. The packaged pieces talk to each other
 on their own internal network, so there is nothing to configure.
 
-**Putting it on a different server** uses the same prompt on that machine: copy
-the project folder over, make sure the box-running software is installed, and
-paste. The package contains everything it needs, so that server needs no
-programming tools — the folder plus the box-running software is the whole list.
+## Step 3 — Put it on a real server people can open from anywhere
+
+"On your computer" only you can open it. A cloud server is simply another
+computer that is always on and has a public address.
+
+**Rent a server with Docker already installed (AWS Lightsail):**
+
+1. Open the Lightsail product page and sign in: [aws.amazon.com/lightsail](https://aws.amazon.com/lightsail/)
+2. In the [Lightsail console](https://lightsail.aws.amazon.com/), choose **Create instance**.
+3. Pick the AWS Region nearest the people using the admin and choose the **Linux/Unix** platform.
+4. For the image choose **Apps + OS** (not **OS Only**) and select the **Docker** blueprint. It starts with Docker and Docker Compose already installed, so nothing has to be set up later.
+5. Choose a plan with at least 2 GB of memory, give the instance a name, and choose **Create instance**.
+6. From the instance page, copy its public IP address, and set the login details — an SSH key, or the password you get from **Connect using SSH**.
+
+Detailed screenshots for every step are in the official guide:
+[Create a Linux/Unix instance in Lightsail](https://docs.aws.amazon.com/lightsail/latest/userguide/getting-started-with-amazon-lightsail.html),
+and the Docker blueprint is described in
+[Docker in Lightsail](https://docs.aws.amazon.com/lightsail/latest/userguide/docker-in-lightsail.html).
+
+Once you have the public address and login details, tell the agent and paste:
+
+> **Say this**
+>
+> I rented an AWS Lightsail instance for this project, created from the Docker
+> blueprint, so Docker and Docker Compose are already installed. Its public
+> address and login details are: [fill them in]. Deploy the packaged admin
+> system there, make it start itself whenever the server restarts, open only the
+> port the website needs, and give me the address to open. Keep any password
+> different from the ones I use locally.
+
+**What you should see:** the agent reporting the system is live on the server,
+with a single address you can open from any computer or phone. Behind it the same
+four pieces run; the data store and cache stay unreachable from outside — only
+the website's door is open.
+
+:::note A domain and the padlock come after it works
+First confirm the IP address opens from another device — say your phone on
+mobile data, not your home Wi-Fi. Only then add a domain and ask the agent to put
+HTTPS (the padlock) on it. Doing both at once mixes two problems into one error.
+:::
 
 ## When it goes wrong
 
@@ -108,3 +145,6 @@ You do not need to diagnose anything. Find your symptom, say the sentence:
 | Pulling the standard packaged images fails or times out | "Configure the proxy for the box-running software — keep the standard images, do not swap in third-party ones" |
 | A database "access denied" after changing the password | "The password is only read when the storage is empty — reset the stored data and start fresh. That wipes what was in it" |
 | It has been silent for a long time | "Check which step you are on and tell me what is happening right now" |
+| The IP address times out from my phone | "Check the server's firewall — in the cloud console and on the machine itself — and make sure the restart policy is set" |
+| The site dies after the server reboots | "Set everything to start itself when the server restarts, then reboot it once to prove it" |
+| A browser warns the site is "not secure" | "It is working on plain HTTP — leave it until the IP address is confirmed, then set up HTTPS and the padlock" |
