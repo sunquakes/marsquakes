@@ -38,6 +38,7 @@ for `package.json`, `AGENTS.md` or `turbo.json`.
 | `-n`, `--non-interactive` | `create` | Accept the default platform selection |
 | `--platform <platform>` | `dev`, `build` | Limit to one platform |
 | `--docker` | `dev`, `build` | Run inside a Docker container |
+| `--android-mode <mode>` | `init` | Android variant: `local` (mock login) or `api` (real login against the backend) |
 | `--lang <en\|zh>` | all | Output language (default `en`) |
 | `--help` | all | Show help |
 
@@ -186,6 +187,8 @@ platforms report that building is not supported yet.
 ```bash
 mars init            # dependencies + the toolchain your selection implies
 mars init --docker   # same, but the API runs in a container
+mars init --android-mode local   # standalone Android, mock login
+mars init --android-mode api     # Android logs in against the real backend
 ```
 
 This is where a tick made during `create` is paid for. `init` reads
@@ -231,6 +234,26 @@ and Redis in Docker while the API itself runs on the host, so a reachable Docker
 is no evidence of the arrangement. The flag is also scoped — in an `api` +
 `android` project Maven is skipped but the JDK is still installed, because
 Gradle runs on the host.
+
+### Choosing the Android variant
+
+The Android app ships in two variants:
+
+- **`local`** — a standalone app whose login uses built-in mock data, so it runs
+  with no backend present.
+- **`api`** — login calls the real JeecgBoot backend (`sys/login` /
+  `sys/logout`) and the returned JWT authenticates subsequent requests.
+
+When `init` runs in an interactive terminal and `android` is enabled, it asks
+which variant you want; in a non-interactive terminal it defaults to `api` when
+the API platform is enabled in `platforms.json`, otherwise `local`. Pass
+`--android-mode local|api` to decide explicitly.
+
+Switching is idempotent and safe to repeat: it only toggles three wiring points
+—the `:core:network` include in `settings.gradle.kts`, its dependency in the app
+module, and the Hilt binding that owns `AuthRepository`. The network sources
+stay on disk in both modes; they are simply excluded from the build in `local`
+mode.
 
 Anything `init` could not install prints the path to
 `.agents/skills/marsquakes-setup/references/install-matrix.md`, which carries the

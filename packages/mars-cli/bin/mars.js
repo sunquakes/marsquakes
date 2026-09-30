@@ -173,6 +173,16 @@ const LOCALES = {
     'next-step-login': '      Default login: admin / 123456',
     'next-step-note': '   Keep this terminal open; press Ctrl+C to stop everything.',
     'mock-disabled': '✅ Turned off the built-in mock data in web-admin (it will use the real API).',
+    'amode-skip-noninteractive': '📱 Non-interactive terminal: using API-connected Android mode (the API platform is enabled).',
+    'amode-intro': '📱 Android app mode:',
+    'amode-option-local': '1) Local-only app (mock login, works without the API)',
+    'amode-option-api': '2) API-connected app (real login against the backend API)',
+    'amode-enter': 'Enter 1 or 2 (default 2): ',
+    'amode-invalid-choice': 'Please enter 1 or 2.',
+    'amode-unknown': 'Unknown Android mode "{{mode}}". Use one of: local, api',
+    'amode-applying': '📱 Configuring Android {{mode}} mode...',
+    'amode-local': '✅ Android local mode: login uses built-in mock data (network module detached).',
+    'amode-api': '✅ Android API mode: login calls the real backend (network module attached).',
   },
   zh: {
     'web-label': 'Web 用户端',
@@ -334,6 +344,16 @@ const LOCALES = {
     'next-step-login': '      默认账号：admin / 123456',
     'next-step-note': '   请保持这个终端开着；按 Ctrl+C 可停止全部服务。',
     'mock-disabled': '✅ 已关闭 web-admin 内置的模拟数据（将使用真实接口）。',
+    'amode-skip-noninteractive': '📱 当前为非交互终端：Android 使用 API 模式（已启用 API 平台）。',
+    'amode-intro': '📱 请选择 Android 应用模式：',
+    'amode-option-local': '1) 纯本地应用（模拟登录，不依赖 API 即可运行）',
+    'amode-option-api': '2) 连接 API 的应用（登录调用真实后端接口）',
+    'amode-enter': '请输入 1 或 2（默认 2）: ',
+    'amode-invalid-choice': '请输入 1 或 2。',
+    'amode-unknown': '未知的 Android 模式“{{mode}}”。可选值为: local、api',
+    'amode-applying': '📱 正在配置 Android {{mode}} 模式...',
+    'amode-local': '✅ Android 本地模式：登录使用内置模拟数据（已移除网络模块挂载）。',
+    'amode-api': '✅ Android API 模式：登录调用真实后端（已挂载网络模块）。',
   },
 };
 
@@ -477,6 +497,7 @@ Commands:
   dev                      Start development server (default: all enabled platforms)
   build                    Build project (default: all enabled platforms)
   init                     Initialize project dependencies and check environment
+  module                   Add or remove an Android feature/core module
   region                   Detect whether this host should use cn or default
   clean                    Clean all build artifacts
 
@@ -488,6 +509,7 @@ Options:
   --from <path>            (create) Use a local directory as template
   -n, --non-interactive    (create) Non-interactive mode (use default platforms)
   --platform <platform>    (dev/build) Run only for specific platform
+                           (module) Only "android" is supported (default: android)
   --docker                 (dev/build) Run in Docker container
                            (init) The API runs in a container, so skip the host JDK/Maven
   --registry <profile>     (init) Mirror used while installing tools only
@@ -495,6 +517,9 @@ Options:
                            cn = mainland-China mirrors for npm/Maven/rustup/Node;
                            auto = detect cn vs default from network and locale;
                            project dependencies are never redirected)
+  --android-mode <mode>    (init) Android variant: local (mock login) or api
+                           (real login against the backend API); interactive
+                           prompt when omitted in a TTY
   --lang <en|zh>           Set language (default: auto-detected)
   --help                   Show this help message
 
@@ -510,7 +535,12 @@ Examples:
   mars init --docker                  # API runs in a container: no host JDK/Maven
   mars init --registry cn             # Install tools from mainland-China mirrors
   mars init --registry auto           # Detect cn vs default, then install
+  mars init --android-mode local      # Mock login, no API calls
+  mars init --android-mode api        # Real login against the backend API
   mars region                         # Show the detected region and reason
+  mars module add feature:gallery     # Add + register an Android feature module
+  mars module add core:analytics --hilt
+  mars module remove feature:gallery -y
   mars clean
 `);
 }
@@ -2665,6 +2695,119 @@ async function setupDatabaseWizard(rootDir, enabledPlatforms) {
   }
 }
 
+// Idempotent toggle between the two Android variants. The network sources stay
+// on disk in both modes; the switch is purely: include + app dependency plus the
+// Hilt binding that owns AuthRepository. Re-running with the same mode is a
+// no-op, so `mars init` can call it on every run.
+function applyAndroidMode(androidDir, mode) {
+  const settingsPath = path.join(androidDir, 'settings.gradle.kts');
+  const appGradlePath = path.join(androidDir, 'app', 'build.gradle.kts');
+  const dataModulePath = path.join(
+    androidDir,
+    'core', 'data', 'src', 'main', 'java', 'cc', 'marsquakes', 'core', 'data', 'di', 'DataModule.kt',
+  );
+
+  let settingsText = fs.readFileSync(settingsPath, 'utf-8');
+  let appText = fs.readFileSync(appGradlePath, 'utf-8');
+  let dataModuleText = fs.readFileSync(dataModulePath, 'utf-8');
+
+  if (mode === 'api') {
+    settingsText = ensureInclude(settingsText, ':core:network');
+    appText = ensureAppDependency(appText, ':core:network');
+    dataModuleText = removeLocalAuthBinding(dataModuleText);
+  } else {
+    settingsText = removeInclude(settingsText, ':core:network');
+    appText = removeAppDependency(appText, ':core:network');
+    dataModuleText = ensureLocalAuthBinding(dataModuleText);
+  }
+
+  fs.writeFileSync(settingsPath, settingsText);
+  fs.writeFileSync(appGradlePath, appText);
+  fs.writeFileSync(dataModulePath, dataModuleText);
+}
+
+const LOCAL_AUTH_BINDING = [
+  '',
+  '    @Binds',
+  '    @Singleton',
+  '    abstract fun bindsAuthRepository(impl: LocalAuthRepository): AuthRepository',
+].join('\n');
+
+function ensureLocalAuthBinding(text) {
+  if (/abstract fun bindsAuthRepository\s*\(\s*impl: LocalAuthRepository\s*\)\s*:\s*AuthRepository/.test(text)) {
+    return text;
+  }
+  let result = text;
+  if (!result.includes('import cc.marsquakes.core.data.repository.AuthRepository')) {
+    result = result.replace(
+      'import cc.marsquakes.core.data.repository.DefaultUserDataRepository',
+      'import cc.marsquakes.core.data.repository.AuthRepository\n'
+        + 'import cc.marsquakes.core.data.repository.DefaultUserDataRepository\n'
+        + 'import cc.marsquakes.core.data.repository.LocalAuthRepository',
+    );
+  }
+  return result.replace(
+    /abstract fun bindsUserDataRepository\(impl: DefaultUserDataRepository\): UserDataRepository/,
+    match => match + LOCAL_AUTH_BINDING,
+  );
+}
+
+function removeLocalAuthBinding(text) {
+  return text
+    .replace(
+      /\n?\s*@Binds\s*\n\s*@Singleton\s*\n\s*abstract fun bindsAuthRepository\s*\(\s*impl: LocalAuthRepository\s*\)\s*:\s*AuthRepository/,
+      '',
+    )
+    .replace(/\nimport cc\.marsquakes\.core\.data\.repository\.AuthRepository/, '')
+    .replace(/\nimport cc\.marsquakes\.core\.data\.repository\.LocalAuthRepository/, '');
+}
+
+// The variant is the user's choice, never auto-derived from the platform set:
+// a local-only app is legitimate even when the API exists. The default simply
+// follows what the wizard would recommend in each environment.
+async function setupAndroidMode(rootDir, enabledPlatforms, args) {
+  const androidDir = path.join(rootDir, getPlatformDir(rootDir, 'android'));
+
+  const modeIndex = args.indexOf('--android-mode');
+  if (modeIndex > -1) {
+    const mode = args[modeIndex + 1];
+    if (mode !== 'local' && mode !== 'api') {
+      console.error(`\n❌ ${t('amode-unknown', { mode })}`);
+      process.exit(1);
+    }
+    console.log(`\n${t('amode-applying', { mode })}`);
+    applyAndroidMode(androidDir, mode);
+    console.log(mode === 'api' ? t('amode-api') : t('amode-local'));
+    return;
+  }
+
+  if (!(process.stdin.isTTY && process.stdout.isTTY)) {
+    const fallback = enabledPlatforms.some(p => p.name === 'api') ? 'api' : 'local';
+    console.log(`\n${t('amode-skip-noninteractive')}`);
+    applyAndroidMode(androidDir, fallback);
+    console.log(fallback === 'api' ? t('amode-api') : t('amode-local'));
+    return;
+  }
+
+  const recommended = enabledPlatforms.some(p => p.name === 'api') ? '2' : '1';
+  console.log(`\n${t('amode-intro')}`);
+  console.log(t('amode-option-local'));
+  console.log(t('amode-option-api'));
+
+  let mode;
+  for (;;) {
+    const answer = (await prompt(t('amode-enter'))).trim() || recommended;
+    if (answer === '1' || answer === '2') {
+      mode = answer === '1' ? 'local' : 'api';
+      break;
+    }
+    console.log(t('amode-invalid-choice'));
+  }
+
+  applyAndroidMode(androidDir, mode);
+  console.log(mode === 'api' ? t('amode-api') : t('amode-local'));
+}
+
 async function initCommand(args = []) {
   const rootDir = findProjectRoot();
   if (!rootDir) {
@@ -2730,6 +2873,7 @@ async function initCommand(args = []) {
   // CLI, so it can only be attempted once that install has had its chance.
   if (enabledPlatforms.some(p => p.name === 'android')) {
     ensureAndroidSdk(rootDir);
+    await setupAndroidMode(rootDir, enabledPlatforms, args);
   }
 
   // Interactive only. A non-TTY run (CI) and an existing .env skip it outright,
@@ -2933,13 +3077,514 @@ async function regionCommand() {
   console.log(t('region-result', { profile: info.region, reason: info.reason }));
 }
 
+// ---------------------------------------------------------------------------
+// mars module add|remove <feature|core>:<name>
+//
+// Keeps the Android multi-module graph consistent so a module is never left
+// half-wired: creating a module also registers it in settings.gradle.kts (and
+// mounts a feature in app), removing a module unwires both before deleting the
+// directory. The feature/core distinction decides the convention plugin and the
+// generated skeleton; dependencies must still point inward/downward.
+// ---------------------------------------------------------------------------
+
+function toModuleSegment(rawName) {
+  const segment = String(rawName)
+    .trim()
+    .replace(/[_\s]+/g, '-')
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return segment;
+}
+
+function toPascalCase(segment) {
+  return segment
+    .split('-')
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('');
+}
+
+function parseModuleRef(args) {
+  const ref = args.find(a => !a.startsWith('-'));
+  if (!ref) return null;
+
+  let kind;
+  let namePart;
+  if (ref.includes(':')) {
+    const [prefix, rest] = ref.split(':');
+    kind = prefix;
+    namePart = rest;
+  } else {
+    kind = args.find((a, i) => a === '--type' && args[i + 1])
+      ? args[args.indexOf('--type') + 1]
+      : null;
+    namePart = ref;
+  }
+
+  if (kind !== 'feature' && kind !== 'core') return null;
+  const segment = toModuleSegment(namePart);
+  if (!segment) return null;
+  return { kind, segment, pascal: toPascalCase(segment) };
+}
+
+function ensureInclude(settingsText, modulePath) {
+  const line = `include("${modulePath}")`;
+  if (new RegExp(`^${line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'm').test(settingsText)) {
+    return settingsText;
+  }
+  const prefix = modulePath.split(':').slice(0, -1).join(':');
+  const lines = settingsText.split('\n');
+  const groupIncludes = [];
+  lines.forEach((l, i) => {
+    const m = l.match(/^include\("(:[^"]+)"\)\s*$/);
+    if (m && m[1].startsWith(prefix + ':')) groupIncludes.push(i);
+  });
+  const insertAt = groupIncludes.length
+    ? groupIncludes[groupIncludes.length - 1] + 1
+    : lines.length;
+  lines.splice(insertAt, 0, line);
+  return lines.join('\n');
+}
+
+function removeInclude(settingsText, modulePath) {
+  const line = `include("${modulePath}")`;
+  return settingsText
+    .split('\n')
+    .filter(l => l.trim() !== line)
+    .join('\n');
+}
+
+function ensureAppDependency(appGradleText, modulePath) {
+  const line = `    implementation(project("${modulePath}"))`;
+  if (appGradleText.includes(line)) return appGradleText;
+  const marker = /dependencies \{\n/;
+  if (!marker.test(appGradleText)) {
+    throw new Error('Could not locate dependencies block in app/build.gradle.kts');
+  }
+  return appGradleText.replace(marker, match => match + line + '\n');
+}
+
+function removeAppDependency(appGradleText, modulePath) {
+  const line = `    implementation(project("${modulePath}"))`;
+  return appGradleText
+    .split('\n')
+    .filter(l => l !== line)
+    .join('\n');
+}
+
+function buildFeatureGradle(segment) {
+  return `plugins {
+    alias(libs.plugins.marsquakes.android.feature)
+}
+
+android {
+    namespace = "cc.marsquakes.feature.${segment.replace(/-/g, '')}"
+}
+
+dependencies {
+    implementation(project(":core:data"))
+}
+`;
+}
+
+function buildCoreGradle(segment, opts) {
+  const plugin = opts.compose
+    ? 'marsquakes.android.library.compose'
+    : 'marsquakes.android.library';
+  const extra = opts.hilt ? '\n    alias(libs.plugins.marsquakes.android.hilt)' : '';
+  const namespace = `cc.marsquakes.core.${segment.replace(/-/g, '')}`;
+  return `plugins {
+    alias(libs.plugins.${plugin})${extra}
+}
+
+android {
+    namespace = "${namespace}"
+}
+
+dependencies {
+    implementation(libs.kotlinx.coroutines.android)
+}
+`;
+}
+
+function buildFeatureScreen(pascal, segment) {
+  const title = segment.replace(/-/g, ' ');
+  return `package cc.marsquakes.feature.${segment.replace(/-/g, '')}
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cc.marsquakes.feature.${segment.replace(/-/g, '')}.${pascal}ViewModel
+
+@Composable
+internal fun ${pascal}Route(
+    modifier: Modifier = Modifier,
+    viewModel: ${pascal}ViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    ${pascal}Screen(
+        uiState = uiState,
+        modifier = modifier,
+    )
+}
+
+@Composable
+internal fun ${pascal}Screen(
+    uiState: ${pascal}UiState,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(cc.marsquakes.feature.${segment.replace(/-/g, '')}.R.string.feature_${segment.replace(/-/g, '_')}_title),
+            style = MaterialTheme.typography.headlineMedium,
+        )
+    }
+}
+`;
+}
+
+function buildFeatureViewModel(pascal, segment) {
+  const pkg = segment.replace(/-/g, '');
+  return `package cc.marsquakes.feature.${pkg}
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
+
+data class ${pascal}UiState(
+    val title: String = "",
+)
+
+@HiltViewModel
+class ${pascal}ViewModel @Inject constructor() : ViewModel() {
+
+    private val _uiState = MutableStateFlow(${pascal}UiState())
+    val uiState: StateFlow<${pascal}UiState> = _uiState.asStateFlow()
+}
+`;
+}
+
+function buildFeatureNavigation(pascal, segment) {
+  const pkg = segment.replace(/-/g, '');
+  const routeConst = `${segment.replace(/-/g, '_').toUpperCase()}_ROUTE`;
+  const navFn = `${segment.replace(/-([a-z])/g, (_, c) => c.toUpperCase())}Screen`;
+  const navigateFn = `navigateTo${pascal}`;
+  return `package cc.marsquakes.feature.${pkg}.navigation
+
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavOptions
+import androidx.navigation.compose.composable
+import cc.marsquakes.feature.${pkg}.${pascal}Route
+
+const val ${routeConst} = "${segment.replace(/-/g, '_')}_route"
+
+fun NavController.${navigateFn}(navOptions: NavOptions? = null) {
+    navigate(${routeConst}, navOptions)
+}
+
+fun NavGraphBuilder.${navFn}() {
+    composable(route = ${routeConst}) {
+        ${pascal}Route()
+    }
+}
+`;
+}
+
+function buildFeatureStrings(segment) {
+  const key = `feature_${segment.replace(/-/g, '_')}_title`;
+  const value = segment
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+  return `<resources>
+    <string name="${key}">${value}</string>
+</resources>
+`;
+}
+
+function buildCoreSkeleton(pascal, segment, opts) {
+  const pkg = segment.replace(/-/g, '');
+  const className = `${pascal}Manager`;
+  if (opts.hilt) {
+    return `package cc.marsquakes.core.${pkg}
+
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class ${className} @Inject constructor()
+`;
+  }
+  return `package cc.marsquakes.core.${pkg}
+
+class ${className}
+`;
+}
+
+function writeSkeletonFile(androidDir, kind, segment, pascal, opts) {
+  const pkgPath = segment.replace(/-/g, '');
+  const base = path.join(
+    androidDir,
+    kind,
+    segment,
+    'src',
+    'main',
+    'java',
+    'cc',
+    'marsquakes',
+    kind,
+    pkgPath,
+  );
+  fs.mkdirSync(base, { recursive: true });
+
+  if (kind === 'feature') {
+    fs.writeFileSync(path.join(base, `${pascal}Screen.kt`), buildFeatureScreen(pascal, segment));
+    fs.writeFileSync(path.join(base, `${pascal}ViewModel.kt`), buildFeatureViewModel(pascal, segment));
+    fs.mkdirSync(path.join(base, 'navigation'), { recursive: true });
+    fs.writeFileSync(
+      path.join(base, 'navigation', `${pascal}Navigation.kt`),
+      buildFeatureNavigation(pascal, segment),
+    );
+    const resDir = path.join(androidDir, kind, segment, 'src', 'main', 'res', 'values');
+    fs.mkdirSync(resDir, { recursive: true });
+    fs.writeFileSync(path.join(resDir, 'strings.xml'), buildFeatureStrings(segment));
+  } else {
+    fs.writeFileSync(path.join(base, `${pascal}Manager.kt`), buildCoreSkeleton(pascal, segment, opts));
+  }
+}
+
+function resolveModuleContext(args) {
+  const rootDir = findProjectRoot();
+  if (!rootDir) {
+    console.error('\n❌ Error: Not in a Marsquakes project.');
+    process.exit(1);
+  }
+
+  const platformIndex = args.indexOf('--platform');
+  const platform = platformIndex > -1 ? args[platformIndex + 1] : 'android';
+
+  if (!platform || platform.startsWith('-')) {
+    console.error('\n❌ Error: --platform requires a value.');
+    process.exit(1);
+  }
+
+  if (platform !== 'android') {
+    console.error(
+      `\n❌ Error: "mars module" only supports the Android platform, got "${platform}".\n`
+      + '   Other platforms use their own module systems (pnpm packages, Maven\n'
+      + '   modules, Xcode targets, Cargo crates) and are not scaffolded here.',
+    );
+    process.exit(1);
+  }
+
+  const config = loadPlatformsConfig(rootDir);
+  const enabled = getEnabledPlatforms(config).some(p => p.name === 'android');
+  if (!enabled) {
+    console.error(
+      '\n❌ Error: The Android platform is not enabled in platforms.json.\n'
+      + '   Enable it first, then run "mars init" before adding modules.',
+    );
+    process.exit(1);
+  }
+
+  const androidRelDir = getPlatformDir(rootDir, 'android');
+  const androidDir = path.join(rootDir, androidRelDir);
+  if (!fs.existsSync(androidDir)) {
+    console.error(`\n❌ Error: Android platform directory not found at ${androidRelDir}.`);
+    process.exit(1);
+  }
+
+  return { rootDir, androidDir, androidRelDir };
+}
+
+function moduleAdd(ref, flags) {
+  const { rootDir, androidDir } = resolveModuleContext(flags.platformArgs);
+
+  const modulePath = ref.kind === 'feature'
+    ? `:feature:${ref.segment}`
+    : `:core:${ref.segment}`;
+  const moduleDir = path.join(androidDir, ref.kind, ref.segment);
+  if (fs.existsSync(moduleDir)) {
+    console.error(`\n❌ Error: Module ${modulePath} already exists.`);
+    process.exit(1);
+  }
+
+  const settingsPath = path.join(androidDir, 'settings.gradle.kts');
+  if (!fs.existsSync(settingsPath)) {
+    console.error('\n❌ Error: settings.gradle.kts not found.');
+    process.exit(1);
+  }
+
+  console.log(`\n📦 Adding ${modulePath}...`);
+
+  fs.mkdirSync(moduleDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(moduleDir, 'build.gradle.kts'),
+    ref.kind === 'feature'
+      ? buildFeatureGradle(ref.segment)
+      : buildCoreGradle(ref.segment, flags),
+  );
+  writeSkeletonFile(androidDir, ref.kind, ref.segment, ref.pascal, flags);
+
+  let settingsText = fs.readFileSync(settingsPath, 'utf-8');
+  settingsText = ensureInclude(settingsText, modulePath);
+  fs.writeFileSync(settingsPath, settingsText);
+
+  if (ref.kind === 'feature' || flags.mount) {
+    const appGradlePath = path.join(androidDir, 'app', 'build.gradle.kts');
+    let appText = fs.readFileSync(appGradlePath, 'utf-8');
+    appText = ensureAppDependency(appText, modulePath);
+    fs.writeFileSync(appGradlePath, appText);
+  }
+
+  console.log(`   ✅ Created ${path.relative(rootDir, moduleDir).replace(/\\/g, '/')}`);
+  console.log(`   ✅ Registered "${modulePath}" in settings.gradle.kts`);
+  if (ref.kind === 'feature' || flags.mount) {
+    console.log('   ✅ Mounted in app/build.gradle.kts');
+  }
+  if (ref.kind === 'feature') {
+    console.log('\n💡 Next: wire the destination into the app NavHost by calling its NavGraphBuilder extension.');
+  }
+  console.log('');
+}
+
+function moduleRemove(ref, flags) {
+  const { rootDir, androidDir } = resolveModuleContext(flags.platformArgs);
+
+  const modulePath = ref.kind === 'feature'
+    ? `:feature:${ref.segment}`
+    : `:core:${ref.segment}`;
+  const moduleDir = path.join(androidDir, ref.kind, ref.segment);
+  if (!fs.existsSync(moduleDir)) {
+    console.error(`\n❌ Error: Module ${modulePath} does not exist.`);
+    process.exit(1);
+  }
+
+  if (!flags.yes) {
+    const answer = prompt(`This permanently deletes ${modulePath}. Continue? (y/N) `);
+    if (!answer || !/^y/i.test(answer.trim())) {
+      console.log('\nCancelled.\n');
+      process.exit(0);
+    }
+  }
+
+  console.log(`\n🗑️  Removing ${modulePath}...`);
+
+  const settingsPath = path.join(androidDir, 'settings.gradle.kts');
+  let settingsText = fs.readFileSync(settingsPath, 'utf-8');
+  settingsText = removeInclude(settingsText, modulePath);
+  fs.writeFileSync(settingsPath, settingsText);
+
+  const appGradlePath = path.join(androidDir, 'app', 'build.gradle.kts');
+  if (fs.existsSync(appGradlePath)) {
+    let appText = fs.readFileSync(appGradlePath, 'utf-8');
+    appText = removeAppDependency(appText, modulePath);
+    fs.writeFileSync(appGradlePath, appText);
+  }
+
+  fs.rmSync(moduleDir, { recursive: true, force: true });
+
+  console.log(`   ✅ Deleted ${path.relative(rootDir, moduleDir).replace(/\\/g, '/')}`);
+  console.log('   ✅ Removed settings include and app dependency');
+  if (ref.kind === 'core') {
+    console.log('\n💡 Other modules may still reference this one; remove those project(...) links too.');
+  }
+  console.log('');
+}
+
+function showModuleUsage() {
+  console.log(`
+Usage: mars module <add|remove> <feature|core>:<name> [options]
+
+This command only manages Android Gradle modules.
+
+Options:
+  --platform <name>  Target platform, only "android" is supported (default: android)
+  --hilt             (add core) Apply the Hilt convention plugin
+  --compose          (add core) Use the Compose library convention plugin
+  --mount            (add core) Also mount the module in app/build.gradle.kts
+  -y, --yes          (remove) Skip the confirmation prompt
+  --help             Show this help
+
+Examples:
+  mars module add feature:gallery
+  mars module add feature:gallery --platform android
+  mars module add core:analytics --hilt
+  mars module add core:widgets --compose --mount
+  mars module remove feature:gallery
+  mars module remove core:analytics -y
+`);
+}
+
+function moduleCommand(args) {
+  if (args.includes('--help') || args.length === 0) {
+    showModuleUsage();
+    process.exit(args.includes('--help') ? 0 : 1);
+  }
+
+  const action = args[0];
+  const rest = args.slice(1);
+
+  const moduleArgs = [];
+  for (let i = 0; i < rest.length; i += 1) {
+    if (rest[i] === '--platform') {
+      i += 1;
+      continue;
+    }
+    moduleArgs.push(rest[i]);
+  }
+
+  const ref = parseModuleRef(moduleArgs);
+  if (!ref || (action !== 'add' && action !== 'remove')) {
+    console.error('\n❌ Error: Invalid module arguments.');
+    showModuleUsage();
+    process.exit(1);
+  }
+
+  const flags = {
+    hilt: rest.includes('--hilt'),
+    compose: rest.includes('--compose'),
+    mount: rest.includes('--mount'),
+    yes: rest.includes('-y') || rest.includes('--yes'),
+    platformArgs: rest,
+  };
+
+  if (action === 'add') moduleAdd(ref, flags);
+  else moduleRemove(ref, flags);
+}
+
 function main() {
   const args = process.argv.slice(2);
   parseLangArg(args);
 
-  if (args.length === 0 || args.includes('--help')) {
+  if (args.length === 0 || args[0] === '--help') {
     showUsage();
-    process.exit(args.includes('--help') ? 0 : 1);
+    process.exit(args.length === 0 ? 1 : 0);
   }
 
   if (args.includes('--version') || args.includes('-v') || args.includes('-V')) {
@@ -2972,6 +3617,9 @@ function main() {
     case 'region':
       regionCommand();
       break;
+    case 'module':
+      moduleCommand(commandArgs);
+      break;
     default:
       console.error(`\n❌ Unknown command: "${command}"`);
       showUsage();
@@ -2979,4 +3627,16 @@ function main() {
   }
 }
 
-main();
+if (require.main === module) {
+  main();
+} else {
+  module.exports = {
+    ensureInclude,
+    removeInclude,
+    ensureAppDependency,
+    removeAppDependency,
+    ensureLocalAuthBinding,
+    removeLocalAuthBinding,
+    applyAndroidMode,
+  };
+}
