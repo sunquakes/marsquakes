@@ -11,22 +11,71 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = MarsCoral,
+    onPrimary = MarsMaroon,
+    primaryContainer = MarsMaroon,
+    onPrimaryContainer = MarsCoralLightest,
+    inversePrimary = MarsRed,
+    secondary = MarsCoralLight,
+    onSecondary = MarsMaroon,
+    secondaryContainer = MarsGrey700,
+    onSecondaryContainer = MarsCoralLighter,
+    tertiary = MarsCoralLighter,
+    onTertiary = MarsMaroon,
+    tertiaryContainer = MarsMaroonDeep,
+    onTertiaryContainer = MarsCoralLightest,
+    background = MarsGrey900,
+    onBackground = MarsGrey200,
+    surface = MarsGrey900,
+    onSurface = MarsGrey200,
+    surfaceVariant = MarsGrey800,
+    onSurfaceVariant = MarsCoralLightest,
+    surfaceTint = MarsCoral,
+    inverseSurface = MarsGrey200,
+    inverseOnSurface = MarsGrey900,
+    error = MarsCoralDarker,
+    onError = White,
+    errorContainer = MarsMaroon,
+    onErrorContainer = MarsCoralLightest,
+    outline = MarsGrey700,
+    outlineVariant = MarsGrey800,
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = MarsRed,
+    onPrimary = White,
+    primaryContainer = MarsRedWash,
+    onPrimaryContainer = MarsRedDarkest,
+    inversePrimary = MarsCoral,
+    secondary = MarsRedLight,
+    onSecondary = White,
+    secondaryContainer = MarsGrey100,
+    onSecondaryContainer = MarsRedDarker,
+    tertiary = MarsRedLighter,
+    onTertiary = White,
+    tertiaryContainer = MarsRedWash,
+    onTertiaryContainer = MarsRedDarkest,
+    background = MarsGrey50,
+    onBackground = MarsGrey900,
+    surface = White,
+    onSurface = MarsGrey900,
+    surfaceVariant = MarsGrey100,
+    onSurfaceVariant = MarsGrey700,
+    surfaceTint = MarsRed,
+    inverseSurface = MarsGrey900,
+    inverseOnSurface = MarsGrey200,
+    error = MarsRed,
+    onError = White,
+    errorContainer = MarsRedWash,
+    onErrorContainer = MarsRedDarkest,
+    outline = MarsGrey200,
+    outlineVariant = MarsGrey100,
 )
 
 @Composable
 fun MarsquakesTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

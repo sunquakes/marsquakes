@@ -33,3 +33,8 @@ include(":core:data")
 include(":core:datastore")
 include(":core:designsystem")
 include(":core:ui")
+include(":core:network")
+
+include(":feature:home")
+include(":feature:login")
+include(":feature:profile")

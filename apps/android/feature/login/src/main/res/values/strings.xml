@@ -1,0 +1,8 @@
+<resources>
+    <string name="feature_login_welcome">Welcome back</string>
+    <string name="feature_login_subtitle">Sign in to Marsquakes to continue</string>
+    <string name="feature_login_username">Username</string>
+    <string name="feature_login_password">Password</string>
+    <string name="feature_login_button">Sign in</string>
+    <string name="feature_login_hint">Use your Marsquakes account to sign in</string>
+</resources>

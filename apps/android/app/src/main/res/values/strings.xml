@@ -1,11 +1,5 @@
 <resources>
     <string name="app_name">Marsquakes</string>
-    <string name="home_placeholder">Home screen placeholder</string>
-    <string name="appearance">Appearance</string>
-    <string name="appearance_dynamic_color">Dynamic color</string>
-    <string name="appearance_theme">Theme</string>
-    <string name="appearance_theme_system">System</string>
-    <string name="appearance_theme_light">Light</string>
-    <string name="appearance_theme_dark">Dark</string>
-    <string name="appearance_close">Close</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_profile">Profile</string>
 </resources>

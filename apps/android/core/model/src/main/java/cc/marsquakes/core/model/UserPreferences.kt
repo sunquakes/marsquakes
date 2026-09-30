@@ -8,7 +8,7 @@ package cc.marsquakes.core.model
  */
 data class UserPreferences(
     val darkThemeMode: DarkThemeMode = DarkThemeMode.SYSTEM,
-    val dynamicColor: Boolean = true,
+    val dynamicColor: Boolean = false,
 )
 
 enum class DarkThemeMode {

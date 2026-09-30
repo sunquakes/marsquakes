@@ -2,7 +2,9 @@ package cc.marsquakes.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cc.marsquakes.core.data.repository.AuthRepository
 import cc.marsquakes.core.data.repository.UserDataRepository
+import cc.marsquakes.core.model.AuthState
 import cc.marsquakes.core.model.DarkThemeMode
 import cc.marsquakes.core.model.UserPreferences
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,13 +15,15 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Holds the preferences the app shell itself renders from — currently the theme.
+ * Holds the state the app shell itself renders from — the theme and the authentication state
+ * that decides whether the login flow or the main scaffold is shown.
  *
  * Kept at the app level rather than in a feature because every screen is affected by it.
  */
 @HiltViewModel
 class AppViewModel @Inject constructor(
     private val userDataRepository: UserDataRepository,
+    authRepository: AuthRepository,
 ) : ViewModel() {
 
     val userPreferences: StateFlow<UserPreferences> = userDataRepository.userPreferences
@@ -27,6 +31,13 @@ class AppViewModel @Inject constructor(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
             initialValue = UserPreferences(),
+        )
+
+    val authState: StateFlow<AuthState> = authRepository.authState
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
+            initialValue = AuthState.Loading,
         )
 
     fun setDarkThemeMode(mode: DarkThemeMode) {

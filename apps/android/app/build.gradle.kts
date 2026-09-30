@@ -31,12 +31,17 @@ android {
 }
 
 dependencies {
+    implementation(project(":core:network"))
     implementation(project(":core:common"))
     implementation(project(":core:model"))
     implementation(project(":core:data"))
     implementation(project(":core:datastore"))
     implementation(project(":core:designsystem"))
     implementation(project(":core:ui"))
+
+    implementation(project(":feature:home"))
+    implementation(project(":feature:login"))
+    implementation(project(":feature:profile"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
