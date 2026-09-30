@@ -14,7 +14,7 @@ import java.security.MessageDigest;
 
 
 public class SampleOpenApiTest {
-    private final String base_url = "http://localhost:8080/jeecg-boot";
+    private final String base_url = "http://localhost:8817/jeecg-boot";
     private final String appKey = "ak-pFjyNHWRsJEFWlu6";
     private final String searchKey = "4hV5dBrZtmGAtPdbA5yseaeKRYNpzGsS";
     

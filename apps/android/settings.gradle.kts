@@ -19,5 +19,22 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Ruby Album"
+rootProject.name = "Marsquakes"
+
+// Convention plugins live in their own build so the app build stays free of buildSrc
+// recompilation on every change.
+includeBuild("build-logic")
+
 include(":app")
+
+include(":core:common")
+include(":core:model")
+include(":core:data")
+include(":core:datastore")
+include(":core:designsystem")
+include(":core:ui")
+include(":core:network")
+
+include(":feature:home")
+include(":feature:login")
+include(":feature:profile")

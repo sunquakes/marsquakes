@@ -35,5 +35,5 @@ Authenticate a user and return a JWT.
 
 ## Runtime references
 
-The API service is `apps/api` (JeecgBoot / Spring Boot), exposed on port `8080`
+The API service is `apps/api` (JeecgBoot / Spring Boot), exposed on port `8817`
 by both compose files. See `docs/content/docker.md` for how it is built and run.

@@ -1,6 +1,6 @@
 version: '2'
 services:
-  jeecg-boot-mysql:
+  marsquakes-mysql:
     build:
       context: ./db
     environment:
@@ -8,8 +8,8 @@ services:
       MYSQL_ROOT_HOST: '%'
       TZ: Asia/Shanghai
     restart: always
-    container_name: jeecg-boot-mysql
-    image: jeecg-boot-mysql
+    container_name: marsquakes-mysql
+    image: marsquakes-mysql
     command:
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_general_ci
@@ -22,13 +22,13 @@ services:
     networks:
       - jeecg-boot
 
-  jeecg-boot-redis:
+  marsquakes-redis:
     image: registry.cn-hangzhou.aliyuncs.com/jeecgdocker/redis:5.0
 #    ports:
 #      - 6379:6379
     restart: always
-    hostname: jeecg-boot-redis
-    container_name: jeecg-boot-redis
+    hostname: marsquakes-redis
+    container_name: marsquakes-redis
     networks:
       - jeecg-boot
 
@@ -59,19 +59,19 @@ services:
 #    networks:
 #      - jeecg-boot
 
-  jeecg-boot-system:
+  marsquakes-api:
     build:
       context: ./jeecg-module-system/jeecg-system-start
     restart: on-failure
     mac_address: 02:42:ac:11:00:02
     depends_on:
-      - jeecg-boot-mysql
-      - jeecg-boot-redis
-    container_name: jeecg-boot-system
-    image: jeecg-boot-system
-    hostname: jeecg-boot-system
+      - marsquakes-mysql
+      - marsquakes-redis
+    container_name: marsquakes-api
+    image: marsquakes-api
+    hostname: marsquakes-api
     ports:
-      - 8080:8080
+      - 8817:8817
     networks:
       - jeecg-boot
     volumes:

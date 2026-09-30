@@ -37,6 +37,7 @@ mars <command> [options]
 | `--platform <platform>` | `dev`、`build` | 只处理指定的端 |
 | `--docker` | `dev`、`build` | 在 Docker 容器内运行 |
 | `--docker` | `init` | 声明 API 跑在容器里，从而跳过宿主机的 JDK/Maven |
+| `--android-mode <mode>` | `init` | Android 变体：`local`（模拟登录）或 `api`（真实登录后端） |
 | `--lang <en\|zh>` | 全部 | 输出语言（默认 `en`） |
 | `--help` | 全部 | 显示帮助 |
 
@@ -176,6 +177,8 @@ mars build --platform api --docker
 ```bash
 mars init            # 依赖 + 你的勾选所要求的工具链
 mars init --docker   # 同上，但 API 跑在容器里
+mars init --android-mode local   # 独立 Android，模拟登录
+mars init --android-mode api     # Android 登录真实后端
 ```
 
 这一步就是为 `create` 时的勾选付账的地方。`init` 读取 `platforms.json`，取其中已
@@ -217,6 +220,23 @@ mars init --docker   # 同上，但 API 跑在容器里
 收窄的 —— 在 `api` + `android` 的项目里只会跳过 Maven，JDK 仍然要装，因为 Gradle
 跑在宿主机上。
 
+### 选择 Android 变体
+
+Android 应用提供两种变体：
+
+- **`local`** —— 独立应用，登录走内置的模拟数据，没有后端也能运行。
+- **`api`** —— 登录调用真实的 JeecgBoot 后端（`sys/login` / `sys/logout`），
+  返回的 JWT 用于后续请求的鉴权。
+
+变体直接由平台集合推导，不再询问：启用了 `api` 平台就应用 `api` 变体，缺少
+`api` 平台就应用 `local` 变体。也可以通过 `--android-mode local|api` 显式覆盖
+推导出的结果。
+
+模式切换是幂等的，可以安全地重复执行：它只会改动三个接线位置 ——
+`settings.gradle.kts` 中的 `:core:network` include、app 模块里对它的依赖，以及
+拥有 `AuthRepository` 的 Hilt 绑定。网络层源码在两种模式下都保留在磁盘上，在
+`local` 模式下只是被排除在构建之外。
+
 凡是 `init` 装不了的东西，都会打印
 `.agents/skills/marsquakes-setup/references/install-matrix.md` 的路径，那里有分操
 作系统的安装命令和版本下限。另外，由于子进程改不了父 shell 的环境变量，安装成功后
@@ -252,8 +272,8 @@ MySQL 和 Redis —— 见[开始一个项目](./ai-start.md)。
    | `build` | `Dockerfile.build` → `Dockerfile` |
 
 4. 以**仓库根目录**为构建上下文，构建 `marsquakes/<platform>:<mode>` 镜像。
-5. 以 `marsquakes-<platform>-<mode>` 运行容器，`web`/`web-admin` 暴露 3100
-   端口，`api` 暴露 8080 端口。
+5. 以 `marsquakes-<platform>-<mode>` 运行容器，`web` 暴露 3100 端口，
+   `web-admin` 暴露 8807 端口，`api` 暴露 8817 端口。
 
 Dockerfile 的组织方式以及那些关键的基础镜像约束，见 [Docker](./docker.md)。
 

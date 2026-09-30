@@ -1,9 +1,11 @@
 *.iml
 .gradle
+.kotlin
 local.properties
 .idea/
 .DS_Store
-/apps/android/build
+# Every Android module has its own build/ output, not just the project root.
+/apps/android/**/build
 /apps/android/captures
 .externalNativeBuild
 .cxx
@@ -14,3 +16,9 @@ dist/
 /docs/build
 /docs/static/skills/
 .env
+*.local
+# TLS certificates for the edge nginx — secrets, never committed
+/apps/web-admin/certs/
+/data
+# Runtime-extracted Online code-generation templates when launched from repo root
+/config

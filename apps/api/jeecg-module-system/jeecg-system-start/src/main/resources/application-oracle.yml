@@ -1,10 +1,10 @@
 server:
-  port: 8080
+  port: 8817
   tomcat:
     max-swallow-size: -1
     basedir: ..
   servlet:
-    context-path: /jeecg-boot
+    context-path: /marsquakes-api
   compression:
     enabled: true
     min-response-size: 1024
@@ -352,20 +352,20 @@ justauth:
     GITHUB:
       client-id: ??
       client-secret: ??
-      redirect-uri: http://sso.test.com:8080/jeecg-boot/sys/thirdLogin/github/callback
+      redirect-uri: http://sso.test.com:8817/marsquakes-api/sys/thirdLogin/github/callback
     WECHAT_ENTERPRISE:
       client-id: ??
       client-secret: ??
-      redirect-uri: http://sso.test.com:8080/jeecg-boot/sys/thirdLogin/wechat_enterprise/callback
+      redirect-uri: http://sso.test.com:8817/marsquakes-api/sys/thirdLogin/wechat_enterprise/callback
       agent-id: ??
     DINGTALK:
       client-id: ??
       client-secret: ??
-      redirect-uri: http://sso.test.com:8080/jeecg-boot/sys/thirdLogin/dingtalk/callback
+      redirect-uri: http://sso.test.com:8817/marsquakes-api/sys/thirdLogin/dingtalk/callback
     WECHAT_OPEN:
       client-id: ??
       client-secret: ??
-      redirect-uri: http://sso.test.com:8080/jeecg-boot/sys/thirdLogin/wechat_open/callback
+      redirect-uri: http://sso.test.com:8817/marsquakes-api/sys/thirdLogin/wechat_open/callback
   cache:
     type: default
     prefix: 'demo::'

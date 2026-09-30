@@ -54,12 +54,15 @@ The built APK lands in `app/build/outputs/apk/`.
 
 ## Project layout
 
-App code lives in `app/src/main/java/com/sunquakes/marsquakes/`, with resources
-in `app/src/main/res/`, JVM unit tests in `app/src/test/` and instrumented tests
-in `app/src/androidTest/`. Dependency versions are centralised in
-`gradle/libs.versions.toml`; only `google()` and `mavenCentral()` may be used as
-repositories. Before changing platform code, read `apps/android/AGENTS.md` for
-the coding standards and repository rules.
+App code is split into modules under `apps/android/`. `app/` is only a shell — it holds
+`MainActivity`, the application class and the navigation host. Screens live in `feature/*`
+modules, and the capability they build on lives in `core/*` modules (model, data, database,
+datastore, network, designsystem, ui). Resources sit in the module that uses them, JVM unit
+tests in that module's `src/test/` and instrumented tests in `src/androidTest/`. The Gradle
+convention plugins that every module applies are in `build-logic/`. Dependency versions are
+centralised in `gradle/libs.versions.toml`; only `google()` and `mavenCentral()` may be used as
+repositories. Before changing platform code, read `apps/android/AGENTS.md` for the coding
+standards and repository rules.
 
 ## Step 3 — Let an AI agent build a feature
 

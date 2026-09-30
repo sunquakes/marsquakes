@@ -186,7 +186,7 @@ cp .env.example .env         # 官方源（默认）
 cp .env.example.cn .env      # 国内镜像源
 ```
 
-复制完再改 `MYSQL_*` / `REDIS_*` / `WEB_ADMIN_PORT`。两份模板声明的键和值完全一致，
+复制完再改 `MYSQL_*` / `REDIS_*` / `NGINX_HOST_PORT`。两份模板声明的键和值完全一致，
 所以之后想换源，改的是两个 URL，不需要重新整理 `.env`。
 
 `.env` 里还有一个 `COMPOSE_PROJECT_NAME`，用来固定 compose 的项目名，避免它默认取
@@ -252,8 +252,9 @@ MySQL 镜像内置了 `apps/api/db/jeecgboot-mysql-5.7.sql` 里的 JeecgBoot 表
 
 | 服务        | 镜像                         | 端口                            |
 | ----------- | ---------------------------- | ------------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                     |
-| `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80`    |
+| `api`       | `marsquakes/api:3.9.3`       | 仅内网（`8817`）                |
+| `web-admin` | `marsquakes/web-admin:3.9.3` | 仅内网（`80`）                  |
+| `nginx`     | `nginx:stable-alpine`        | `${NGINX_HOST_PORT:-80}:80`     |
 | `mysql`     | `marsquakes/mysql:8.0.36`    | `${MYSQL_HOST_PORT:-3306}:3306` |
 | `redis`     | `redis:7-alpine`             | `${REDIS_HOST_PORT:-6379}:6379` |
 

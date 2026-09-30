@@ -17,7 +17,7 @@ cp .env.example .env         # 官方源（默认）
 cp .env.example.cn .env      # 国内镜像源
 ```
 
-复制完再改 `MYSQL_*` / `REDIS_*` / `WEB_ADMIN_PORT`。两份模板声明的键和值完全一致，
+复制完再改 `MYSQL_*` / `REDIS_*` / `NGINX_HOST_PORT`。两份模板声明的键和值完全一致，
 只有 `NPM_REGISTRY` 和 `MAVEN_MIRROR_URL` 不同，所以之后想换源，改两行就够，不用重新
 复制。改完任意一份之后跑 `pnpm check:env`，两份一旦不一致它会以非零退出码报错。
 
@@ -43,10 +43,17 @@ docker compose up -d
 点击运行任意一个。它们都把 MySQL 与 Redis 当作**外部服务**，通过
 `host.docker.internal` 访问。
 
-| 服务        | 镜像                         | 端口                         |
-| ----------- | ---------------------------- | ---------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                  |
-| `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80` |
+| 服务        | 镜像                         | 主机端口（对外发布）          |
+| ----------- | ---------------------------- | ----------------------------- |
+| `api`       | `marsquakes/api:3.9.3`       | 仅内网（`8817`）              |
+| `web-admin` | `marsquakes/web-admin:3.9.3` | 仅内网（`80`）                |
+| `nginx`     | `nginx:stable-alpine`        | `${NGINX_HOST_PORT:-80}:80`   |
+
+`nginx` 是边缘反向代理，也是**唯一**对外发布的服务：`/` 转发到 `web-admin`
+容器，`/marsquakes-api/` 转发到 API（重写为 `/marsquakes-api` 上下文路径），并处理
+WebSocket 升级。它的配置是 `apps/web-admin/edge-nginx.conf`，以只读方式挂载进
+官方镜像，无需自建镜像。只有当主机 80 端口被占用时才需要改 `NGINX_HOST_PORT`；
+内网端口始终不变。
 
 `docker-compose.build.yml` 通过服务级的 `extends` 继承 `docker-compose.yml`，
 只覆盖 `build.dockerfile` 一项。
@@ -173,8 +180,162 @@ Vite 7 的 `preprocessorMaxWorkers` 默认为 `true`，会启动
 `pnpm exec vite build --mode docker`。
 :::
 
-## 代理
+## 域名解析与 HTTPS
 
-直连时 `docker.io` 可能被 DNS 污染，此时 Docker daemon 需要配置 HTTP/HTTPS 代理
-（Docker Desktop → Settings → Resources → Proxies）。配好代理后所有官方镜像都能
-正常拉取 —— 不要替换成第三方镜像源。
+由于边缘 `nginx` 是唯一对外发布的服务，域名只需解析到运行该容器的主机公网
+IP 即可；`api` 与 `web-admin` 始终不对公网暴露。下文示例统一使用
+`admin.example.com`，请替换成你自己的域名。
+
+还没有服务器或域名，或者不确定下面该填哪个 IP？见[服务器与域名准备](./appendix.md)附录。
+
+### 域名解析（阿里云云解析 DNS）
+
+1. 域名在阿里云注册时会自动开通云解析 DNS。如果域名在其他注册商处，先在
+   阿里云 **云解析 DNS** 控制台添加域名，再到原注册商把 NS 修改为阿里云
+   分配的 DNS 服务器，完成解析托管。
+2. 进入该域名的解析设置，添加指向本套服务的记录：
+
+| 记录                      | 类型   | 记录值                                  |
+| ------------------------- | ------ | --------------------------------------- |
+| `admin.example.com`       | `A`    | 运行边缘 `nginx` 的主机公网 IP |
+| `api.example.com`（可选） | `A`    | 同一公网 IP（已有 `/marsquakes-api/` 前缀，无需单独域名） |
+
+3. 等待解析生效（默认记录 TTL 通常为 10 分钟），然后验证：
+
+```bash
+dig +short admin.example.com
+nslookup admin.example.com
+```
+
+:::warning
+服务器位于**中国大陆**时，域名必须先完成 **ICP 备案**，否则云解析会拦截、
+网站无法通过 80/443 端口对外访问。备案主体需与云服务器（如阿里云 ECS）
+对应，备案通过通常需要若干个工作日。服务器位于中国香港或海外则无需备案。
+:::
+
+### HTTPS 证书
+
+有两条证书路径，区别在于 **TLS 在哪一层终结**，以及使用阿里云数字证书管理
+服务的哪一种证书。
+
+**个人测试证书部署到 SLB / CDN（终结在 SLB / CDN）。** 在阿里云数字证书
+管理服务申请免费的个人测试证书（DV，有效期 90 天），通过 DNS 自动验证后，
+把证书部署到 **SLB 监听**或 **CDN**。由 SLB / CDN 负责 HTTPS 卸载，再以
+HTTP 回源到边缘 nginx，nginx 现有配置无需改动。
+
+**证书下载后终结在边缘 nginx。** 当客户端直接访问 nginx 容器时，在阿里云
+数字证书管理服务申请证书（免费的个人测试证书有效期 90 天，付费正式证书
+有效期 1 年），下载时选择 **Nginx** 类型，得到 PEM 格式的证书链和私钥。
+把这两个文件放入宿主机上固定的、已被 git 忽略的目录 `apps/web-admin/certs/`，
+分别命名为 `fullchain.pem`（证书链）和 `privkey.pem`（未加密私钥）。
+
+通过覆盖 `nginx` 服务发布 443 端口并挂载该目录（项目层面合并，原 compose
+文件不用改）：
+
+```yaml
+# docker-compose.override.yml
+services:
+  nginx:
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./apps/web-admin/edge-nginx.ssl.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./apps/web-admin/certs:/etc/nginx/certs:ro
+```
+
+该目录在容器内挂载为 `/etc/nginx/certs`，nginx 只读取其中的
+`fullchain.pem` 和 `privkey.pem` 两个文件。
+
+完整的 TLS server 配置——同样的 `/` 和 `/marsquakes-api/` 路由，加上
+HTTP 到 HTTPS 的跳转和 `ssl_certificate` 行——已在仓库中提供：
+`apps/web-admin/edge-nginx.ssl.conf.example`。把它复制为
+`apps/web-admin/edge-nginx.ssl.conf`，将 `admin.example.com` 替换成你的
+域名，再按上面挂载即可。
+
+校验并重载，再检查线上证书：
+
+```bash
+docker compose exec nginx nginx -t
+docker compose exec nginx nginx -s reload
+curl -I https://admin.example.com
+```
+
+个人测试证书 90 天到期（付费正式证书 1 年到期），请在到期前重新申请、下载
+Nginx 类型证书并替换 `apps/web-admin/certs/` 中的同名文件，然后 reload nginx。
+
+## 代理：在中国大陆拉取 Docker Hub
+
+本仓库所有 Dockerfile 都使用 **Docker Hub 官方镜像**。在中国大陆直连
+`docker.io` / `registry-1.docker.io` 通常会被 DNS 污染或连接超时，`docker pull`
+常见报错包括：
+
+- `dial tcp: lookup registry-1.docker.io: no such host`
+- `net/http: TLS handshake timeout`
+- 一直卡在 `Pulling fs layer` 没有进度
+
+解决办法是**给 Docker daemon 配置 HTTP/HTTPS 代理**，而不是替换成第三方镜像源：
+第三方镜像源可用性不稳定，而本仓库锁定的 glibc 版本与镜像结构只在官方镜像上验证过
+（见上方的基础镜像约束）。
+
+### Docker Desktop（Windows / macOS）
+
+打开 **Settings → Resources → Proxies**，选择 **Manual proxy configuration**，
+填入本机代理客户端的地址（例如 Clash 默认的 `http://127.0.0.1:7890`，以你的客户端
+实际端口为准）：
+
+- **HTTP Proxy**：`http://127.0.0.1:7890`
+- **HTTPS Proxy**：`http://127.0.0.1:7890`
+- **No proxy**：`localhost,127.0.0.1,host.docker.internal`
+
+点击 **Apply & Restart**，等 daemon 重启完成即可。
+
+### Linux（systemd）
+
+Linux 上 Docker daemon 由 systemd 管理，需要通过 drop-in 文件给 daemon 服务
+注入代理环境变量：
+
+```bash
+sudo mkdir -p /etc/systemd/system/docker.service.d
+sudo tee /etc/systemd/system/docker.service.d/http-proxy.conf <<'EOF'
+[Service]
+Environment="HTTP_PROXY=http://127.0.0.1:7890"
+Environment="HTTPS_PROXY=http://127.0.0.1:7890"
+Environment="NO_PROXY=localhost,127.0.0.1"
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+把 `127.0.0.1:7890` 换成你代理客户端实际监听的地址与端口。
+
+### 验证是否生效
+
+```bash
+docker info | grep -A 3 'HTTP Proxy'
+docker pull hello-world
+```
+
+`docker info` 能看到代理地址、`hello-world` 能拉取成功，说明 daemon 的网络已经
+走代理。
+
+### 构建镜像时的网络
+
+`docker build` 阶段容器内部访问网络使用的是另一套配置。Docker 23+ 会自动读取
+`~/.docker/config.json` 中的 `proxies` 段并注入构建参数：
+
+```json
+{
+  "proxies": {
+    "default": {
+      "httpProxy": "http://127.0.0.1:7890",
+      "httpsProxy": "http://127.0.0.1:7890",
+      "noProxy": "localhost,127.0.0.1"
+    }
+  }
+}
+```
+
+镜像构建过程中的 **npm / Maven 包下载不需要走代理**：使用 `.env.example.cn`
+模板（`NPM_REGISTRY` 指向 npmmirror、`MAVEN_MIRROR_URL` 指向阿里云 Maven）
+即可让这部分下载走国内源。代理只用于拉取 Docker Hub 基础镜像。

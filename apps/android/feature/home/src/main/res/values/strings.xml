@@ -1,0 +1,4 @@
+<resources>
+    <string name="feature_home_hello">Hello, %1$s</string>
+    <string name="feature_home_subtitle">Browse your albums and memories</string>
+</resources>

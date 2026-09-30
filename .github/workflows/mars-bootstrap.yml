@@ -9,7 +9,9 @@
 #   4. gate `mars region` (expect default on these abroad runners), then run
 #      `mars init --registry default`, which derives JDK / Maven / Rust from
 #      the scaffolded project's platforms.json and installs them itself via
-#      mise from the upstream registries
+#      mise from the upstream registries. Its interactive MySQL/Redis setup
+#      wizard auto-skips here: CI has no TTY on stdin/stdout, so no .env is
+#      written and no container is started
 #   5. detect again with --scenario api,desktop and require OK on every
 #      toolchain mars init was supposed to derive
 #

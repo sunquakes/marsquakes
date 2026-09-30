@@ -8,6 +8,8 @@ title: 部署
 两半的打包方式各不相同：Web Admin 是 nginx 提供的静态构建产物，API 是跑在 JRE
 容器里的 Spring Boot jar。按顺序执行下面的步骤。
 
+开始之前还缺服务器或域名？见[服务器与域名准备](./appendix.md)附录。
+
 ## 第 1 步 —— 构建 Web Admin
 
 ```bash
@@ -26,9 +28,9 @@ pnpm build:web-admin
 mars build --platform web-admin --docker
 ```
 
-容器在 `${WEB_ADMIN_PORT:-8807}` 端口（默认 8807，映射到容器内 nginx 的 80 端口）
-提供应用，这与开发服务器的 3100 刻意不同。Dockerfile 变体和网络慢时要紧的
-`NPM_REGISTRY` 构建参数见 [Docker](./docker.md)。
+在 compose 编排里该容器仅在内网可达；由边缘 nginx 在 `${NGINX_HOST_PORT:-80}`
+端口（默认 80）对外提供应用。开发服务器仍使用 8807。Dockerfile 变体、边缘 nginx
+代理和网络慢时要紧的 `NPM_REGISTRY` 构建参数见 [Docker](./docker.md)。
 
 ## 第 2 步 —— 在容器里构建并运行 API
 
@@ -44,7 +46,7 @@ mars build --platform api --docker
 docker compose -f docker-compose.build.yml up -d
 ```
 
-两者都发布 `8080:8080` 端口，并且都要求 MySQL 和 Redis 已经在运行 —— 用
+两者都发布 `8817:8817` 端口，并且都要求 MySQL 和 Redis 已经在运行 —— 用
 `docker compose -f docker-compose.infra.yml up -d` 启动（见
 [环境准备](./guide-admin-env.md#start-the-dependencies)）。[Docker](./docker.md)
 页面介绍了 Dockerfile 变体、`.env` 构建参数（`MAVEN_MIRROR_URL`）以及在网络慢或

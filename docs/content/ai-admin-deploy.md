@@ -6,7 +6,8 @@ title: Deploy It
 # Building an Admin System: Deploy It
 
 Once the system from [Create a Feature](./ai-admin-module.md) works on your
-computer, two prompts finish the job.
+computer, three prompts finish the job — package it, check it, and put it on a
+real server people can reach over the internet.
 
 Until now most of the system ran directly on your computer and only the data
 store ran in its box. Deployment packages the **whole system** — data store,
@@ -44,8 +45,8 @@ check there are exactly four:
 | ----- | ----------------------------------------------- |
 | Data store | 3306 |
 | Cache | 6379 |
-| Behind-the-scenes service (`jeecg-boot-system`) | 8080 |
-| Admin website (`jeecg-boot-web-admin`) | 8807 |
+| Behind-the-scenes service (`marsquakes-api`) | 8817 |
+| Admin website (`marsquakes-web-admin`) | internal only |
 
 The first packaging takes several minutes — programming tools download inside
 the package as it builds. A long silent stretch is normal; an error is not.
@@ -74,7 +75,7 @@ running — the packaged system simply adopts it.
 
 ## Step 2 — Open it and check it works
 
-The finished website is at `http://localhost:8807`. The address ending in 8080
+The finished website is at `http://localhost:8807`. The address ending in 8817
 belongs to the behind-the-scenes service and is not meant for browsers — the
 website is the only page you ever use.
 
@@ -88,10 +89,37 @@ website is the only page you ever use.
 development, including your new column. The packaged pieces talk to each other
 on their own internal network, so there is nothing to configure.
 
-**Putting it on a different server** uses the same prompt on that machine: copy
-the project folder over, make sure the box-running software is installed, and
-paste. The package contains everything it needs, so that server needs no
-programming tools — the folder plus the box-running software is the whole list.
+## Step 3 — Put it on a real server people can open from anywhere
+
+"On your computer" only you can open it. A cloud server is simply another
+computer that is always on and has a public address.
+
+Need a server or a domain? See the [Server and Domain Setup](./appendix.md)
+appendix first — it also gives the order: open over the IP, then add the domain,
+then the padlock.
+
+Once you have the public address and login details, tell the agent and paste:
+
+> **Say this**
+>
+> I rented an AWS Lightsail instance for this project, created from the Docker
+> blueprint, so Docker and Docker Compose are already installed. Its public
+> address and login details are: [fill them in]. Deploy the packaged admin
+> system there, make it start itself whenever the server restarts, open only the
+> port the website needs, and give me the address to open. Keep any password
+> different from the ones I use locally.
+
+**What you should see:** the agent reporting the system is live on the server,
+with a single address you can open from any computer or phone. Behind it the same
+four pieces run; the data store and cache stay unreachable from outside — only
+the website's door is open.
+
+:::note A domain and the padlock come after it works
+First confirm the IP address opens from another device — say your phone on
+mobile data, not your home Wi-Fi. Only then follow the same
+[appendix](./appendix.md) for the domain, and ask the agent to put HTTPS (the
+padlock) on it. Doing both at once mixes two problems into one error.
+:::
 
 ## When it goes wrong
 
@@ -108,3 +136,6 @@ You do not need to diagnose anything. Find your symptom, say the sentence:
 | Pulling the standard packaged images fails or times out | "Configure the proxy for the box-running software — keep the standard images, do not swap in third-party ones" |
 | A database "access denied" after changing the password | "The password is only read when the storage is empty — reset the stored data and start fresh. That wipes what was in it" |
 | It has been silent for a long time | "Check which step you are on and tell me what is happening right now" |
+| The IP address times out from my phone | "Check the server's firewall — in the cloud console and on the machine itself — and make sure the restart policy is set" |
+| The site dies after the server reboots | "Set everything to start itself when the server restarts, then reboot it once to prove it" |
+| A browser warns the site is "not secure" | "It is working on plain HTTP — leave it until the IP address is confirmed, then set up HTTPS and the padlock" |

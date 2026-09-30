@@ -65,7 +65,7 @@ RUN pnpm install --frozen-lockfile
 COPY apps/web-admin/ ./
 
 ENV NODE_OPTIONS=--max-old-space-size=8192
-# build:docker reads .env.docker, where the API address points at /jeecgboot
+# build:docker reads .env.docker, where the API address points at /marsquakes-api
 RUN pnpm build:docker
 
 # Runtime: nginx serves the static output and reverse-proxies the backend

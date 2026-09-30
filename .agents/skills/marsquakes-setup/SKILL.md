@@ -226,6 +226,72 @@ the toolchains those platforms need — so the Rust or JDK this skill deliberate
 skipped arrives exactly when a project asks for it. Tell the user to run it; do
 not pre-empt it by installing those toolchains here.
 
+When the project enables `api` or `web-admin`, an **interactive** `mars init`
+also runs a MySQL/Redis setup wizard after the toolchain step. The CLI speaks
+the operator's language here without being told: it auto-detects from
+`LANG`/`LC_ALL`, the Windows UI culture, then the timezone (China zones ->
+Chinese, otherwise English); `--lang en|zh` overrides it. Technical terms carry
+plain-language glosses (what MySQL and Redis are, what a host/port means) so a
+first-time user is not expected to know them. It asks one question — start both
+services in Docker, or connect to existing instances — and then:
+
+- **Existing instances:** prompts host/port/database/credentials with defaults
+  and verifies reachability before writing anything (a MySQL handshake probe;
+  Redis gets an AUTH + PING; full MySQL credential verification only when a
+  `mysql` client exists on PATH).
+- **Containers:** probes the daemon with `docker info` (a missing daemon prints
+  install guidance and stops; Docker is never auto-installed), asks for an
+  alternate `MYSQL_HOST_PORT`/`REDIS_HOST_PORT` when 3306/6379 are busy, offers
+  a named volume (default) or a host-directory bind mount under `./data`, writes
+  `.env` with the hosts switched to `mysql`/`redis`, runs
+  `docker compose -f docker-compose.infra.yml up -d`, and waits for both
+  healthchecks to pass.
+- **Either path:** when `web-admin` is enabled the wizard also writes
+  `apps/web-admin/.env.development.local` with `VITE_USE_MOCK=false`, so the UI
+  talks to the real API instead of its built-in mock data. The write is
+  idempotent and preserves any other keys already in that local file.
+
+The wizard is part of the interactive path only. It skips when stdin or stdout
+is not a TTY (so CI, including the bootstrap workflows below, is unaffected) and
+skips — without ever overwriting — when `.env` already exists. Passwords are
+written solely to the gitignored `.env`; they are never logged and never placed
+in a compose file. The mock-disable override ends in `.local`, which is likewise
+gitignored (`*.local`). A user who wants the infra containers in a
+non-interactive shell starts them with
+`docker compose -f docker-compose.infra.yml up -d`.
+
+### Starting the app after init
+
+`mars init` ends with printed next steps (`mars dev`, wait for the API, then open
+the web admin at `http://localhost:8807` and log in as `admin / 123456`). The
+CLI can actually start the whole stack itself, including the Java API:
+
+- **Native:** when `api` is enabled, `mars dev` runs
+  `mvn install -DskipTests && cd jeecg-module-system/jeecg-system-start && mvn
+  spring-boot:run` inside `apps/api` (alongside the pnpm-managed web apps). The
+  two steps matter: `spring-boot:run` cannot be combined with `-am`, because
+  the goal would then execute on every upstream reactor project too and fail on
+  the parent pom, which has no main class; so upstream modules are installed
+  first, then the goal runs inside the start module only. It first checks that
+  `mvn` is on PATH and points at `mars init` if not. The API's
+  `application-dev.yml` reads `${MYSQL_HOST}:${MYSQL_PORT}` and the Redis
+  equivalents from the environment, which `mars dev` loads from the project
+  `.env`. The container wizard writes the in-container names `mysql`/`redis`
+  there; those do not resolve on the host, so the CLI remaps them to
+  `127.0.0.1` with the published `MYSQL_HOST_PORT`/`REDIS_HOST_PORT` before
+  spawning Maven.
+- **Docker:** `mars dev --docker --platform api` builds/runs `apps/api`'s
+  `Dockerfile.dev` and attaches the container to the user-defined `jeecg_boot`
+  network with `--network jeecg_boot`; `application-docker.yml` reaches the
+  databases by their fixed container names, which only resolve on that network.
+  The API container also takes the network alias `marsquakes-api`, the name
+  the web-admin Vite proxy targets. The web-admin dev container joins the same
+  network, so a plain `mars dev --docker` (or starting both platforms) gives a
+  fully containerized stack with the browser hitting web-admin and its `/marsquakes-api`
+  proxy reaching the API. Start the infra containers first
+  (`docker compose -f docker-compose.infra.yml up -d`); the CLI prints this
+  reminder when launching the API container.
+
 ### Region detection: cn vs default
 
 `--registry auto` decides where the host effectively is instead of making the

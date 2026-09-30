@@ -18,7 +18,7 @@ ENV JAVA_TOOL_OPTIONS="-Dfile.encoding=UTF-8"
 
 WORKDIR /jeecg-boot
 
-EXPOSE 8080
+EXPOSE 8817
 
 #ADD ./src/main/resources/jeecg ./config/jeecg
 ADD ./target/jeecg-system-start-3.9.3.jar ./

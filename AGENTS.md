@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-- **Project Name**: Marsquakes
+- **Project Name**: Marsquakes — this is the only product/brand name. It MUST be used in every user-facing string, document, title, package metadata and generated artifact. The legacy name `RubyAlbum` MUST never appear anywhere; do not reuse it even as placeholder or example text
 - **Multi-platform Project**: Android / iOS / Web / API / Windows / Linux / macOS / Desktop
 - **Monorepo Tools**: pnpm workspace + Turborepo
 - **Platform Configuration**: `platforms.json` (defines enabled platforms and tech stacks, AI automatically generates directories based on this)
@@ -243,8 +243,8 @@ The **project name is pinned to `marsquakes`** via `COMPOSE_PROJECT_NAME` in `.e
 (shipped in `.env.example`, and rewritten by `mars create` to the new project's name).
 It must be set through the environment, not the YAML: compose v2.0.0 rejects the top-level
 `name:` key with `(root) Additional property name is not allowed`. Leaving it unset makes
-compose fall back to the lower-cased directory name, so a checkout in `RubyAlbum/` silently
-produces a project called `rubyalbum` — which then diverges from the containers a colleague
+compose fall back to the lower-cased directory name, so a checkout in `MyApp/` silently
+produces a project called `myapp` — which then diverges from the containers a colleague
 started from a differently named folder. Project names must be lower-case.
 
 Renaming the project is safe for state here **only because** every volume and network sets an
@@ -586,11 +586,12 @@ The project defines enabled platforms through `platforms.json`. When AI initiali
 }
 ```
 
-When adding a new platform: Update `platforms.json` → Create corresponding directory under `apps/` → Create AGENTS.md → Update the platform table in this file.
+When adding a new platform: Update `platforms.json` → Create corresponding directory under `apps/` → Create AGENTS.md → Update the platform table in this file → Register it in the docs platform matrix and the landing page platform strip (see `docs/AGENTS.md` for when an icon is lit as Ready).
 
 ## Platform-specific AGENTS.md
 
-Each platform directory has its own `AGENTS.md`, containing coding standards, build commands, notes, etc. When AI processes specific platform code, it should refer to the AGENTS.md in the corresponding directory:
+Each platform directory has its own `AGENTS.md`. When AI works in a platform,
+it must read that platform's file together with this root file:
 
 | Platform | AGENTS.md Path |
 |----------|----------------|
@@ -607,6 +608,20 @@ Each platform directory has its own `AGENTS.md`, containing coding standards, bu
 The documentation site is not a platform, but it follows the same convention:
 see [docs/AGENTS.md](docs/AGENTS.md).
 
+### Layering rule: one source of truth, root overridable
+
+To keep guidance from drifting, the files are layered rather than duplicated:
+
+- This root file holds **cross-platform** rules only (pnpm-only, English commit
+  messages, documentation placement, restart-after-change, command formatting).
+- A platform `AGENTS.md` holds **platform-specific** rules and explicitly
+  inherits the root. It must not restate the cross-platform rules.
+- When a platform file and the root ever conflict, the **root wins**; fix the
+  platform file rather than forking the rule.
+- `AGENTS.md` is the vendor-neutral single source of truth. Tool-specific files
+  such as `CLAUDE.md` stay one-line pointers to the sibling `AGENTS.md`; never
+  maintain a second full copy of the guidance.
+
 ## Global Coding Standards
 
 - **Commit Messages**: **MUST** be in English. Use concise descriptions following conventional commits format:
@@ -619,6 +634,11 @@ see [docs/AGENTS.md](docs/AGENTS.md).
   - `chore:` for build/tooling changes
 - **Git Branches**: Main branch is `main`, feature branches named `feature/xxx`, fix branches `fix/xxx`
 - **Ignored Files**: `.idea/`, `.gradle/`, `local.properties`, build artifacts, `node_modules`, `.turbo/`, etc. are already added to `.gitignore`
+- **Restart services after a task**: after finishing any task that touches the
+  backend API or the web admin (code, config, dependencies, schema), restart
+  both the API (`apps/api`) and the web admin (`apps/web-admin`) before
+  finishing, so verification runs against fresh processes with the changes
+  actually loaded. Never leave a long-running service serving stale code.
 - **Platform-specific commands**: whenever an example differs per operating
   system, offer **every** supported platform side by side — never only the one
   the author happens to use. See the rules below.

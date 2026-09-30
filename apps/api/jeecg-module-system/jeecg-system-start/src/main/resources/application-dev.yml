@@ -1,10 +1,10 @@
 server:
-  port: 8080
+  port: 8817
   tomcat:
     max-swallow-size: -1
     basedir: ..
   servlet:
-    context-path: /jeecg-boot
+    context-path: /marsquakes-api
   compression:
     enabled: true
     min-response-size: 1024
@@ -147,9 +147,9 @@ spring:
           slow-sql-millis: 5000
       datasource:
         master:
-          url: jdbc:mysql://127.0.0.1:3306/jeecg-boot?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-          username: root
-          password: root
+          url: jdbc:mysql://${MYSQL_HOST:127.0.0.1}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:jeecg-boot}?characterEncoding=UTF-8&useUnicode=true&useSSL=false&tinyInt1isBit=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+          username: ${MYSQL_USERNAME:root}
+          password: ${MYSQL_PASSWORD:root}
           driver-class-name: com.mysql.cj.jdbc.Driver
 #        # shardingjdbc数据源
 #        sharding-db:
@@ -158,10 +158,10 @@ spring:
   #redis 配置
   data:
     redis:
-      database: 0
-      host: 127.0.0.1
-      port: 6379
-      password:
+      database: ${REDIS_DATABASE:0}
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
 #mybatis plus 设置
 mybatis-plus:
   mapper-locations: classpath*:org/jeecg/**/xml/*Mapper.xml
@@ -265,6 +265,8 @@ jeecg:
     lowCodeMode: dev
     # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
     is-concurrent: true
+    # 登录验证码开关（dev 环境关闭，便于 AI 自动化登录）
+    enableLoginCaptcha: false
   # 签名密钥串(前后端要一致，正式发布请自行修改)
   signatureSecret: dd05f1c54d63749eda95f9fa6d49v442a
   #签名拦截接口
@@ -273,7 +275,7 @@ jeecg:
   uploadType: local
   # 前端访问地址
   domainUrl:
-    pc: http://localhost:3100
+    pc: http://localhost:8807
     app: http://localhost:8051
   path:
     #文件上传根目录 设置
@@ -362,8 +364,8 @@ jeecg:
     logRetentionDays: 30
   #分布式锁配置
   redisson:
-    address: 127.0.0.1:6379
-    password:
+    address: ${REDIS_HOST:127.0.0.1}:${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
     type: STANDALONE
     enabled: true
   # 百度开放API配置
@@ -398,20 +400,20 @@ justauth:
     GITHUB:
       client-id: ??
       client-secret: ??
-      redirect-uri: http://sso.test.com:8080/jeecg-boot/sys/thirdLogin/github/callback
+      redirect-uri: http://sso.test.com:8817/marsquakes-api/sys/thirdLogin/github/callback
     WECHAT_ENTERPRISE:
       client-id: ??
       client-secret: ??
-      redirect-uri: http://sso.test.com:8080/jeecg-boot/sys/thirdLogin/wechat_enterprise/callback
+      redirect-uri: http://sso.test.com:8817/marsquakes-api/sys/thirdLogin/wechat_enterprise/callback
       agent-id: ??
     DINGTALK:
       client-id: ??
       client-secret: ??
-      redirect-uri: http://sso.test.com:8080/jeecg-boot/sys/thirdLogin/dingtalk/callback
+      redirect-uri: http://sso.test.com:8817/marsquakes-api/sys/thirdLogin/dingtalk/callback
     WECHAT_OPEN:
       client-id: ??
       client-secret: ??
-      redirect-uri: http://sso.test.com:8080/jeecg-boot/sys/thirdLogin/wechat_open/callback
+      redirect-uri: http://sso.test.com:8817/marsquakes-api/sys/thirdLogin/wechat_open/callback
   cache:
     type: default
     prefix: 'demo::'

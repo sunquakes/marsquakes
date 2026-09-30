@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">Ruby Album</string>
+    <string name="app_name">Marsquakes</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_profile">Profile</string>
 </resources>

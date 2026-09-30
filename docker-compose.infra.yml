@@ -18,11 +18,12 @@
 # IMPORTANT: when stacking this file with the application stack, point the app
 # at the in-network service names instead of the host, otherwise api keeps
 # talking to host.docker.internal and ignores the containers started here:
-#     MYSQL_HOST=mysql
-#     REDIS_HOST=redis
+#     MYSQL_HOST=marsquakes-mysql
+#     REDIS_HOST=marsquakes-redis
 #     MYSQL_PORT=3306
 #     REDIS_PORT=6379
-# .env.example ships these as a commented block, ready to be swapped in.
+# An interactive `mars init` writes these automatically via its setup wizard;
+# .env.example ships them as a commented block for the manual path.
 #
 # Startup order: api cannot declare depends_on for services that only exist in
 # this file, and adding an api stub here would break the "base services only"
@@ -40,8 +41,8 @@ services:
       context: .
       dockerfile: apps/api/db/Dockerfile
     image: marsquakes/mysql:8.0.36
-    container_name: jeecg-boot-mysql
-    hostname: mysql
+    container_name: marsquakes-mysql
+    hostname: marsquakes-mysql
     # A sequence rather than a single string: YAML forbids comments inside a
     # multi-line plain scalar. The entrypoint prepends `mysqld` on its own
     # because the first argument starts with a dash.
@@ -69,7 +70,10 @@ services:
       # keep reaching the host instance. Inside the network it is always 3306.
       - '${MYSQL_HOST_PORT:-3306}:3306'
     volumes:
-      - mysql-data:/var/lib/mysql
+      # Named volume by default. A relative value such as ./data/mysql is a
+      # bind mount instead; the `mars init` wizard sets MYSQL_DATA_SOURCE only
+      # when the user explicitly chooses a host directory.
+      - '${MYSQL_DATA_SOURCE:-mysql-data}:/var/lib/mysql'
     healthcheck:
       test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-uroot', '-p${MYSQL_PASSWORD:-root}']
       interval: 10s
@@ -86,8 +90,8 @@ services:
     # Official image, alpine tag: unaffected by the glibc 2.31 / clone3 seccomp
     # constraint documented in AGENTS.md.
     image: redis:7-alpine
-    container_name: jeecg-boot-redis
-    hostname: redis
+    container_name: marsquakes-redis
+    hostname: marsquakes-redis
     # REDIS_PASSWORD is passed in as an env var and the `:+` expansion is left
     # to the container's shell, hence `$$` and the `sh -c` wrapper. Compose
     # v2.0.0 rejects `${VAR:+...}` at parse time ("invalid interpolation
@@ -109,7 +113,9 @@ services:
       # REDIS_HOST_PORT when the host port is already taken.
       - '${REDIS_HOST_PORT:-6379}:6379'
     volumes:
-      - redis-data:/data
+      # Same switch as MySQL: REDIS_DATA_SOURCE stays unset for the named
+      # volume and becomes ./data/redis for a host-directory bind mount.
+      - '${REDIS_DATA_SOURCE:-redis-data}:/data'
     healthcheck:
       # Same deferred expansion as command above.
       test: ['CMD-SHELL', 'redis-cli $${REDIS_PASSWORD:+-a "$$REDIS_PASSWORD"} ping | grep -q PONG']
@@ -122,9 +128,13 @@ services:
     restart: unless-stopped
 
 volumes:
-  # Named volumes, so the data survives `docker compose down`. Note that the
-  # init scripts only run when the data directory is empty: to re-import the
-  # schema you must drop the volume with `docker compose down -v`.
+  # Named volumes, so the data survives `docker compose down`. These keys are
+  # also the interpolation defaults of the service mounts above; when the
+  # wizard writes MYSQL_DATA_SOURCE/REDIS_DATA_SOURCE as ./data/... the mounts
+  # become host-directory bind mounts and these volumes stay unused. Note that
+  # the init scripts only run when the data directory is empty: to re-import
+  # the schema you must drop the volume (or delete the host directory) with
+  # `docker compose down -v`.
   mysql-data:
     name: jeecg_boot_mysql_data
   redis-data:

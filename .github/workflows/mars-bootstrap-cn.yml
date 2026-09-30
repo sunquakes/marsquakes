@@ -3,7 +3,9 @@
 # workflow (.github/workflows/mars-bootstrap.yml), with exactly one difference:
 #
 #   step 4 runs `mars init --registry cn`, so the JDK / Maven / Rust installs
-#   are forced through the cn mirrors instead of the upstream registries.
+#   are forced through the cn mirrors instead of the upstream registries. The
+#   interactive MySQL/Redis wizard also auto-skips on this non-TTY runner, so
+#   no .env is written and no container is started.
 #
 # The standalone `mars region` step is informational here and is NOT gated:
 # these runners sit abroad, so the detector honestly reports default even

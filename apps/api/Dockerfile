@@ -28,5 +28,5 @@ RUN mkdir -p /jeecg-boot/config
 ARG JAR_FILE=apps/api/jeecg-module-system/jeecg-system-start/target/jeecg-system-start-3.9.3.jar
 COPY ${JAR_FILE} ./app.jar
 
-EXPOSE 8080
+EXPOSE 8817
 CMD ["java", "-Djava.security.egd=file:/dev/./urandom", "-jar", "app.jar"]

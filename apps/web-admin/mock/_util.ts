@@ -60,4 +60,4 @@ export function getRequestToken({ headers }: requestParams): string | undefined 
 }
 
 //TODO 接口父路径（写死不够灵活）
-export const baseUrl = '/jeecgboot/mock';
+export const baseUrl = '/marsquakes-api/mock';

@@ -313,6 +313,18 @@ banner had to duplicate one of them, and the copy that is not the source of
 truth is the one that goes stale. Keep prose, buttons and artwork above the
 fold; if a visitor needs commands, the CTA is one click away.
 
+**Light an icon the moment its app is real.** The platform strip in
+`src/pages/index.tsx` mirrors the Maturity column of `content/platforms.md`:
+each target's `ready` boolean decides whether the icon is lit in its brand
+colour or stays grey with a "Scaffold only" badge. "Ready" has one definition,
+stated in that table — the platform builds and runs out of the box. When your
+work takes a target from placeholder code to a buildable, runnable app, and not
+before, flip its `ready` to `true` and change that same row's Maturity cell in
+`platforms.md`, in the same change. Neither file is derived at build time, so a
+finished app behind a grey icon is a missed rule, not lag the tooling will
+catch up. Being enabled in `platforms.json` or having a directory reserved does
+not count — enabled and scaffolded are not Ready.
+
 Every platform-specific command must match
 `.agents/skills/marsquakes-setup/references/install-matrix.md`, which is the
 single source of truth for per-OS install commands and version floors. That file

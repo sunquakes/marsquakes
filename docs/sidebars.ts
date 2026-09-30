@@ -22,10 +22,9 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 // platform, and every platform opens into the same three sub-pages —
 // Environment, Develop and Deploy. The platform is the one thing that decides
 // the commands, and inside a platform those three are the lifecycle stages.
-// The deep material the journey references (CLI, platforms.json) is parked in
-// Reference at the bottom, out of the way of someone doing the journey once.
-// docker.md and conventions.md stay published — the footer and the guide pages
-// link to them — but they are deliberately absent from the sidebar.
+// The deep material the journey references (CLI, platforms.json, Docker,
+// conventions) is parked in Reference at the bottom, out of the way of someone
+// doing the journey once.
 //
 // `aiSidebar` is the same journey without shell commands: install the agent,
 // install the skill, read how the working style differs, then start a project.
@@ -34,6 +33,9 @@ import type { SidebarsConfig } from '@docusaurus/plugin-content-docs';
 // entry rather than a one-item category, because a category of one renders as a
 // folder the reader has to open to find its only child. After that the
 // Applications category splits by platform.
+// Buying a server and a domain happens outside the repository, and the reader
+// does it by talking to the agent, so those walkthroughs close aiSidebar in
+// their own Appendices category; the deploy pages and docker.md link to them.
 //
 // Category labels are user-facing strings, so each one generates an i18n key
 // (`sidebar.<sidebarId>.category.<Label>`) in
@@ -88,7 +90,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Reference',
       collapsed: false,
-      items: ['cli', 'platforms'],
+      items: ['cli', 'platforms', 'docker', 'conventions'],
     },
   ],
 
@@ -141,6 +143,12 @@ const sidebars: SidebarsConfig = {
           ],
         },
       ],
+    },
+    {
+      type: 'category',
+      label: 'Appendices',
+      collapsed: false,
+      items: ['appendix'],
     },
   ],
 };

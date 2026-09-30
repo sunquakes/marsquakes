@@ -202,7 +202,7 @@ cp .env.example .env         # official registries (default)
 cp .env.example.cn .env      # mainland-China mirrors
 ```
 
-Then edit `MYSQL_*` / `REDIS_*` / `WEB_ADMIN_PORT`. Both templates declare the
+Then edit `MYSQL_*` / `REDIS_*` / `NGINX_HOST_PORT`. Both templates declare the
 same keys with the same values, so switching later means changing two URLs, not
 rebuilding your `.env`.
 
@@ -276,8 +276,9 @@ modules.
 
 | Service     | Image                        | Port                          |
 | ----------- | ---------------------------- | ----------------------------- |
-| `api`       | `marsquakes/api:3.9.3`       | `8080:8080`                   |
-| `web-admin` | `marsquakes/web-admin:3.9.3` | `${WEB_ADMIN_PORT:-8807}:80`  |
+| `api`       | `marsquakes/api:3.9.3`       | internal only (`8817`)        |
+| `web-admin` | `marsquakes/web-admin:3.9.3` | internal only (`80`)          |
+| `nginx`     | `nginx:stable-alpine`        | `${NGINX_HOST_PORT:-80}:80`   |
 | `mysql`     | `marsquakes/mysql:8.0.36`    | `${MYSQL_HOST_PORT:-3306}:3306` |
 | `redis`     | `redis:7-alpine`             | `${REDIS_HOST_PORT:-6379}:6379` |
 
