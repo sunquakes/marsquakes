@@ -9,9 +9,15 @@
 #     is deliberately not rebuilt or redeployed here
 #
 # Cut a release with:
-#   pnpm -C packages/mars-cli version 1.2.3 --no-git-tag-version
-#   git commit -am "chore(release): v1.2.3"
-#   git tag v1.2.3 && git push origin v1.2.3
+#   1. move the "## [Unreleased]" notes in packages/mars-cli/CHANGELOG.md under
+#      a new "## [1.2.3] - YYYY-MM-DD" heading, separated from the previous
+#      release by a line containing only "---"
+#   2. pnpm -C packages/mars-cli version 1.2.3 --no-git-tag-version
+#   3. git commit -am "chore(release): v1.2.3"
+#   4. git tag v1.2.3 && git push origin v1.2.3
+#
+# The GitHub Release notes are extracted from the matching CHANGELOG section
+# (from the file start up to the first "---" delimiter), not auto-generated.
 name: Release
 
 on:
@@ -92,6 +98,36 @@ jobs:
         run: pnpm pack --dry-run
         working-directory: packages/mars-cli
 
+      # The tag must have a matching CHANGELOG section, otherwise the release
+      # would go out with empty or wrong notes.
+      - name: Verify changelog section
+        run: |
+          if ! grep -Fq "## [$VERSION]" packages/mars-cli/CHANGELOG.md; then
+            echo "::error::packages/mars-cli/CHANGELOG.md has no section for $VERSION"
+            exit 1
+          fi
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+
+      # Extract the first CHANGELOG section (up to the first "---" line) as the
+      # GitHub Release body. Mirrors the reference project's release workflow.
+      - name: Extract changelog
+        run: |
+          : > release_body.md
+          while IFS= read -r line
+          do
+            if [ "$line" = "---" ]
+            then
+              break
+            fi
+            printf '%s\n' "$line" >> release_body.md
+          done < "packages/mars-cli/CHANGELOG.md"
+          if [ ! -s release_body.md ]
+          then
+            echo "::error::extracted release body is empty"
+            exit 1
+          fi
+
       # Authentication uses npm trusted publishing (OIDC): configure the
       # trusted publisher once on npmjs.com (repo sunquakes/marsquakes,
       # workflow release.yml) and no secret is needed here. --provenance
@@ -106,4 +142,4 @@ jobs:
           tag_name: ${{ steps.version.outputs.tag }}
           name: Release ${{ steps.version.outputs.version }}
           prerelease: ${{ steps.version.outputs.prerelease }}
-          generate_release_notes: true
+          body_path: release_body.md

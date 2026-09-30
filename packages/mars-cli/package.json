@@ -1,6 +1,6 @@
 {
   "name": "@marsquakes/cli",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Scaffold multi-platform monorepos (API, web, admin, desktop, mobile) with the mars command",
   "main": "bin/mars.js",
   "bin": {
@@ -10,6 +10,7 @@
     "bin/",
     "config/",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "publishConfig": {
