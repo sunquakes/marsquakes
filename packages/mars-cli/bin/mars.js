@@ -104,6 +104,7 @@ const LOCALES = {
     'toolchain-manual': 'ℹ️ {{label}} must be installed by hand — see .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-mise-missing': '⚠️ mise is not installed, so {{list}} cannot be installed automatically. See .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-installing': '📥 Installing {{label}} via mise ({{pin}})...',
+    'toolchain-retrying': '↻ Attempt {{attempt}} failed. Retrying in {{seconds}}s ({{total}} attempts total)...',
     'toolchain-installing-official': '📥 Installing {{label}} with its official installer (user-scoped, no admin rights)...',
     'toolchain-install-failed': '❌ Failed to install {{label}}. Install it by hand — see .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-installed': '✅ Toolchain installed. Open a new shell so it lands on PATH.',
@@ -271,6 +272,7 @@ const LOCALES = {
     'toolchain-manual': 'ℹ️ {{label}} 需要手动安装，参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-mise-missing': '⚠️ 未安装 mise，无法自动安装 {{list}}。请参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-installing': '📥 正在通过 mise 安装 {{label}} ({{pin}})...',
+    'toolchain-retrying': '↻ 第 {{attempt}} 次尝试失败，{{seconds}} 秒后重试（共 {{total}} 次）...',
     'toolchain-installing-official': '📥 正在用官方安装器安装 {{label}}（用户级，无需管理员权限）...',
     'toolchain-install-failed': '❌ {{label}} 安装失败，请手动安装，参见 .agents/skills/marsquakes-setup/references/install-matrix.md',
     'toolchain-installed': '✅ 工具链安装完成。请打开一个新终端，让它进入 PATH。',
@@ -1787,6 +1789,13 @@ const TOOL_SPECS = {
   },
 };
 
+// rustup downloads over the network and a transient failure -- most visible
+// against the rsproxy.cn mirror -- used to leave the tool silently missing,
+// because the failed mise call was neither retried nor surfaced. Retry the
+// whole install with a growing pause between attempts, and verify with a
+// fresh probe instead of trusting mise's exit status.
+const MISE_INSTALL_ATTEMPTS = 3;
+
 // Registry profiles decide where the *tool installers* download from, and
 // nothing else. Every URL lives in its own config file rather than in this
 // script, so a mirror set can be audited or swapped without touching code:
@@ -2122,7 +2131,7 @@ function hasMise() {
 // Installs only what the probes actually found missing or outdated. This is the
 // whole point of doing it here rather than up front: a web-only project never
 // triggers a JDK download, which is the largest install in the matrix.
-function ensureToolchain(platforms, apiInDocker, installEnv = {}, regionInfo = null) {
+async function ensureToolchain(platforms, apiInDocker, installEnv = {}, regionInfo = null) {
   const tools = requiredTools(platforms);
   if (tools.length === 0) {
     console.log(`\n${t('toolchain-none')}`);
@@ -2213,7 +2222,21 @@ function ensureToolchain(platforms, apiInDocker, installEnv = {}, regionInfo = n
     } else {
       for (const r of viaMise) {
         console.log(`\n${t('toolchain-installing', { label: r.spec.label, pin: r.spec.pin })}`);
-        if (run(`mise use --global ${r.spec.pin}`, process.cwd(), 'inherit', installEnv)) installedAny = true;
+        let success = false;
+        for (let attempt = 1; attempt <= MISE_INSTALL_ATTEMPTS; attempt += 1) {
+          run(`mise use --global ${r.spec.pin}`, process.cwd(), 'inherit', installEnv);
+          if (probeTool(r.name).status === 'ok') {
+            success = true;
+            break;
+          }
+          if (attempt < MISE_INSTALL_ATTEMPTS) {
+            const seconds = attempt * 10;
+            console.log(`   ${t('toolchain-retrying', { attempt, total: MISE_INSTALL_ATTEMPTS, seconds })}`);
+            // eslint-disable-next-line no-await-in-loop
+            await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+          }
+        }
+        if (success) installedAny = true;
         else console.log(`   ${t('toolchain-install-failed', { label: r.spec.label })}`);
       }
     }
@@ -2840,7 +2863,7 @@ async function initCommand(args = []) {
     }
   }
 
-  ensureToolchain(enabledPlatforms, apiInDocker, installEnv, regionInfo);
+  await ensureToolchain(enabledPlatforms, apiInDocker, installEnv, regionInfo);
 
   // After ensureToolchain, not inside it: the SDK is installed *by* the Android
   // CLI, so it can only be attempted once that install has had its chance.
