@@ -215,21 +215,21 @@ nslookup admin.example.com
 
 ### HTTPS 证书
 
-有两条证书路径，区别在于 **TLS 在哪一层终结**。
+有两条证书路径，区别在于 **TLS 在哪一层终结**，以及使用阿里云数字证书管理
+服务的哪一种证书。
 
-**阿里云 SSL 证书（终结在 SLB / CDN）。** 在阿里云数字证书管理服务（SSL
-证书）申请免费证书（DigiCert 单域名 DV，有效期按当前免费额度规则），通过
-DNS 自动验证后，把证书部署到 **SLB 监听**或 **CDN**。由 SLB / CDN 负责
-HTTPS 卸载，再以 HTTP 回源到边缘 nginx，nginx 现有配置无需改动。
+**个人测试证书部署到 SLB / CDN（终结在 SLB / CDN）。** 在阿里云数字证书
+管理服务申请免费的个人测试证书（DV，有效期 90 天），通过 DNS 自动验证后，
+把证书部署到 **SLB 监听**或 **CDN**。由 SLB / CDN 负责 HTTPS 卸载，再以
+HTTP 回源到边缘 nginx，nginx 现有配置无需改动。
 
-**Let's Encrypt（终结在边缘 nginx）。** 当客户端直接访问 nginx 容器时，用
-certbot 申请免费证书并挂载进容器：
+**证书下载后终结在边缘 nginx。** 当客户端直接访问 nginx 容器时，在阿里云
+数字证书管理服务申请证书（免费的个人测试证书有效期 90 天，付费正式证书
+有效期 1 年），下载时选择 **Nginx** 类型，得到 PEM 格式的证书链和私钥。
+把这两个文件放入宿主机上固定的、已被 git 忽略的目录 `apps/web-admin/certs/`，
+分别命名为 `fullchain.pem`（证书链）和 `privkey.pem`（未加密私钥）。
 
-```bash
-certbot certonly --standalone -d admin.example.com
-```
-
-通过覆盖 `nginx` 服务发布 443 端口并挂载证书目录（项目层面合并，原 compose
+通过覆盖 `nginx` 服务发布 443 端口并挂载该目录（项目层面合并，原 compose
 文件不用改）：
 
 ```yaml
@@ -241,8 +241,11 @@ services:
       - '443:443'
     volumes:
       - ./apps/web-admin/edge-nginx.ssl.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt/live/admin.example.com:/etc/nginx/certs:ro
+      - ./apps/web-admin/certs:/etc/nginx/certs:ro
 ```
+
+该目录在容器内挂载为 `/etc/nginx/certs`，nginx 只读取其中的
+`fullchain.pem` 和 `privkey.pem` 两个文件。
 
 完整的 TLS server 配置——同样的 `/` 和 `/marsquakes-api/` 路由，加上
 HTTP 到 HTTPS 的跳转和 `ssl_certificate` 行——已在仓库中提供：
@@ -258,8 +261,8 @@ docker compose exec nginx nginx -s reload
 curl -I https://admin.example.com
 ```
 
-Let's Encrypt 证书有效期为 90 天，请安排 `certbot renew`（例如定时任务或
-certbot sidecar），续期后 reload nginx。
+个人测试证书 90 天到期（付费正式证书 1 年到期），请在到期前重新申请、下载
+Nginx 类型证书并替换 `apps/web-admin/certs/` 中的同名文件，然后 reload nginx。
 
 ## 代理：在中国大陆拉取 Docker Hub
 

@@ -17,6 +17,8 @@ dist/
 /docs/static/skills/
 .env
 *.local
+# TLS certificates for the edge nginx — secrets, never committed
+/apps/web-admin/certs/
 /data
 # Runtime-extracted Online code-generation templates when launched from repo root
 /config

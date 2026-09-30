@@ -4,8 +4,9 @@
 #
 # Requirements for the nginx container:
 #   - port 443 published on the host (the firewall must allow 80 and 443)
-#   - the certificate directory mounted read-only at /etc/nginx/certs,
-#     containing fullchain.pem and privkey.pem (Let's Encrypt layout)
+#   - the host directory apps/web-admin/certs (git-ignored) mounted
+#     read-only at /etc/nginx/certs, containing fullchain.pem and
+#     privkey.pem in PEM format (unencrypted private key)
 #   - the domain's A record pointing at this host's public IP
 #
 #   /               -> web-admin container (static SPA; its own nginx also

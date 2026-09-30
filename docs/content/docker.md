@@ -241,23 +241,24 @@ nslookup admin.example.com
 
 ### HTTPS certificates
 
-There are two certificate paths. They differ in *where* TLS is terminated.
+There are two certificate paths. They differ in *where* TLS is terminated and
+in which AWS Certificate Manager certificate is used.
 
-**AWS ACM (terminate TLS on ALB / CloudFront).** Request a free ACM certificate
-for the domain, validate it with the DNS records Route 53 suggests, and attach
-it to the ALB listener or CloudFront. ACM certificates cannot be exported, so
-they cannot be mounted into the nginx container — the ALB handles HTTPS and
-forwards plain HTTP to the edge nginx, which keeps its current config unchanged.
+**Standard ACM certificate (terminate TLS on ALB / CloudFront).** Request the
+free standard public certificate for the domain, validate it with the DNS
+records Route 53 suggests, and attach it to the ALB listener or CloudFront. It
+is renewed automatically but cannot be exported, so it cannot be mounted into
+the nginx container — the ALB handles HTTPS and forwards plain HTTP to the edge
+nginx, which keeps its current config unchanged.
 
-**Let's Encrypt (terminate TLS on the edge nginx).** When clients reach the
-nginx container directly, issue a free certificate with certbot and mount it in:
-
-```bash
-certbot certonly --standalone -d admin.example.com
-```
-
-Publish 443 and mount the certificate directory by overriding the `nginx`
-service (a project-level merge, so the original compose file is untouched):
+**Exportable ACM certificate (terminate TLS on the edge nginx).** When clients
+reach the nginx container directly, request the exportable public certificate
+(charged, 395 days) and export it as PEM. Place the two files in the fixed,
+git-ignored directory `apps/web-admin/certs/`, named `fullchain.pem` (the
+exported chain) and `privkey.pem` (the exported private key, decrypted from its
+passphrase). Then publish 443 and mount that directory by overriding the
+`nginx` service (a project-level merge, so the original compose file is
+untouched):
 
 ```yaml
 # docker-compose.override.yml
@@ -268,7 +269,7 @@ services:
       - '443:443'
     volumes:
       - ./apps/web-admin/edge-nginx.ssl.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt/live/admin.example.com:/etc/nginx/certs:ro
+      - ./apps/web-admin/certs:/etc/nginx/certs:ro
 ```
 
 A complete TLS server block — the same `/` and `/marsquakes-api/` locations,
@@ -285,8 +286,8 @@ docker compose exec nginx nginx -s reload
 curl -I https://admin.example.com
 ```
 
-Let's Encrypt certificates expire after 90 days — schedule `certbot renew` (for
-example with a cron job or a certbot sidecar) and reload nginx after each renew.
+The exportable certificate expires after 395 days — request and export a new
+one into the same directory before then and reload nginx.
 
 ## Proxy
 

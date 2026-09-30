@@ -175,22 +175,27 @@ paid public certificate, and only the paid one can reach your edge nginx:
 | Standard public certificate | free | DV | renewed automatically by ACM | cannot be exported — attach it only to an ALB, CloudFront or API Gateway, which run HTTPS themselves |
 | Exportable public certificate (requested after June 17, 2025) | charged at issue and renewal | DV | 395 days | exported as PEM, the private key encrypted under a passphrase you choose — this is the kind the edge nginx needs |
 
-### What format the edge nginx needs
+### Where the files go
 
-The edge server wants two **PEM** files — plain Base64 text starting with
-`-----BEGIN ...-----` — mounted into the container at the paths in
-`edge-nginx.ssl.conf`:
+The certificate files live in one fixed directory on the host:
+
+`apps/web-admin/certs/`
+
+That directory is git-ignored, so the keys are never committed. It is mounted
+read-only into the edge container at `/etc/nginx/certs`, where
+`edge-nginx.ssl.conf` reads exactly these two **PEM** files — plain Base64 text
+starting with `-----BEGIN ...-----`:
 
 - `fullchain.pem` — your certificate followed by the issuer's intermediate
   certificate (the full chain), used for `ssl_certificate`.
 - `privkey.pem` — the unencrypted private key, used for `ssl_certificate_key`.
 
 The ACM export gives you the certificate chain, the certificate and an
-encrypted private key. Rename the chain to `fullchain.pem`, and decrypt the
-exported private key into `privkey.pem` before nginx can use it — give your
-agent the passphrase in that one step rather than storing it anywhere. The
-files only need to sit in the mounted directory; never upload them back into a
-console.
+encrypted private key. Rename the chain to `apps/web-admin/certs/fullchain.pem`,
+and decrypt the exported private key into
+`apps/web-admin/certs/privkey.pem` before nginx can use it — give your agent
+the passphrase in that one step rather than storing it anywhere. Never upload
+the files back into a console.
 
 The certificate is no good as a file on its own: the edge nginx has to be shown
 where it is, publish port 443, and send plain visitors to `https://`. A complete
@@ -204,9 +209,9 @@ Give the domain to your agent and say:
 >
 > My website now opens at my domain over plain HTTP. Request an exportable
 > public certificate for that domain in AWS Certificate Manager, export it, and
-> put the chain at `fullchain.pem` and the decrypted private key at
-> `privkey.pem` where the edge server reads them. Make the edge server use them
-> on port 443, redirect plain addresses to https, and renew the certificate
+> put the chain at `apps/web-admin/certs/fullchain.pem` and the decrypted
+> private key at `apps/web-admin/certs/privkey.pem`. Make the edge server use
+> them on port 443, redirect plain addresses to https, and renew the certificate
 > before its 395 days run out. Do not change how the pages and the backend
 > work. Tell me when a fresh visitor sees the padlock.
 
@@ -214,23 +219,24 @@ Give the domain to your agent and say:
 
 You may instead have requested and exported the certificate yourself in the ACM
 console. Do not paste its contents into the chat — the key file is a secret, and
-anything pasted in can end up in a log. Place the files the export gave you
-into a directory on the machine, named exactly as the edge config expects:
+anything pasted in can end up in a log. Put the files the export gave you into
+the fixed directory, renamed exactly as the edge config expects:
 
-- `fullchain.pem` — the certificate chain
-- `privkey.pem` — the private key, decrypted from the exported encrypted key
+- `apps/web-admin/certs/fullchain.pem` — the certificate chain
+- `apps/web-admin/certs/privkey.pem` — the private key, decrypted from the
+  exported encrypted key
 
-Keep that directory out of version control. Then give your agent only the
-domain and the directory path, and say:
+The directory is already git-ignored. Then give your agent only the domain, and
+say:
 
 > **Say this**
 >
-> I already exported an HTTPS certificate for my domain from ACM to
-> `<directory>` — the chain is `fullchain.pem` and the private key is
-> `privkey.pem`. Make the edge server use them on port 443, redirect plain
-> addresses to https, and renew the certificate before its 395 days run out. Do
-> not change how the pages and the backend work, and do not put the key into
-> version control. Tell me when a fresh visitor sees the padlock.
+> I already exported an HTTPS certificate for my domain from ACM — the chain is
+> at `apps/web-admin/certs/fullchain.pem` and the private key is at
+> `apps/web-admin/certs/privkey.pem`. Make the edge server use them on port 443,
+> redirect plain addresses to https, and renew the certificate before its 395
+> days run out. Do not change how the pages and the backend work, and do not put
+> the key into version control. Tell me when a fresh visitor sees the padlock.
 
 **What you should see:** in both cases, the agent reporting the certificate is
 installed, and opening the domain yourself showing `https://` with a closed
