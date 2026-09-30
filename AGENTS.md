@@ -75,6 +75,11 @@ Marsquakes/
 
 This project provides the `mars` CLI tool, which can be installed globally to quickly create new projects.
 
+The CLI lives in `packages/mars-cli/`. Any change to the CLI — new commands,
+flags, behavior, config files or output — MUST be documented in the same commit
+by updating `packages/mars-cli/README.md`. Code and its README must never drift;
+do not merge a CLI change without the corresponding README update.
+
 ### Installation
 
 ```bash
