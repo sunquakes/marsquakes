@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-- **Project Name**: Marsquakes
+- **Project Name**: Marsquakes — this is the only product/brand name. It MUST be used in every user-facing string, document, title, package metadata and generated artifact. The legacy name `RubyAlbum` MUST never appear anywhere; do not reuse it even as placeholder or example text
 - **Multi-platform Project**: Android / iOS / Web / API / Windows / Linux / macOS / Desktop
 - **Monorepo Tools**: pnpm workspace + Turborepo
 - **Platform Configuration**: `platforms.json` (defines enabled platforms and tech stacks, AI automatically generates directories based on this)

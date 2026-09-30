@@ -6,6 +6,7 @@ This file holds the **Android-specific** rules and inherits the root
 ## Module Overview
 
 - **Application ID / Namespace**: `cc.marsquakes`
+- **Product name**: always `Marsquakes` in user-facing strings and resources; the legacy name `RubyAlbum` is forbidden (see root AGENTS.md → Project Overview)
 - **Tech Stack**: Android / Kotlin / Jetpack Compose / Hilt / DataStore
 - **minSdk**: 33 / **targetSdk**: 36 / **compileSdk**: 36
 - **Build Tool**: Gradle 8.13 (Kotlin DSL) / AGP 8.13.2 / Kotlin 2.0.21 / KSP 2.0.21-1.0.28
