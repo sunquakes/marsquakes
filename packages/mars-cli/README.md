@@ -1,4 +1,8 @@
-# @marsquakes/cli
+<p align="center">
+  <img src="https://marsquakes.cc/img/logo.svg" alt="Marsquakes logo" width="120" />
+</p>
+
+<h1 align="center">@marsquakes/cli</h1>
 
 > Scaffold multi-platform monorepos. Install it once, run `mars create`, pick
 > the platforms you need, and you get a working repository with a backend API,
