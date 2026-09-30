@@ -88,11 +88,11 @@ The Android app ships in two variants:
 - **api** — login calls the real JeecgBoot backend (`sys/login` /
   `sys/logout`) and the returned JWT authenticates subsequent requests.
 
-When `mars init` runs in an interactive terminal it asks which variant you
-want; in a non-interactive terminal it defaults to `api` when the API platform
-is enabled, otherwise `local`. Pass `--android-mode local|api` to decide
-explicitly. Switching is idempotent and safe to repeat: it only toggles the
-`:core:network` include, its app dependency and the Hilt binding that owns
+The variant is derived from the platform set with no prompt: when the API
+platform is enabled the `api` variant is applied, and when it is absent the
+`local` variant is. Pass `--android-mode local|api` to override the derived
+value explicitly. Switching is idempotent and safe to repeat: it only toggles
+the `:core:network` include, its app dependency and the Hilt binding that owns
 `AuthRepository` — the network sources stay on disk in both modes.
 
 ### Managing Android modules

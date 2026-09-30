@@ -173,12 +173,8 @@ const LOCALES = {
     'next-step-login': '      Default login: admin / 123456',
     'next-step-note': '   Keep this terminal open; press Ctrl+C to stop everything.',
     'mock-disabled': '✅ Turned off the built-in mock data in web-admin (it will use the real API).',
-    'amode-skip-noninteractive': '📱 Non-interactive terminal: using API-connected Android mode (the API platform is enabled).',
-    'amode-intro': '📱 Android app mode:',
-    'amode-option-local': '1) Local-only app (mock login, works without the API)',
-    'amode-option-api': '2) API-connected app (real login against the backend API)',
-    'amode-enter': 'Enter 1 or 2 (default 2): ',
-    'amode-invalid-choice': 'Please enter 1 or 2.',
+    'amode-auto-api': '📱 API platform enabled: using API-connected Android mode.',
+    'amode-auto-local': '📱 No API platform enabled: using local-only Android mode.',
     'amode-unknown': 'Unknown Android mode "{{mode}}". Use one of: local, api',
     'amode-applying': '📱 Configuring Android {{mode}} mode...',
     'amode-local': '✅ Android local mode: login uses built-in mock data (network module detached).',
@@ -344,12 +340,8 @@ const LOCALES = {
     'next-step-login': '      默认账号：admin / 123456',
     'next-step-note': '   请保持这个终端开着；按 Ctrl+C 可停止全部服务。',
     'mock-disabled': '✅ 已关闭 web-admin 内置的模拟数据（将使用真实接口）。',
-    'amode-skip-noninteractive': '📱 当前为非交互终端：Android 使用 API 模式（已启用 API 平台）。',
-    'amode-intro': '📱 请选择 Android 应用模式：',
-    'amode-option-local': '1) 纯本地应用（模拟登录，不依赖 API 即可运行）',
-    'amode-option-api': '2) 连接 API 的应用（登录调用真实后端接口）',
-    'amode-enter': '请输入 1 或 2（默认 2）: ',
-    'amode-invalid-choice': '请输入 1 或 2。',
+    'amode-auto-api': '📱 已启用 API 平台：Android 使用 API 模式。',
+    'amode-auto-local': '📱 未启用 API 平台：Android 使用纯本地模式。',
     'amode-unknown': '未知的 Android 模式“{{mode}}”。可选值为: local、api',
     'amode-applying': '📱 正在配置 Android {{mode}} 模式...',
     'amode-local': '✅ Android 本地模式：登录使用内置模拟数据（已移除网络模块挂载）。',
@@ -518,8 +510,8 @@ Options:
                            auto = detect cn vs default from network and locale;
                            project dependencies are never redirected)
   --android-mode <mode>    (init) Android variant: local (mock login) or api
-                           (real login against the backend API); interactive
-                           prompt when omitted in a TTY
+                           (real login against the backend API); derived
+                           from the platform set when omitted
   --lang <en|zh>           Set language (default: auto-detected)
   --help                   Show this help message
 
@@ -2762,11 +2754,13 @@ function removeLocalAuthBinding(text) {
     .replace(/\nimport cc\.marsquakes\.core\.data\.repository\.LocalAuthRepository/, '');
 }
 
-// The variant is the user's choice, never auto-derived from the platform set:
-// a local-only app is legitimate even when the API exists. The default simply
-// follows what the wizard would recommend in each environment.
+// The Android variant is derived purely from the platform set, with no prompt:
+// an enabled API platform selects the api variant, its absence selects local.
+// An explicit --android-mode flag overrides the derived value for the rare case
+// of an api-enabled project that still wants a standalone, mock-login app.
 async function setupAndroidMode(rootDir, enabledPlatforms, args) {
   const androidDir = path.join(rootDir, getPlatformDir(rootDir, 'android'));
+  const hasApi = enabledPlatforms.some(p => p.name === 'api');
 
   const modeIndex = args.indexOf('--android-mode');
   if (modeIndex > -1) {
@@ -2781,29 +2775,8 @@ async function setupAndroidMode(rootDir, enabledPlatforms, args) {
     return;
   }
 
-  if (!(process.stdin.isTTY && process.stdout.isTTY)) {
-    const fallback = enabledPlatforms.some(p => p.name === 'api') ? 'api' : 'local';
-    console.log(`\n${t('amode-skip-noninteractive')}`);
-    applyAndroidMode(androidDir, fallback);
-    console.log(fallback === 'api' ? t('amode-api') : t('amode-local'));
-    return;
-  }
-
-  const recommended = enabledPlatforms.some(p => p.name === 'api') ? '2' : '1';
-  console.log(`\n${t('amode-intro')}`);
-  console.log(t('amode-option-local'));
-  console.log(t('amode-option-api'));
-
-  let mode;
-  for (;;) {
-    const answer = (await prompt(t('amode-enter'))).trim() || recommended;
-    if (answer === '1' || answer === '2') {
-      mode = answer === '1' ? 'local' : 'api';
-      break;
-    }
-    console.log(t('amode-invalid-choice'));
-  }
-
+  const mode = hasApi ? 'api' : 'local';
+  console.log(`\n${hasApi ? t('amode-auto-api') : t('amode-auto-local')}`);
   applyAndroidMode(androidDir, mode);
   console.log(mode === 'api' ? t('amode-api') : t('amode-local'));
 }

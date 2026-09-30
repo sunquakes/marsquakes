@@ -228,9 +228,9 @@ Android 应用提供两种变体：
 - **`api`** —— 登录调用真实的 JeecgBoot 后端（`sys/login` / `sys/logout`），
   返回的 JWT 用于后续请求的鉴权。
 
-当 `init` 在交互式终端运行且启用了 `android` 时，会询问你要哪种变体；在非交互
-式终端里，如果 `platforms.json` 中启用了 API 端则默认 `api`，否则默认 `local`。
-也可以通过 `--android-mode local|api` 显式指定。
+变体直接由平台集合推导，不再询问：启用了 `api` 平台就应用 `api` 变体，缺少
+`api` 平台就应用 `local` 变体。也可以通过 `--android-mode local|api` 显式覆盖
+推导出的结果。
 
 模式切换是幂等的，可以安全地重复执行：它只会改动三个接线位置 ——
 `settings.gradle.kts` 中的 `:core:network` include、app 模块里对它的依赖，以及

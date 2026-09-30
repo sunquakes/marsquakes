@@ -244,10 +244,10 @@ The Android app ships in two variants:
 - **`api`** — login calls the real JeecgBoot backend (`sys/login` /
   `sys/logout`) and the returned JWT authenticates subsequent requests.
 
-When `init` runs in an interactive terminal and `android` is enabled, it asks
-which variant you want; in a non-interactive terminal it defaults to `api` when
-the API platform is enabled in `platforms.json`, otherwise `local`. Pass
-`--android-mode local|api` to decide explicitly.
+The variant is derived from the platform set with no prompt: when the `api`
+platform is enabled the `api` variant is applied, and when it is absent the
+`local` variant is. Pass `--android-mode local|api` to override the derived
+value explicitly.
 
 Switching is idempotent and safe to repeat: it only toggles three wiring points
 —the `:core:network` include in `settings.gradle.kts`, its dependency in the app
