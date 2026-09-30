@@ -75,6 +75,11 @@ Marsquakes/
 
 This project provides the `mars` CLI tool, which can be installed globally to quickly create new projects.
 
+The CLI lives in `packages/mars-cli/`. Any change to the CLI — new commands,
+flags, behavior, config files or output — MUST be documented in the same commit
+by updating `packages/mars-cli/README.md`. Code and its README must never drift;
+do not merge a CLI change without the corresponding README update.
+
 ### Installation
 
 ```bash
@@ -632,7 +637,9 @@ To keep guidance from drifting, the files are layered rather than duplicated:
   - `refactor:` for code refactoring
   - `test:` for tests
   - `chore:` for build/tooling changes
-- **Git Branches**: Main branch is `main`, feature branches named `feature/xxx`, fix branches `fix/xxx`
+- **Git Branches**: protected release branch is `main`; day-to-day integration
+  happens on `develop`; short-lived branches are named `feature/xxx` or
+  `fix/xxx`. See the workflow rules below.
 - **Ignored Files**: `.idea/`, `.gradle/`, `local.properties`, build artifacts, `node_modules`, `.turbo/`, etc. are already added to `.gitignore`
 - **Restart services after a task**: after finishing any task that touches the
   backend API or the web admin (code, config, dependencies, schema), restart
@@ -642,6 +649,23 @@ To keep guidance from drifting, the files are layered rather than duplicated:
 - **Platform-specific commands**: whenever an example differs per operating
   system, offer **every** supported platform side by side — never only the one
   the author happens to use. See the rules below.
+
+### Branch and pull-request workflow
+
+All changes reach `main` through a reviewed pull request; nobody commits
+directly to `main`.
+
+- **`develop` is the working branch.** Create features and fixes there (or on a
+  short-lived `feature/xxx` / `fix/xxx` branch cut from `develop` and merged
+  back into it). Commit messages follow the conventional-commit rules above.
+- **Open a pull request from `develop` into `main`** when the work is ready.
+  Every change set must go through this PR before it is released.
+- The pull request title and description must be written in English and state
+  what changed and why; link the related issue when one exists.
+- Merge the PR only after review and a green CI. Use "Merge pull request"
+  (merge commit) so the integration point is visible in history.
+- After merging, keep `develop` in sync with `main` if the merge created
+  differences, then continue the next piece of work on `develop`.
 
 ### Platform-specific commands must be switchable
 
