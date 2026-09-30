@@ -10,7 +10,6 @@
     "bin/",
     "config/",
     "README.md",
-    "CHANGELOG.md",
     "LICENSE"
   ],
   "publishConfig": {

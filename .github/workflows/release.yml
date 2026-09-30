@@ -9,7 +9,7 @@
 #     is deliberately not rebuilt or redeployed here
 #
 # Cut a release with:
-#   1. move the "## [Unreleased]" notes in packages/mars-cli/CHANGELOG.md under
+#   1. move the "## [Unreleased]" notes in CHANGELOG.md under
 #      a new "## [1.2.3] - YYYY-MM-DD" heading, separated from the previous
 #      release by a line containing only "---"
 #   2. pnpm -C packages/mars-cli version 1.2.3 --no-git-tag-version
@@ -102,8 +102,8 @@ jobs:
       # would go out with empty or wrong notes.
       - name: Verify changelog section
         run: |
-          if ! grep -Fq "## [$VERSION]" packages/mars-cli/CHANGELOG.md; then
-            echo "::error::packages/mars-cli/CHANGELOG.md has no section for $VERSION"
+          if ! grep -Fq "## [$VERSION]" CHANGELOG.md; then
+            echo "::error::CHANGELOG.md has no section for $VERSION"
             exit 1
           fi
         env:
@@ -121,7 +121,7 @@ jobs:
               break
             fi
             printf '%s\n' "$line" >> release_body.md
-          done < "packages/mars-cli/CHANGELOG.md"
+          done < "CHANGELOG.md"
           if [ ! -s release_body.md ]
           then
             echo "::error::extracted release body is empty"
