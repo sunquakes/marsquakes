@@ -35,6 +35,8 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
                 "implementation"(libs.findLibrary("kotlinx-coroutines-android").get())
                 "implementation"(libs.findLibrary("kotlinx-serialization-json").get())
 
+                "testImplementation"(project(":core:testing"))
+
                 "androidTestImplementation"(libs.findLibrary("androidx-compose-ui-test-junit4").get())
                 "debugImplementation"(libs.findLibrary("androidx-compose-ui-test-manifest").get())
             }
