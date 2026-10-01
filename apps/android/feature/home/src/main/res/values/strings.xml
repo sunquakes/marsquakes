@@ -1,4 +1,24 @@
 <resources>
     <string name="feature_home_hello">Hello, %1$s</string>
-    <string name="feature_home_subtitle">Browse your albums and memories</string>
+    <string name="feature_home_hello_guest">Welcome</string>
+    <string name="feature_home_subtitle">Here is what is happening today</string>
+    <string name="feature_home_banner_1_title">Weekly Overview</string>
+    <string name="feature_home_banner_1_desc">Your activity is up 12% compared with last week</string>
+    <string name="feature_home_banner_2_title">New Features</string>
+    <string name="feature_home_banner_2_desc">Explore the freshly added tools and templates</string>
+    <string name="feature_home_banner_3_title">Stay Organized</string>
+    <string name="feature_home_banner_3_desc">Review pending tasks and keep everything on track</string>
+    <string name="feature_home_stat_1">Projects</string>
+    <string name="feature_home_stat_2">Favorites</string>
+    <string name="feature_home_stat_3">Messages</string>
+    <string name="feature_home_quick_actions">Quick Actions</string>
+    <string name="feature_home_recent_activity">Recent Activity</string>
+    <string name="feature_home_action_1">Browse</string>
+    <string name="feature_home_action_2">Create</string>
+    <string name="feature_home_action_3">Schedule</string>
+    <string name="feature_home_action_4">Saved</string>
+    <string name="feature_home_activity_1">New project \"Mobile Redesign\" was created</string>
+    <string name="feature_home_activity_2">Weekly report is ready to review</string>
+    <string name="feature_home_activity_3">3 tasks were completed yesterday</string>
+    <string name="feature_home_activity_4">Your profile was updated successfully</string>
 </resources>

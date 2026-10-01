@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -30,8 +32,13 @@ import cc.marsquakes.feature.home.navigation.HOME_ROUTE
 import cc.marsquakes.feature.home.navigation.homeScreen
 import cc.marsquakes.feature.login.navigation.LOGIN_ROUTE
 import cc.marsquakes.feature.login.navigation.loginScreen
-import cc.marsquakes.feature.profile.navigation.PROFILE_ROUTE
-import cc.marsquakes.feature.profile.navigation.profileScreen
+import cc.marsquakes.feature.notifications.navigation.NOTIFICATIONS_ROUTE
+import cc.marsquakes.feature.notifications.navigation.navigateToNotificationDetail
+import cc.marsquakes.feature.notifications.navigation.notificationsScreen
+import cc.marsquakes.feature.search.navigation.SEARCH_ROUTE
+import cc.marsquakes.feature.search.navigation.searchScreen
+import cc.marsquakes.feature.settings.navigation.SETTINGS_ROUTE
+import cc.marsquakes.feature.settings.navigation.settingsScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -116,7 +123,14 @@ private fun MainScaffold() {
             modifier = Modifier.padding(innerPadding),
         ) {
             homeScreen()
-            profileScreen()
+            searchScreen()
+            notificationsScreen(
+                onNotificationClick = { id ->
+                    navController.navigateToNotificationDetail(id)
+                },
+                onBack = { navController.popBackStack() },
+            )
+            settingsScreen()
         }
     }
 }
@@ -131,9 +145,19 @@ private enum class TopLevelDestination(
         icon = Icons.Filled.Home,
         labelRes = R.string.nav_home,
     ),
-    PROFILE(
-        route = PROFILE_ROUTE,
-        icon = Icons.Filled.Person,
-        labelRes = R.string.nav_profile,
+    SEARCH(
+        route = SEARCH_ROUTE,
+        icon = Icons.Filled.Search,
+        labelRes = R.string.nav_search,
+    ),
+    NOTIFICATIONS(
+        route = NOTIFICATIONS_ROUTE,
+        icon = Icons.Filled.Notifications,
+        labelRes = R.string.nav_notifications,
+    ),
+    SETTINGS(
+        route = SETTINGS_ROUTE,
+        icon = Icons.Filled.Settings,
+        labelRes = R.string.nav_settings,
     ),
 }

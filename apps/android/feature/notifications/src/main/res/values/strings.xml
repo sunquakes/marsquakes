@@ -1,0 +1,9 @@
+<resources>
+    <string name="feature_notifications_title">Notifications</string>
+    <string name="feature_notifications_tab_all">All</string>
+    <string name="feature_notifications_tab_system">System</string>
+    <string name="feature_notifications_tab_activity">Activity</string>
+    <string name="feature_notifications_empty">No notifications yet</string>
+    <string name="feature_notifications_detail_title">Notification</string>
+    <string name="feature_notifications_not_found">This notification no longer exists.</string>
+</resources>

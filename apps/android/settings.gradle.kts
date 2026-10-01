@@ -37,4 +37,6 @@ include(":core:network")
 
 include(":feature:home")
 include(":feature:login")
-include(":feature:profile")
+include(":feature:search")
+include(":feature:notifications")
+include(":feature:settings")

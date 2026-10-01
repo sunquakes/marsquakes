@@ -28,17 +28,18 @@ app ──> feature:* ──> core:ui ──> core:designsystem
 
 | Module | Purpose |
 |--------|---------|
-| `:app` | Shell only: `MainActivity`, `@HiltAndroidApp` Application, theme wiring, `NavHost`, the top app bar and a home placeholder. Owns no feature content |
+| `:app` | Shell only: `MainActivity`, `@HiltAndroidApp` Application, theme wiring, `NavHost`, the four-tab bottom navigation and the authentication gate. Owns no feature content |
 | `:core:common` | Cross-cutting utilities. Holds the `@Dispatcher` qualifier and its module |
-| `:core:model` | Pure Kotlin models (`UserPreferences`, `DarkThemeMode`). No Android, Room or network annotations — that is what keeps the other layers free to map into it |
-| `:core:data` | Repositories. The only layer features talk to. `DefaultUserDataRepository` exposes the user settings as a `Flow<UserPreferences>` |
-| `:core:datastore` | Proto-free Preferences DataStore (`MarsquakesPreferencesDataSource`) for user settings |
-| `:core:designsystem` | Theme (`MarsquakesTheme`), colour and typography. The only place Material theming is configured |
+| `:core:model` | Pure Kotlin models (`User`, `AuthState`, `UserPreferences`, `DarkThemeMode`). No Android, Room or network annotations — that is what keeps the other layers free to map into it |
+| `:core:data` | Repositories. The only layer features talk to. Holds the `AuthRepository` interface plus its network-free `LocalAuthRepository`, and `DefaultUserDataRepository` exposing settings as a `Flow<UserPreferences>` |
+| `:core:datastore` | Proto-free Preferences DataStore (`MarsquakesPreferencesDataSource`) for the auth session and user settings |
+| `:core:network` | Remote data: Retrofit `ApiService`, `NetworkAuthDataSource`, `RemoteAuthRepository` and the Hilt module that swaps the `AuthRepository` binding to the backend. Only present in the API-backed variant |
+| `:core:designsystem` | Theme (`MarsquakesTheme`), colour and typography. The only place Material theming is configured; re-exports `material-icons-extended` so every feature can use any icon |
 | `:core:ui` | Reusable composables shared by features (`LoadingWheel`, `MarsquakesTopAppBar`) |
 | `build-logic` | Convention plugins. A separate included build, so editing it never invalidates the app build |
 
-This is a **blank architecture template**: the `feature/` directory is intentionally empty. Login,
-home, profile and any other screens belong in new `feature:*` modules.
+The shipped app has five feature modules: `login`, `home`, `search`, `notifications` and
+`settings`. Each lives in its own `feature:*` module; new screens follow the same shape.
 
 ### Route / Screen split
 
@@ -51,6 +52,58 @@ and testable without Hilt. Do not collapse the two.
 A feature contributes its destinations through a `NavGraphBuilder` extension in its own
 `navigation/` package (e.g. `loginScreen()`), and `app` only calls it. Adding a feature must
 never require editing the body of the nav graph.
+
+## Data Modes: API-backed vs Local
+
+The same screen code runs in two data modes. The difference lives entirely in the
+repository implementation that Hilt binds; ViewModels, `UiState`, Compose screens and the
+`AuthState` contract never change.
+
+| Aspect | Local mode (no backend) | API mode (requests the server) |
+|--------|--------------------------|--------------------------------|
+| Module present | `:core:data` only | `:core:data` + `:core:network` |
+| `AuthRepository` binding | `LocalAuthRepository` (validates in memory, 800 ms fake delay) | `RemoteAuthRepository` (Retrofit `POST sys/login`) |
+| Credentials | any non-empty username, password ≥ 6 chars | real credentials checked by the backend |
+| Token | `mock-token-<uuid>`, unused | server JWT held by `AccessTokenHolder`, attached by `AccessTokenInterceptor` |
+| Failure surface | local `IllegalArgumentException` messages | HTTP errors and `success=false` both surface as `IOException` carrying the server message |
+| Runs offline | yes — fully usable with no network | no — login/session calls require the server |
+| Persistence | DataStore session either way; a restart restores the signed-in state | identical DataStore session; the token is replayed to the interceptor on restart |
+
+Why two modes at all: local mode keeps the app runnable, demoable and UI-testable before a
+backend exists or when offline; API mode is what ships against the real service. Flipping
+modes is one Hilt binding plus a module include — never a screen rewrite. When wiring a new
+feature to the backend, keep the repository interface in `:core:data`, put the Retrofit
+implementation in `:core:network`, and leave the screen depending on the interface only.
+
+Loading/error behaviour is identical in both modes: every `*Route` collects a
+`StateFlow<UiState>` and renders loading and error states from that state, so the UI does
+not know which implementation produced it.
+
+## Screen Catalog
+
+Each row is one destination the app actually ships, with its module, route constant and
+exact data source. "Local" data means constants or `MutableStateFlow` inside the app — no
+network — while "DataStore" means persisted on-device preferences.
+
+| Screen | Module / route constant | Contents | Data source |
+|--------|--------------------------|----------|-------------|
+| Login | `:feature:login` · `LOGIN_ROUTE` | Username/password form, loading spinner, inline error; success moves to the main scaffold | Repository via interface: `LocalAuthRepository` or `RemoteAuthRepository` depending on mode |
+| Home (dashboard) | `:feature:home` · `HOME_ROUTE` | Greeting, banner `HorizontalPager` with page dots, three stat cards, four quick actions, recent-activity list | Greeting nickname from `AuthRepository.authState`; banners/stats/actions/activity are local constants |
+| Search | `:feature:search` · `SEARCH_ROUTE` | Search bar; hot tags + history while empty; result list or empty state after submit | Entirely local: sample items filtered in the ViewModel; history is in-memory `MutableStateFlow` (not persisted) |
+| Notifications | `:feature:notifications` · `NOTIFICATIONS_ROUTE` | All/System/Activity tabs, unread dots, notification cards | Local in-memory `NotificationsRepository` (`@Singleton`) seeded with sample notifications |
+| Notification detail | `:feature:notifications` · `notification_detail_route/{notificationId}` | Full title, time and content; back arrow; "no longer exists" fallback | Same singleton repository, so read state is shared with the list |
+| Settings | `:feature:settings` · `SETTINGS_ROUTE` | Account card; appearance dialog (theme + dynamic color); push/email switches; clear cache; version; terms; logout | Account/logout via `AuthRepository`; theme + dynamic color via `UserDataRepository` → DataStore; push/email switches and cache size are local, not persisted |
+
+Notes for extending the catalog:
+
+- Only **login** truly depends on a backend today, and even it has a local implementation.
+  **Search, notifications and the body of home/settings are intentionally local sample data.**
+- To convert a local screen to the API, add a method to a repository interface in
+  `:core:data`, implement it with Retrofit in `:core:network`, expose a `Flow`/suspend call
+  to the ViewModel, and leave the Compose screen untouched.
+- The bottom navigation exposes four top-level destinations — Home, Search, Notifications,
+  Settings — declared in `MarsquakesApp.kt`; notification detail is a pushed screen, not a
+  tab, and login is shown only while `AuthState.SignedOut`.
 
 ## Build-logic Convention Plugins
 
@@ -86,11 +139,17 @@ apps/android/
 ├── core/
 │   ├── common/                          # @Dispatcher qualifier, shared utilities
 │   ├── model/                           # Pure Kotlin models
-│   ├── data/                            # Repositories
+│   ├── data/                            # Repository interfaces + local implementations
 │   ├── datastore/                       # Preferences DataStore
+│   ├── network/                         # Retrofit, remote repository (API mode only)
 │   ├── designsystem/                    # Theme, colour, typography
 │   └── ui/                              # Shared composables
-├── feature/                             # Add feature:* modules here (blank by default)
+├── feature/
+│   ├── login/                           # Sign-in screen
+│   ├── home/                            # Dashboard
+│   ├── search/                          # Search and discovery
+│   ├── notifications/                   # Notification list and detail
+│   └── settings/                        # Settings
 ├── build-logic/                         # Convention plugins (included build)
 │   ├── settings.gradle.kts
 │   └── convention/                      # Plugin implementations

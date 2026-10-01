@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace = "cc.marsquakes.feature.profile"
+    namespace = "cc.marsquakes.feature.settings"
 }
 
 dependencies {

@@ -1,4 +1,4 @@
-package cc.marsquakes.feature.profile
+package cc.marsquakes.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,38 +8,52 @@ import cc.marsquakes.core.model.AuthState
 import cc.marsquakes.core.model.DarkThemeMode
 import cc.marsquakes.core.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class ProfileUiState(
+data class NotificationSettings(
+    val pushEnabled: Boolean = true,
+    val emailEnabled: Boolean = false,
+)
+
+data class SettingsUiState(
     val user: User? = null,
     val darkThemeMode: DarkThemeMode = DarkThemeMode.SYSTEM,
-    val dynamicColor: Boolean = true,
+    val dynamicColor: Boolean = false,
+    val pushEnabled: Boolean = true,
+    val emailEnabled: Boolean = false,
 )
 
 @HiltViewModel
-class ProfileViewModel @Inject constructor(
+class SettingsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val userDataRepository: UserDataRepository,
 ) : ViewModel() {
 
-    val uiState: StateFlow<ProfileUiState> = combine(
+    private val notificationSettings = MutableStateFlow(NotificationSettings())
+
+    val uiState: StateFlow<SettingsUiState> = combine(
         authRepository.authState,
         userDataRepository.userPreferences,
-    ) { authState, preferences ->
-        ProfileUiState(
+        notificationSettings,
+    ) { authState, preferences, notifications ->
+        SettingsUiState(
             user = (authState as? AuthState.SignedIn)?.user,
             darkThemeMode = preferences.darkThemeMode,
             dynamicColor = preferences.dynamicColor,
+            pushEnabled = notifications.pushEnabled,
+            emailEnabled = notifications.emailEnabled,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-        initialValue = ProfileUiState(),
+        initialValue = SettingsUiState(),
     )
 
     fun setDarkThemeMode(mode: DarkThemeMode) {
@@ -48,6 +62,14 @@ class ProfileViewModel @Inject constructor(
 
     fun setDynamicColor(enabled: Boolean) {
         viewModelScope.launch { userDataRepository.setDynamicColor(enabled) }
+    }
+
+    fun setPushEnabled(enabled: Boolean) {
+        notificationSettings.update { it.copy(pushEnabled = enabled) }
+    }
+
+    fun setEmailEnabled(enabled: Boolean) {
+        notificationSettings.update { it.copy(emailEnabled = enabled) }
     }
 
     fun logout() {

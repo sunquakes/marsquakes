@@ -13,7 +13,6 @@ import javax.inject.Inject
 
 data class HomeUiState(
     val nickname: String = "",
-    val albums: List<String> = emptyList(),
 )
 
 @HiltViewModel
@@ -23,26 +22,15 @@ class HomeViewModel @Inject constructor(
 
     val uiState: StateFlow<HomeUiState> = authRepository.authState
         .map { state ->
-            val nickname = (state as? AuthState.SignedIn)?.user?.nickname ?: ""
-            HomeUiState(nickname = nickname, albums = SAMPLE_ALBUMS)
+            HomeUiState(nickname = (state as? AuthState.SignedIn)?.user?.nickname ?: "")
         }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS),
-            initialValue = HomeUiState(albums = SAMPLE_ALBUMS),
+            initialValue = HomeUiState(),
         )
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L
-        val SAMPLE_ALBUMS = listOf(
-            "Favorites",
-            "Travel",
-            "Family",
-            "Food",
-            "Pets",
-            "Nature",
-            "City",
-            "Friends",
-        )
     }
 }
