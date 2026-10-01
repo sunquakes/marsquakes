@@ -5,15 +5,17 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import cc.marsquakes.feature.home.HomeRoute
+import kotlinx.serialization.Serializable
 
-const val HOME_ROUTE = "home_route"
+@Serializable
+data object HomeDestination
 
 fun NavController.navigateToHome(navOptions: NavOptions? = null) {
-    navigate(HOME_ROUTE, navOptions)
+    navigate(HomeDestination, navOptions)
 }
 
 fun NavGraphBuilder.homeScreen() {
-    composable(route = HOME_ROUTE) {
+    composable<HomeDestination> {
         HomeRoute()
     }
 }

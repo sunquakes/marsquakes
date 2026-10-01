@@ -5,15 +5,17 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import cc.marsquakes.feature.search.SearchRoute
+import kotlinx.serialization.Serializable
 
-const val SEARCH_ROUTE = "search_route"
+@Serializable
+data object SearchDestination
 
 fun NavController.navigateToSearch(navOptions: NavOptions? = null) {
-    navigate(SEARCH_ROUTE, navOptions)
+    navigate(SearchDestination, navOptions)
 }
 
 fun NavGraphBuilder.searchScreen() {
-    composable(route = SEARCH_ROUTE) {
+    composable<SearchDestination> {
         SearchRoute()
     }
 }

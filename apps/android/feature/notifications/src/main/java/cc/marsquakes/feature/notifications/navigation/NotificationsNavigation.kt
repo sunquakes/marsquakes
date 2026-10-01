@@ -3,18 +3,22 @@ package cc.marsquakes.feature.notifications.navigation
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
-import androidx.navigation.NavType
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import cc.marsquakes.feature.notifications.NotificationDetailRoute
 import cc.marsquakes.feature.notifications.NotificationsRoute
+import kotlinx.serialization.Serializable
 
-const val NOTIFICATIONS_ROUTE = "notifications_route"
-private const val NOTIFICATION_ID_ARG = "notificationId"
-private const val NOTIFICATION_DETAIL_ROUTE = "notification_detail_route/{$NOTIFICATION_ID_ARG}"
+@Serializable
+data object NotificationsDestination
+
+@Serializable
+data class NotificationDetailDestination(
+    val notificationId: String,
+)
 
 fun NavController.navigateToNotifications(navOptions: NavOptions? = null) {
-    navigate(NOTIFICATIONS_ROUTE, navOptions)
+    navigate(NotificationsDestination, navOptions)
 }
 
 fun NavController.navigateToNotificationDetail(
@@ -22,7 +26,7 @@ fun NavController.navigateToNotificationDetail(
     navOptions: NavOptions? = null,
 ) {
     navigate(
-        route = "notification_detail_route/$notificationId",
+        route = NotificationDetailDestination(notificationId = notificationId),
         navOptions = navOptions,
     )
 }
@@ -31,20 +35,13 @@ fun NavGraphBuilder.notificationsScreen(
     onNotificationClick: (String) -> Unit,
     onBack: () -> Unit,
 ) {
-    composable(route = NOTIFICATIONS_ROUTE) {
+    composable<NotificationsDestination> {
         NotificationsRoute(onNotificationClick = onNotificationClick)
     }
-    composable(
-        route = NOTIFICATION_DETAIL_ROUTE,
-        arguments = listOf(
-            navArgument(NOTIFICATION_ID_ARG) { type = NavType.StringType },
-        ),
-    ) { backStackEntry ->
-        val notificationId = backStackEntry.arguments
-            ?.getString(NOTIFICATION_ID_ARG)
-            .orEmpty()
+    composable<NotificationDetailDestination> { backStackEntry ->
+        val destination = backStackEntry.toRoute<NotificationDetailDestination>()
         NotificationDetailRoute(
-            notificationId = notificationId,
+            notificationId = destination.notificationId,
             onBack = onBack,
         )
     }
