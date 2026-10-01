@@ -1,5 +1,6 @@
 package cc.marsquakes.feature.notifications
 
+import cc.marsquakes.core.model.AppNotification
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize

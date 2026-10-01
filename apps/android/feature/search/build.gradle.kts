@@ -5,3 +5,7 @@ plugins {
 android {
     namespace = "cc.marsquakes.feature.search"
 }
+
+dependencies {
+    implementation(project(":core:data"))
+}

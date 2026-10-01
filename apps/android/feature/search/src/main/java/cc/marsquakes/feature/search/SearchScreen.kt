@@ -1,5 +1,6 @@
 package cc.marsquakes.feature.search
 
+import cc.marsquakes.core.model.SearchResultItem
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

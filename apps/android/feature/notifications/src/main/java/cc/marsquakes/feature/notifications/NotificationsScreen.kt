@@ -1,5 +1,7 @@
 package cc.marsquakes.feature.notifications
 
+import cc.marsquakes.core.model.AppNotification
+import cc.marsquakes.core.model.NotificationType
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box

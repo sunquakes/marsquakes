@@ -1,34 +1,24 @@
-package cc.marsquakes.feature.notifications
+package cc.marsquakes.core.data.repository
 
+import cc.marsquakes.core.model.AppNotification
+import cc.marsquakes.core.model.NotificationType
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 
-enum class NotificationType {
-    SYSTEM,
-    ACTIVITY,
-}
-
-data class AppNotification(
-    val id: String,
-    val title: String,
-    val content: String,
-    val time: String,
-    val type: NotificationType,
-    val unread: Boolean,
-)
-
 @Singleton
-class NotificationsRepository @Inject constructor() {
+class DefaultNotificationsRepository @Inject constructor() : NotificationsRepository {
 
-    private val _notifications = MutableStateFlow(SAMPLE_NOTIFICATIONS)
-    val notifications: StateFlow<List<AppNotification>> = _notifications.asStateFlow()
+    private val notificationsStore = MutableStateFlow(SAMPLE_NOTIFICATIONS)
 
-    fun markAsRead(id: String) {
-        _notifications.update { list ->
+    override val notifications: Flow<List<AppNotification>> =
+        notificationsStore.asStateFlow()
+
+    override suspend fun markAsRead(id: String) {
+        notificationsStore.update { list ->
             list.map { notification ->
                 if (notification.id == id) notification.copy(unread = false) else notification
             }

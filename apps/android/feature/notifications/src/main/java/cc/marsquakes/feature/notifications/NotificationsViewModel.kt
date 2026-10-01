@@ -2,6 +2,8 @@ package cc.marsquakes.feature.notifications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cc.marsquakes.core.data.repository.NotificationsRepository
+import cc.marsquakes.core.model.AppNotification
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
