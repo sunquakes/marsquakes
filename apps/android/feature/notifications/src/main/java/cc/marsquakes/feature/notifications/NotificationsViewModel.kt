@@ -2,6 +2,8 @@ package cc.marsquakes.feature.notifications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cc.marsquakes.core.common.result.Result
+import cc.marsquakes.core.common.result.asResult
 import cc.marsquakes.core.data.repository.NotificationsRepository
 import cc.marsquakes.core.model.AppNotification
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,7 +15,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class NotificationsUiState(
-    val notifications: List<AppNotification> = emptyList(),
+    val notifications: Result<List<AppNotification>> = Result.Loading,
 )
 
 @HiltViewModel
@@ -22,6 +24,7 @@ class NotificationsViewModel @Inject constructor(
 ) : ViewModel() {
 
     val uiState: StateFlow<NotificationsUiState> = notificationsRepository.notifications
+        .asResult()
         .map { notifications -> NotificationsUiState(notifications = notifications) }
         .stateIn(
             scope = viewModelScope,

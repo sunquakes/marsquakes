@@ -1,11 +1,16 @@
 package cc.marsquakes.feature.notifications
 
+import cc.marsquakes.core.common.result.Result
 import cc.marsquakes.core.model.AppNotification
 import cc.marsquakes.core.model.NotificationType
+import cc.marsquakes.core.ui.component.EmptyState
+import cc.marsquakes.core.ui.component.ErrorState
+import cc.marsquakes.core.ui.component.LoadingWheel
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -58,7 +63,7 @@ fun NotificationsRoute(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     NotificationsScreen(
-        notifications = uiState.notifications,
+        notificationsResult = uiState.notifications,
         onNotificationClick = { id ->
             viewModel.markAsRead(id)
             onNotificationClick(id)
@@ -70,9 +75,34 @@ fun NotificationsRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NotificationsScreen(
-    notifications: List<AppNotification>,
+    notificationsResult: Result<List<AppNotification>>,
     onNotificationClick: (String) -> Unit,
     modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text(text = stringResource(id = R.string.feature_notifications_title)) },
+        )
+
+        when (notificationsResult) {
+            Result.Loading -> LoadingWheel()
+            is Result.Error ->
+                ErrorState(
+                    message = stringResource(id = R.string.feature_notifications_load_error),
+                )
+            is Result.Success -> NotificationsContent(
+                notifications = notificationsResult.data,
+                onNotificationClick = onNotificationClick,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NotificationsContent(
+    notifications: List<AppNotification>,
+    onNotificationClick: (String) -> Unit,
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val filter = NotificationFilter.entries[selectedTab]
@@ -84,52 +114,31 @@ internal fun NotificationsScreen(
             notifications.filter { it.type == NotificationType.ACTIVITY }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-        TopAppBar(
-            title = { Text(text = stringResource(id = R.string.feature_notifications_title)) },
-        )
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
-            NotificationFilter.entries.forEachIndexed { index, item ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(text = stringResource(id = item.labelRes)) },
-                )
-            }
+    PrimaryTabRow(selectedTabIndex = selectedTab) {
+        NotificationFilter.entries.forEachIndexed { index, item ->
+            Tab(
+                selected = selectedTab == index,
+                onClick = { selectedTab = index },
+                text = { Text(text = stringResource(id = item.labelRes)) },
+            )
         }
+    }
 
-        if (filtered.isEmpty()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.NotificationsOff,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    if (filtered.isEmpty()) {
+        EmptyState(
+            icon = Icons.Filled.NotificationsOff,
+            title = stringResource(id = R.string.feature_notifications_empty),
+        )
+    } else {
+        LazyColumn(
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(filtered, key = { it.id }) { notification ->
+                NotificationCard(
+                    notification = notification,
+                    onClick = { onNotificationClick(notification.id) },
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(id = R.string.feature_notifications_empty),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            LazyColumn(
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(filtered, key = { it.id }) { notification ->
-                    NotificationCard(
-                        notification = notification,
-                        onClick = { onNotificationClick(notification.id) },
-                    )
-                }
             }
         }
     }

@@ -1,6 +1,10 @@
 package cc.marsquakes.feature.search
 
+import cc.marsquakes.core.common.result.Result
 import cc.marsquakes.core.model.SearchResultItem
+import cc.marsquakes.core.ui.component.EmptyState
+import cc.marsquakes.core.ui.component.ErrorState
+import cc.marsquakes.core.ui.component.LoadingWheel
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -108,7 +112,10 @@ internal fun SearchScreen(
                 onClearHistory = onClearHistory,
             )
         } else {
-            ResultsContent(results = uiState.results)
+            ResultsContent(
+                results = uiState.results,
+                onRetry = onSearchSubmit,
+            )
         }
     }
 }
@@ -215,47 +222,43 @@ private fun FlowChips(
 }
 
 @Composable
-private fun ResultsContent(results: List<SearchResultItem>) {
-    if (results.isEmpty()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.SearchOff,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+private fun ResultsContent(
+    results: Result<List<SearchResultItem>>?,
+    onRetry: () -> Unit,
+) {
+    when (results) {
+        null, Result.Loading -> LoadingWheel()
+        is Result.Error ->
+            ErrorState(
+                message = stringResource(id = R.string.feature_search_load_error),
+                onRetry = onRetry,
             )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(id = R.string.feature_search_no_results),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    } else {
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item {
-                Text(
-                    text = stringResource(
-                        id = R.string.feature_search_result_count,
-                        results.size,
-                    ),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+        is Result.Success ->
+            if (results.data.isEmpty()) {
+                EmptyState(
+                    icon = Icons.Filled.SearchOff,
+                    title = stringResource(id = R.string.feature_search_no_results),
                 )
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item {
+                        Text(
+                            text = stringResource(
+                                id = R.string.feature_search_result_count,
+                                results.data.size,
+                            ),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    items(results.data, key = { it.id }) { item ->
+                        ResultCard(item = item)
+                    }
+                }
             }
-            items(results, key = { it.id }) { item ->
-                ResultCard(item = item)
-            }
-        }
     }
 }
 

@@ -1,12 +1,16 @@
 package cc.marsquakes.feature.notifications
 
+import cc.marsquakes.core.common.result.Result
 import cc.marsquakes.core.model.AppNotification
-import androidx.compose.foundation.layout.Arrangement
+import cc.marsquakes.core.ui.component.EmptyState
+import cc.marsquakes.core.ui.component.ErrorState
+import cc.marsquakes.core.ui.component.LoadingWheel
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.NotificationsOff
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -30,10 +34,10 @@ fun NotificationDetailRoute(
     viewModel: NotificationsViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val notification = uiState.notifications.firstOrNull { it.id == notificationId }
 
     NotificationDetailScreen(
-        notification = notification,
+        notificationsResult = uiState.notifications,
+        notificationId = notificationId,
         onBack = onBack,
         modifier = modifier,
     )
@@ -42,10 +46,15 @@ fun NotificationDetailRoute(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NotificationDetailScreen(
-    notification: AppNotification?,
+    notificationsResult: Result<List<AppNotification>>,
+    notificationId: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val notification = (notificationsResult as? Result.Success)
+        ?.data
+        ?.firstOrNull { it.id == notificationId }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -67,42 +76,45 @@ internal fun NotificationDetailScreen(
             )
         },
     ) { innerPadding ->
-        if (notification == null) {
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .fillMaxSize()
-                    .padding(32.dp),
-                verticalArrangement = Arrangement.Center,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.feature_notifications_not_found),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+        val contentModifier = Modifier
+            .padding(innerPadding)
+            .fillMaxSize()
+
+        when (notificationsResult) {
+            Result.Loading -> LoadingWheel(modifier = contentModifier)
+            is Result.Error ->
+                ErrorState(
+                    message = stringResource(id = R.string.feature_notifications_load_error),
+                    modifier = contentModifier,
                 )
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding)
-                    .padding(24.dp),
-            ) {
-                Text(
-                    text = notification.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-                Text(
-                    text = notification.time,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-                Text(
-                    text = notification.content,
-                    style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(top = 20.dp),
-                )
-            }
+            is Result.Success ->
+                if (notification == null) {
+                    EmptyState(
+                        icon = Icons.Filled.NotificationsOff,
+                        title = stringResource(id = R.string.feature_notifications_not_found),
+                        modifier = contentModifier,
+                    )
+                } else {
+                    Column(
+                        modifier = contentModifier.padding(24.dp),
+                    ) {
+                        Text(
+                            text = notification.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                        Text(
+                            text = notification.time,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                        Text(
+                            text = notification.content,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(top = 20.dp),
+                        )
+                    }
+                }
         }
     }
 }
