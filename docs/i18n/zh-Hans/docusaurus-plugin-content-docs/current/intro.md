@@ -11,6 +11,13 @@ sidebar_position: 1
 > 勾选需要的端，你就能得到一个可直接运行的仓库 —— 后端 API、后台前端、
 > 桌面端与移动端，已经由 pnpm workspace + Turborepo 串联好。
 
+:::tip 每个人，都能成为全栈工程师
+过去做出一整个产品，需要一整支团队 —— 后端、前端、移动端、运维各有专人。
+Marsquakes 把这道门槛拿掉了：接线、工具链与平台胶水都已经做好，一个人就能
+横跨 API、Web、管理后台、桌面、Android 和 iOS 交付产品。你负责出想法，那些
+过去需要团队才能搞定的环境与配置，交给它来完成。
+:::
+
 ```bash
 pnpm add -g @marsquakes/cli
 mars create my-app

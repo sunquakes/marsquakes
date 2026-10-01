@@ -8,6 +8,8 @@
 
 > 一个用于生成多端 monorepo 的 npm 包。装一次，运行 `mars create`，勾选需要的端，就能得到一个可运行的仓库 —— 后端 API、管理后台、桌面端与移动端已经由 pnpm workspace + Turborepo 串联好。
 
+**每个人，都能成为全栈工程师。** Marsquakes 让一个人就能交付横跨 API、Web、管理后台、桌面、Android 和 iOS 的产品 —— 不需要后端专家，也不需要运维团队。过去需要一整个工程团队才能搞定的接线、工具链与平台胶水，这里都已经做好；你只需专注于产品本身。
+
 [![npm](https://img.shields.io/npm/v/@marsquakes/cli.svg)](https://www.npmjs.com/package/@marsquakes/cli)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 
