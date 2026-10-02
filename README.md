@@ -8,6 +8,8 @@
 
 > An npm package that scaffolds multi-platform monorepos. Install it once, run `mars create`, pick the platforms you need, and you get a working repository with a backend API, an admin frontend, desktop and mobile clients already wired together by pnpm workspace + Turborepo.
 
+**Everyone can become a full-stack engineer.** Marsquakes lets a single person ship a product across API, web, admin, desktop, Android and iOS — no backend specialist or DevOps team required. The wiring, toolchains and platform glue that used to demand an engineering team are already done; you focus on the product.
+
 [![npm](https://img.shields.io/npm/v/@marsquakes/cli.svg)](https://www.npmjs.com/package/@marsquakes/cli)
 [![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](./LICENSE)
 

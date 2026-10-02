@@ -18,6 +18,7 @@ retrofitKotlinxSerialization = "1.0.0"
 okhttp = "4.12.0"
 kotlinxSerializationJson = "1.7.3"
 kotlinxCoroutines = "1.9.0"
+turbine = "1.2.0"
 navigationCompose = "2.8.4"
 
 [libraries]
@@ -62,6 +63,7 @@ okhttp-logging = { group = "com.squareup.okhttp3", name = "logging-interceptor" 
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "kotlinxCoroutines" }
+turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 
 # Gradle plugin classpath, compiled against only (see build-logic/convention/build.gradle.kts)
 android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }

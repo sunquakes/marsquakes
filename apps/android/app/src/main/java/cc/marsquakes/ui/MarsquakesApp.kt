@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -15,7 +17,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import kotlin.reflect.KClass
 import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -26,12 +30,17 @@ import cc.marsquakes.core.designsystem.theme.MarsquakesTheme
 import cc.marsquakes.core.model.AuthState
 import cc.marsquakes.core.model.DarkThemeMode
 import cc.marsquakes.core.ui.component.LoadingWheel
-import cc.marsquakes.feature.home.navigation.HOME_ROUTE
+import cc.marsquakes.feature.home.navigation.HomeDestination
 import cc.marsquakes.feature.home.navigation.homeScreen
-import cc.marsquakes.feature.login.navigation.LOGIN_ROUTE
+import cc.marsquakes.feature.login.navigation.LoginDestination
 import cc.marsquakes.feature.login.navigation.loginScreen
-import cc.marsquakes.feature.profile.navigation.PROFILE_ROUTE
-import cc.marsquakes.feature.profile.navigation.profileScreen
+import cc.marsquakes.feature.notifications.navigation.NotificationDetailDestination
+import cc.marsquakes.feature.notifications.navigation.NotificationsDestination
+import cc.marsquakes.feature.notifications.navigation.notificationsScreen
+import cc.marsquakes.feature.search.navigation.SearchDestination
+import cc.marsquakes.feature.search.navigation.searchScreen
+import cc.marsquakes.feature.settings.navigation.SettingsDestination
+import cc.marsquakes.feature.settings.navigation.settingsScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -62,7 +71,7 @@ fun MarsquakesApp(viewModel: AppViewModel = hiltViewModel()) {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
-                    startDestination = LOGIN_ROUTE,
+                    startDestination = LoginDestination,
                 ) {
                     loginScreen()
                 }
@@ -86,7 +95,7 @@ private fun MainScaffold() {
                 val currentDestination = backStackEntry?.destination
                 destinations.forEach { destination ->
                     val isSelected = currentDestination?.hierarchy
-                        ?.any { it.route == destination.route } == true
+                        ?.any { it.hasRoute(destination.route) } == true
                     NavigationBarItem(
                         selected = isSelected,
                         onClick = {
@@ -112,28 +121,45 @@ private fun MainScaffold() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = HOME_ROUTE,
+            startDestination = HomeDestination,
             modifier = Modifier.padding(innerPadding),
         ) {
             homeScreen()
-            profileScreen()
+            searchScreen()
+            notificationsScreen(
+                onNotificationClick = { id ->
+                    navController.navigate(NotificationDetailDestination(notificationId = id))
+                },
+                onBack = { navController.popBackStack() },
+            )
+            settingsScreen()
         }
     }
 }
 
 private enum class TopLevelDestination(
-    val route: String,
+    val route: KClass<*>,
     val icon: ImageVector,
     val labelRes: Int,
 ) {
     HOME(
-        route = HOME_ROUTE,
+        route = HomeDestination::class,
         icon = Icons.Filled.Home,
         labelRes = R.string.nav_home,
     ),
-    PROFILE(
-        route = PROFILE_ROUTE,
-        icon = Icons.Filled.Person,
-        labelRes = R.string.nav_profile,
+    SEARCH(
+        route = SearchDestination::class,
+        icon = Icons.Filled.Search,
+        labelRes = R.string.nav_search,
+    ),
+    NOTIFICATIONS(
+        route = NotificationsDestination::class,
+        icon = Icons.Filled.Notifications,
+        labelRes = R.string.nav_notifications,
+    ),
+    SETTINGS(
+        route = SettingsDestination::class,
+        icon = Icons.Filled.Settings,
+        labelRes = R.string.nav_settings,
     ),
 }

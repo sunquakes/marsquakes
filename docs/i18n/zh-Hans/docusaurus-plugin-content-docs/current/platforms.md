@@ -17,7 +17,7 @@ sidebar_position: 4
 | Web Admin | `apps/web-admin` | Vue 3 + Vite             | 是       | —                      | 可用     |
 | 桌面端    | `apps/desktop`   | Tauri + React + Rust     | 否       | Rust                   | 可用     |
 | Web       | `apps/web`       | 待定                     | 否       | —                      | 仅有骨架 |
-| Android   | `apps/android`   | Kotlin + Jetpack Compose | 否       | JDK、Android CLI + SDK | 仅有骨架 |
+| Android   | `apps/android`   | Kotlin + Jetpack Compose | 否       | JDK、Android CLI + SDK | 可用 |
 | iOS       | `apps/ios`       | Swift + SwiftUI          | 否       | —                      | 仅有骨架 |
 | Windows   | `apps/windows`   | 待定                     | 否       | —                      | 仅有骨架 |
 | Linux     | `apps/linux`     | 待定                     | 否       | —                      | 仅有骨架 |

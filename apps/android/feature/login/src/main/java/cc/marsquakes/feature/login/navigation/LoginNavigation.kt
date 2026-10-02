@@ -1,19 +1,15 @@
 package cc.marsquakes.feature.login.navigation
 
-import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
-import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
 import cc.marsquakes.feature.login.LoginRoute
+import kotlinx.serialization.Serializable
 
-const val LOGIN_ROUTE = "login_route"
-
-fun NavController.navigateToLogin(navOptions: NavOptions? = null) {
-    navigate(LOGIN_ROUTE, navOptions)
-}
+@Serializable
+data object LoginDestination
 
 fun NavGraphBuilder.loginScreen() {
-    composable(route = LOGIN_ROUTE) {
+    composable<LoginDestination> {
         LoginRoute()
     }
 }

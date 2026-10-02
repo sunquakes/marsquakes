@@ -1114,7 +1114,16 @@ function copySelectedPlatforms(srcDir, destDir, selectedPlatforms) {
       const srcPath = path.join(appsSrcDir, entry.name);
       const destPath = path.join(appsDestDir, entry.name);
       console.log(`   ${t('copy-platform', { name: entry.name })}`);
-      copyDir(srcPath, destPath, new Set(['.git', 'node_modules', '.gradle', 'build', 'dist', '.turbo', '.idea']));
+      // For every platform, 'build' is a generated output and is skipped.
+      // The exception is web-admin: its top-level build/ holds the Vite build
+      // configuration (plugins, constants, generators) and is source code,
+      // while any genuinely nested output is still filtered by the recursive
+      // excludes below.
+      const platformExclude = new Set(['.git', 'node_modules', '.gradle', 'build', 'dist', '.turbo', '.idea']);
+      if (entry.name === 'web-admin') {
+        platformExclude.delete('build');
+      }
+      copyDir(srcPath, destPath, platformExclude);
     }
   }
 }
@@ -1252,10 +1261,16 @@ async function createProject(args) {
     execSync('git init', { cwd: targetDir, stdio: 'pipe' });
     execSync('git config user.email "admin@example.com"', { cwd: targetDir, stdio: 'pipe' });
     execSync('git config user.name "Admin"', { cwd: targetDir, stdio: 'pipe' });
+    // The JeecgBoot API template contains files whose full paths exceed the
+    // Windows MAX_PATH limit (260 characters); without this, `git add .`
+    // fails with "Filename too long" and the initial commit is skipped.
+    execSync('git config core.longpaths true', { cwd: targetDir, stdio: 'pipe' });
     execSync('git add .', { cwd: targetDir, stdio: 'pipe' });
     execSync('git commit -m "init: create project from template"', { cwd: targetDir, stdio: 'pipe' });
   } catch (e) {
     console.warn('\n⚠️  Git initialization skipped (non-fatal). You can manually run git init later.');
+    const detail = (e.stderr || e.stdout || '').toString().trim();
+    if (detail) console.warn(`   Reason: ${detail.split('\n').slice(-3).join('\n   ')}`);
   }
 
   console.log(`\n${t('project-created', { name: projectName })}\n`);
@@ -1482,11 +1497,16 @@ function runDocker(rootDir, platform, mode) {
   }
 }
 
+// The root scripts delegate to Turborepo, whose --filter matches package
+// names or explicit directory selectors ("./apps/web"), never a bare
+// directory basename. Resolve the filter from platforms.json's dir field so
+// it keeps working after a generated project renames its packages.
+function workspaceFilter(entry) {
+  return `--filter=./${entry.dir.split(path.sep).join('/')}`;
+}
+
 const PLATFORM_COMMANDS = {
   dev: {
-    web: { cmd: 'pnpm', args: ['dev', '--filter=web'], native: false },
-    'web-admin': { cmd: 'pnpm', args: ['dev', '--filter=web-admin'], native: false },
-    desktop: { cmd: 'pnpm', args: ['dev', '--filter=desktop'], native: false },
     android: { cmd: null, script: 'gradlew installDebug', native: true },
     ios: { cmd: null, script: 'xcodebuild', native: true },
     api: { cmd: null, script: null, native: true },
@@ -1495,9 +1515,6 @@ const PLATFORM_COMMANDS = {
     macos: { cmd: null, script: null, native: true },
   },
   build: {
-    web: { cmd: 'pnpm', args: ['build', '--filter=web'], native: false },
-    'web-admin': { cmd: 'pnpm', args: ['build', '--filter=web-admin'], native: false },
-    desktop: { cmd: 'pnpm', args: ['build', '--filter=desktop'], native: false },
     android: { cmd: null, script: 'gradlew assembleRelease', native: true },
     ios: { cmd: null, script: 'xcodebuild', native: true },
     api: { cmd: null, script: null, native: true },
@@ -1625,13 +1642,12 @@ function devCommand(args) {
   const children = [];
 
   const workspaceTargets = platform === 'all'
-    ? workspacePlatforms.map(p => p.name)
-    : (workspacePlatforms.some(p => p.name === platform) ? [platform] : []);
+    ? workspacePlatforms
+    : workspacePlatforms.filter(p => p.name === platform);
 
   if (workspaceTargets.length > 0) {
     for (const target of workspaceTargets) {
-      const filterFlag = `--filter=${target}`;
-      const child = spawnProcess('pnpm', ['dev', filterFlag], rootDir);
+      const child = spawnProcess('pnpm', ['dev', workspaceFilter(target)], rootDir);
       children.push(child);
     }
   }
@@ -1698,20 +1714,23 @@ function buildCommand(args) {
   console.log(`\n🔨 Building project...\n`);
 
   if (platform === 'all' || platform === 'web') {
-    if (enabledPlatforms.some(p => p.name === 'web')) {
-      run('pnpm build --filter=web', rootDir);
+    const entry = enabledPlatforms.find(p => p.name === 'web');
+    if (entry) {
+      run(`pnpm build ${workspaceFilter(entry)}`, rootDir);
     }
   }
 
   if (platform === 'all' || platform === 'web-admin') {
-    if (enabledPlatforms.some(p => p.name === 'web-admin')) {
-      run('pnpm build --filter=web-admin', rootDir);
+    const entry = enabledPlatforms.find(p => p.name === 'web-admin');
+    if (entry) {
+      run(`pnpm build ${workspaceFilter(entry)}`, rootDir);
     }
   }
 
   if (platform === 'all' || platform === 'desktop') {
-    if (enabledPlatforms.some(p => p.name === 'desktop')) {
-      run('pnpm build --filter=desktop', rootDir);
+    const entry = enabledPlatforms.find(p => p.name === 'desktop');
+    if (entry) {
+      run(`pnpm build ${workspaceFilter(entry)}`, rootDir);
     }
   }
 
@@ -3155,20 +3174,24 @@ function removeInclude(settingsText, modulePath) {
 
 function ensureAppDependency(appGradleText, modulePath) {
   const line = `    implementation(project("${modulePath}"))`;
-  if (appGradleText.includes(line)) return appGradleText;
-  const marker = /dependencies \{\n/;
+  const eol = appGradleText.includes('\r\n') ? '\r\n' : '\n';
+  const hasLine = appGradleText
+    .split(/\r?\n/)
+    .some(l => l.trim() === line.trim());
+  if (hasLine) return appGradleText;
+  const marker = /dependencies \{\r?\n/;
   if (!marker.test(appGradleText)) {
     throw new Error('Could not locate dependencies block in app/build.gradle.kts');
   }
-  return appGradleText.replace(marker, match => match + line + '\n');
+  return appGradleText.replace(marker, match => match + line + eol);
 }
 
 function removeAppDependency(appGradleText, modulePath) {
   const line = `    implementation(project("${modulePath}"))`;
   return appGradleText
-    .split('\n')
-    .filter(l => l !== line)
-    .join('\n');
+    .split(/\r?\n/)
+    .filter(l => l.trim() !== line.trim())
+    .join(appGradleText.includes('\r\n') ? '\r\n' : '\n');
 }
 
 function buildFeatureGradle(segment) {

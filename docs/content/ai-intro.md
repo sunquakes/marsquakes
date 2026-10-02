@@ -12,6 +12,17 @@ on your computer — writes the code, runs the commands and shows you the result
 This track tells you exactly what to say, from an empty computer to a finished
 app you can show to someone.
 
+## Everyone can become a full-stack engineer
+
+You may think building an app — the website people open, the server that stores the data, the program that runs on a phone or computer — is only for people who studied programming. It used to be. Each part demanded a different specialist, so one person could not do it all alone.
+
+That barrier is what Marsquakes removes. The agent writes the code, and the
+setup work that used to need a team is already prepared. You stay in charge of
+the one thing no specialist can supply: what the product should do. By the end
+of this track you will have built the backend, the website and the app yourself,
+in ordinary sentences — which is what "full-stack engineer" means, reached
+without learning to code.
+
 ## Two words you will see constantly
 
 | Word | What it means here |

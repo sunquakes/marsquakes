@@ -1,21 +1,34 @@
 package cc.marsquakes.feature.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,9 +37,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import cc.marsquakes.core.designsystem.theme.MarsRedDarkest
+import cc.marsquakes.core.designsystem.theme.MarsRedLight
 
 @Composable
 fun HomeRoute(
@@ -42,91 +58,272 @@ internal fun HomeScreen(
     uiState: HomeUiState,
     modifier: Modifier = Modifier,
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+        item {
             GreetingHeader(nickname = uiState.nickname)
         }
-        items(uiState.albums) { album ->
-            AlbumCard(title = album)
+        item {
+            BannerCarousel()
+        }
+        item {
+            StatCardRow()
+        }
+        item {
+            SectionHeader(title = stringResource(id = R.string.feature_home_quick_actions))
+            QuickActionGrid()
+        }
+        item {
+            SectionHeader(title = stringResource(id = R.string.feature_home_recent_activity))
+            RecentActivityList()
         }
     }
 }
 
 @Composable
 private fun GreetingHeader(nickname: String) {
-    Column(modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)) {
+    Column(modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp)) {
         Text(
-            text = stringResource(id = R.string.feature_home_hello, nickname),
+            text = if (nickname.isEmpty()) {
+                stringResource(id = R.string.feature_home_hello_guest)
+            } else {
+                stringResource(id = R.string.feature_home_hello, nickname)
+            },
             style = MaterialTheme.typography.headlineSmall,
         )
         Text(
             text = stringResource(id = R.string.feature_home_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
         )
     }
 }
 
 @Composable
-private fun AlbumCard(title: String) {
-    val palette = albumPalette(title)
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(150.dp),
+private fun BannerCarousel() {
+    val banners = listOf(
+        stringResource(id = R.string.feature_home_banner_1_title) to
+            stringResource(id = R.string.feature_home_banner_1_desc),
+        stringResource(id = R.string.feature_home_banner_2_title) to
+            stringResource(id = R.string.feature_home_banner_2_desc),
+        stringResource(id = R.string.feature_home_banner_3_title) to
+            stringResource(id = R.string.feature_home_banner_3_desc),
+    )
+    val pagerState = rememberPagerState(pageCount = { banners.size })
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(colors = palette.toList()),
-                ),
-            contentAlignment = Alignment.BottomStart,
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.28f),
+        HorizontalPager(state = pagerState) { page ->
+            val (title, desc) = banners[page]
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(MarsRedDarkest, MarsRedLight),
                             ),
+                        )
+                        .padding(20.dp)
+                        .height(96.dp),
+                ) {
+                    Column(verticalArrangement = Arrangement.Center) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = Color.White,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = desc,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.85f),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            repeat(banners.size) { index ->
+                val selected = pagerState.currentPage == index
+                Box(
+                    modifier = Modifier
+                        .size(if (selected) 8.dp else 6.dp)
+                        .background(
+                            color = if (selected) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.outlineVariant
+                            },
+                            shape = CircleShape,
                         ),
-                    ),
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-                modifier = Modifier.padding(14.dp),
-            )
+                )
+            }
         }
     }
 }
 
-private val albumPalettes: List<Pair<Color, Color>> = listOf(
-    Color(0xFFB3312C) to Color(0xFF7D221E),
-    Color(0xFFC25E4A) to Color(0xFF8F3B2B),
-    Color(0xFFC9833E) to Color(0xFF935824),
-    Color(0xFFB5973E) to Color(0xFF7E6824),
-    Color(0xFF8C9E4B) to Color(0xFF5C6B2C),
-    Color(0xFF5E9E7A) to Color(0xFF367054),
-    Color(0xFF4A8C9E) to Color(0xFF2B5F6E),
-    Color(0xFF5C6FA8) to Color(0xFF3A4773),
-    Color(0xFF845C9E) to Color(0xFF56366E),
-    Color(0xFFA85C7E) to Color(0xFF733752),
-)
+@Composable
+private fun StatCardRow() {
+    val stats = listOf(
+        Triple("128", stringResource(id = R.string.feature_home_stat_1), Icons.Filled.Star),
+        Triple("36", stringResource(id = R.string.feature_home_stat_2), Icons.Filled.Favorite),
+        Triple("12", stringResource(id = R.string.feature_home_stat_3), Icons.Filled.Email),
+    )
+    Row(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        stats.forEach { (value, label, icon) ->
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                tonalElevation = 1.dp,
+                modifier = Modifier.weight(1f),
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = value,
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
 
-private fun albumPalette(title: String): Pair<Color, Color> =
-    albumPalettes[title.hashCode().mod(albumPalettes.size)]
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(horizontal = 16.dp),
+    )
+}
+
+@Composable
+private fun QuickActionGrid() {
+    val actions = listOf(
+        stringResource(id = R.string.feature_home_action_1) to Icons.Filled.Search,
+        stringResource(id = R.string.feature_home_action_2) to Icons.Filled.AddCircle,
+        stringResource(id = R.string.feature_home_action_3) to Icons.Filled.DateRange,
+        stringResource(id = R.string.feature_home_action_4) to Icons.Filled.Favorite,
+    )
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        actions.forEach { (label, icon) ->
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(16.dp),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentActivityList() {
+    val activities = listOf(
+        stringResource(id = R.string.feature_home_activity_1),
+        stringResource(id = R.string.feature_home_activity_2),
+        stringResource(id = R.string.feature_home_activity_3),
+        stringResource(id = R.string.feature_home_activity_4),
+    )
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        tonalElevation = 1.dp,
+        modifier = Modifier.padding(horizontal = 16.dp),
+    ) {
+        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+            activities.forEachIndexed { index, activity ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = CircleShape,
+                            ),
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = activity,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (index != activities.lastIndex) {
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 38.dp)
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                    )
+                }
+            }
+        }
+    }
+}

@@ -18,6 +18,7 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
             with(pluginManager) {
                 apply("marsquakes.android.library.compose")
                 apply("marsquakes.android.hilt")
+                apply("org.jetbrains.kotlin.plugin.serialization")
             }
 
             dependencies {
@@ -32,6 +33,9 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
                 "implementation"(libs.findLibrary("androidx-hilt-navigation-compose").get())
                 "implementation"(libs.findLibrary("androidx-compose-material3").get())
                 "implementation"(libs.findLibrary("kotlinx-coroutines-android").get())
+                "implementation"(libs.findLibrary("kotlinx-serialization-json").get())
+
+                "testImplementation"(project(":core:testing"))
 
                 "androidTestImplementation"(libs.findLibrary("androidx-compose-ui-test-junit4").get())
                 "debugImplementation"(libs.findLibrary("androidx-compose-ui-test-manifest").get())

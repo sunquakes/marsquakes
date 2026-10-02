@@ -1,0 +1,9 @@
+<resources>
+    <string name="feature_search_placeholder">Search anything</string>
+    <string name="feature_search_hot_tags">Hot Tags</string>
+    <string name="feature_search_history">Search History</string>
+    <string name="feature_search_clear_history">Clear</string>
+    <string name="feature_search_no_results">No results found</string>
+    <string name="feature_search_load_error">Search failed, please try again</string>
+    <string name="feature_search_result_count">%1$d results</string>
+</resources>

@@ -12,6 +12,14 @@ sidebar_position: 1
 > with a backend API, an admin frontend, desktop and mobile clients already
 > wired together by pnpm workspace + Turborepo.
 
+:::tip Everyone can become a full-stack engineer
+Building a whole product used to require a team — backend, frontend, mobile and
+DevOps specialists. Marsquakes removes that barrier: the wiring, toolchains and
+platform glue are already done, so one person can ship across API, web, admin,
+desktop, Android and iOS. You bring the idea; the setup that used to demand a
+team is handled for you.
+:::
+
 ```bash
 pnpm add -g @marsquakes/cli
 mars create my-app
