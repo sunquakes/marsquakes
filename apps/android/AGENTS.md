@@ -36,6 +36,7 @@ app ──> feature:* ──> core:ui ──> core:designsystem
 | `:core:network` | Remote data: Retrofit `ApiService`, `NetworkAuthDataSource`, `RemoteAuthRepository` and the Hilt module that swaps the `AuthRepository` binding to the backend. Only present in the API-backed variant |
 | `:core:designsystem` | Theme (`MarsquakesTheme`), colour and typography. The only place Material theming is configured; re-exports `material-icons-extended` so every feature can use any icon |
 | `:core:ui` | Reusable composables shared by features (`LoadingWheel`, `MarsquakesTopAppBar`) |
+| `:core:testing` | Shared test toolkit: JUnit, `kotlinx-coroutines-test` and Turbine, plus the modules under test. Unit tests depend on this instead of declaring the test libraries again |
 | `build-logic` | Convention plugins. A separate included build, so editing it never invalidates the app build |
 
 The shipped app has five feature modules: `login`, `home`, `search`, `notifications` and
@@ -49,9 +50,13 @@ and testable without Hilt. Do not collapse the two.
 
 ### Navigation
 
-A feature contributes its destinations through a `NavGraphBuilder` extension in its own
-`navigation/` package (e.g. `loginScreen()`), and `app` only calls it. Adding a feature must
-never require editing the body of the nav graph.
+Navigation is **type-safe**: each destination is a `@Serializable` class or
+`data object` named `*Destination` in the feature's `navigation/` package
+(e.g. `HomeDestination`, `NotificationDetailDestination(val notificationId: String)`).
+A feature also contributes a `NavGraphBuilder` extension (e.g. `homeScreen()`)
+and typed `NavController.navigateTo*` helpers; `app` only calls them. There are
+no string route constants, so adding a feature never requires editing the body
+of the nav graph or hand-writing path patterns.
 
 ## Data Modes: API-backed vs Local
 
@@ -81,18 +86,18 @@ not know which implementation produced it.
 
 ## Screen Catalog
 
-Each row is one destination the app actually ships, with its module, route constant and
-exact data source. "Local" data means constants or `MutableStateFlow` inside the app — no
-network — while "DataStore" means persisted on-device preferences.
+Each row is one destination the app actually ships, with its module, type-safe destination
+and exact data source. "Local" data means constants or `MutableStateFlow` inside the app —
+no network — while "DataStore" means persisted on-device preferences.
 
-| Screen | Module / route constant | Contents | Data source |
-|--------|--------------------------|----------|-------------|
-| Login | `:feature:login` · `LOGIN_ROUTE` | Username/password form, loading spinner, inline error; success moves to the main scaffold | Repository via interface: `LocalAuthRepository` or `RemoteAuthRepository` depending on mode |
-| Home (dashboard) | `:feature:home` · `HOME_ROUTE` | Greeting, banner `HorizontalPager` with page dots, three stat cards, four quick actions, recent-activity list | Greeting nickname from `AuthRepository.authState`; banners/stats/actions/activity are local constants |
-| Search | `:feature:search` · `SEARCH_ROUTE` | Search bar; hot tags + history while empty; result list or empty state after submit | Entirely local: sample items filtered in the ViewModel; history is in-memory `MutableStateFlow` (not persisted) |
-| Notifications | `:feature:notifications` · `NOTIFICATIONS_ROUTE` | All/System/Activity tabs, unread dots, notification cards | Local in-memory `NotificationsRepository` (`@Singleton`) seeded with sample notifications |
-| Notification detail | `:feature:notifications` · `notification_detail_route/{notificationId}` | Full title, time and content; back arrow; "no longer exists" fallback | Same singleton repository, so read state is shared with the list |
-| Settings | `:feature:settings` · `SETTINGS_ROUTE` | Account card; appearance dialog (theme + dynamic color); push/email switches; clear cache; version; terms; logout | Account/logout via `AuthRepository`; theme + dynamic color via `UserDataRepository` → DataStore; push/email switches and cache size are local, not persisted |
+| Screen | Module / destination | Contents | Data source |
+|--------|----------------------|----------|-------------|
+| Login | `:feature:login` · `LoginDestination` | Username/password form, loading spinner, inline error; success moves to the main scaffold | Repository via interface: `LocalAuthRepository` or `RemoteAuthRepository` depending on mode |
+| Home (dashboard) | `:feature:home` · `HomeDestination` | Greeting, banner `HorizontalPager` with page dots, three stat cards, four quick actions, recent-activity list | Greeting nickname from `AuthRepository.authState`; banners/stats/actions/activity are local constants |
+| Search | `:feature:search` · `SearchDestination` | Search bar; hot tags + history while empty; result list or empty state after submit | Entirely local: sample items filtered in the ViewModel; history is in-memory `MutableStateFlow` (not persisted) |
+| Notifications | `:feature:notifications` · `NotificationsDestination` | All/System/Activity tabs, unread dots, notification cards | Local in-memory `NotificationsRepository` (`@Singleton`) seeded with sample notifications |
+| Notification detail | `:feature:notifications` · `NotificationDetailDestination(notificationId)` | Full title, time and content; back arrow; "no longer exists" fallback | Same singleton repository, so read state is shared with the list |
+| Settings | `:feature:settings` · `SettingsDestination` | Account card; appearance dialog (theme + dynamic color); push/email switches; clear cache; version; terms; logout | Account/logout via `AuthRepository`; theme + dynamic color via `UserDataRepository` → DataStore; push/email switches and cache size are local, not persisted |
 
 Notes for extending the catalog:
 
