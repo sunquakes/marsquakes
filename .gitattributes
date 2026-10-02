@@ -1,0 +1,10 @@
+# Skill bundles are validated byte-wise by scripts/pack-skill.js, so their
+# line endings must stay LF even on machines with core.autocrlf=true.
+.agents/skills/**/*.md text eol=lf
+.agents/skills/**/*.sh text eol=lf
+.agents/skills/**/*.ps1 text eol=crlf
+
+# The .env templates are parsed by docker compose; a BOM or CRLF can break
+# the first key. Keep them LF on every platform.
+.env.example text eol=lf
+.env.example.cn text eol=lf
