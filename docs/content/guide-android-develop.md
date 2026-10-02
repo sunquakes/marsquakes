@@ -56,13 +56,28 @@ The built APK lands in `app/build/outputs/apk/`.
 
 App code is split into modules under `apps/android/`. `app/` is only a shell — it holds
 `MainActivity`, the application class and the navigation host. Screens live in `feature/*`
-modules, and the capability they build on lives in `core/*` modules (model, data, database,
-datastore, network, designsystem, ui). Resources sit in the module that uses them, JVM unit
+modules (login, home, search, notifications, settings), and the capability they build on
+lives in `core/*` modules (common, model, data, datastore, network, designsystem, ui,
+testing). Navigation is type-safe: each destination is a `@Serializable` class or
+`data object` named `*Destination`. Resources sit in the module that uses them, JVM unit
 tests in that module's `src/test/` and instrumented tests in `src/androidTest/`. The Gradle
 convention plugins that every module applies are in `build-logic/`. Dependency versions are
 centralised in `gradle/libs.versions.toml`; only `google()` and `mavenCentral()` may be used as
 repositories. Before changing platform code, read `apps/android/AGENTS.md` for the coding
 standards and repository rules.
+
+## Variants: local and api
+
+The variant is chosen at init time, not build time:
+
+```bash
+mars init --android-mode local   # mock login, standalone, no backend
+mars init --android-mode api     # login against the real backend
+```
+
+Re-running init with the other flag rewires the Gradle modules in place; the APK is then
+built the same way either variant. See [CLI reference](./cli.md#choosing-the-android-variant)
+for the derivation rule.
 
 ## Step 3 — Let an AI agent build a feature
 

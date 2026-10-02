@@ -198,7 +198,7 @@ setup, develop, deploy. "Ready" platforms build and run out of the box;
 | ----------- | -------- | ---------- |
 | Admin System — Web Admin + API (`apps/web-admin`, `apps/api`) | Ready | [Environment setup](./guide-admin-env.md) |
 | Desktop (`apps/desktop`) | Ready | [Environment setup](./guide-desktop-env.md) |
-| Android (`apps/android`) | Scaffold only | [Environment setup](./guide-android-env.md) |
+| Android (`apps/android`) | Ready | [Environment setup](./guide-android-env.md) |
 | Web, iOS, Windows, Linux, macOS | Scaffold only | covered by the [platform matrix](./platforms.md#the-platform-matrix) |
 
 Each platform directory also carries an `AGENTS.md` with its build commands,

@@ -54,12 +54,26 @@ cd apps/android
 ## 项目结构
 
 应用代码按模块拆分在 `apps/android/` 下。`app/` 只是一个壳——里面只有 `MainActivity`、
-Application 类和导航宿主。界面在 `feature/*` 模块里，界面所依赖的能力在 `core/*` 模块里
-（model、data、database、datastore、network、designsystem、ui）。资源放在用到它的模块里，
+Application 类和导航宿主。界面在 `feature/*` 模块里（login、home、search、notifications、
+settings），界面所依赖的能力在 `core/*` 模块里（common、model、data、datastore、network、
+designsystem、ui、testing）。导航是类型安全的：每个目的地都是一个名为 `*Destination` 的
+`@Serializable` 类或 `data object`。资源放在用到它的模块里，
 JVM 单元测试放在该模块的 `src/test/`，插桩测试放在 `src/androidTest/`。所有模块共用的
 Gradle 约定插件在 `build-logic/` 中。依赖版本集中在 `gradle/libs.versions.toml`；仓库只允许
 使用 `google()` 和 `mavenCentral()` 作为仓库源。动手改平台代码之前，先读
 `apps/android/AGENTS.md` 了解编码规范和仓库规则。
+
+## 变体：local 和 api
+
+变体在 init 时选择，而不是构建时：
+
+```bash
+mars init --android-mode local   # 模拟登录，独立运行，无需后端
+mars init --android-mode api     # 对接真实后端登录
+```
+
+用另一个标志重跑 init 会就地重新接线 Gradle 模块；两种变体构建 APK 的方式完全相同。
+推导规则见 [CLI 参考](./cli.md#选择-android-变体)。
 
 ## 第 3 步 —— 让 AI Agent 替你开发功能
 

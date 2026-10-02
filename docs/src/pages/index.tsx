@@ -88,7 +88,7 @@ const platformTargets: PlatformTarget[] = [
     name: 'Android',
     stackKey: 'home.platform.android.stack',
     stack: 'Kotlin + Jetpack Compose',
-    ready: false,
+    ready: true,
   },
   {
     icon: LuSmartphone,

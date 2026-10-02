@@ -9,8 +9,12 @@ import TabItem from '@theme/TabItem';
 # Android: Environment Setup
 
 The Android app in `apps/android` is Kotlin with Jetpack Compose and Material 3,
-built with the Gradle wrapper. Maturity: **Scaffold only** — the project builds
-and reserves the structure, but the screens are still placeholders.
+built with the Gradle wrapper. Maturity: **Ready** — it builds and runs out of
+the box with a four-tab app (home, search, notifications, settings) plus login.
+
+It ships in two variants selected by `mars init --android-mode`: **local**
+(mock login, no backend needed) and **api** (real login against the backend).
+See [CLI reference](./cli.md#choosing-the-android-variant) for how the variant is derived.
 
 An Android build needs three things: a host **JDK 17** (Gradle runs on the
 host), Google's **Android CLI**, and the **Android SDK** packages derived from

@@ -9,8 +9,12 @@ import TabItem from '@theme/TabItem';
 # Android：环境准备
 
 `apps/android` 里的 Android 应用是 Kotlin + Jetpack Compose + Material 3，用
-Gradle wrapper 构建。成熟度：**仅脚手架** —— 项目能构建、结构也预留好了，
-但界面仍然是占位的。
+Gradle wrapper 构建。成熟度：**Ready** —— 开箱即可构建运行，自带四个标签页
+（首页、搜索、通知、设置）外加登录页。
+
+应用有两种变体，由 `mars init --android-mode` 选择：**local**（模拟登录，无需
+后端）和 **api**（对接后端真实登录）。变体如何推导见
+[CLI 参考](./cli.md#选择-android-变体)。
 
 Android 构建需要三样东西：宿主机上的 **JDK 17**（Gradle 在宿主机运行）、
 Google 的 **Android CLI**，以及从 `compileSdk` 推导出来的 **Android SDK** 包。

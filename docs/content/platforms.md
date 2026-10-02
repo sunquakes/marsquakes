@@ -17,7 +17,7 @@ each one contains and how the generated project keeps track of them.
 | Web Admin | `apps/web-admin` | Vue 3 + Vite | yes | — | Ready |
 | Desktop | `apps/desktop` | Tauri + React + Rust | no | Rust | Ready |
 | Web | `apps/web` | TBD | no | — | Scaffold only |
-| Android | `apps/android` | Kotlin + Jetpack Compose | no | JDK, Android CLI + SDK | Scaffold only |
+| Android | `apps/android` | Kotlin + Jetpack Compose | no | JDK, Android CLI + SDK | Ready |
 | iOS | `apps/ios` | Swift + SwiftUI | no | — | Scaffold only |
 | Windows | `apps/windows` | TBD | no | — | Scaffold only |
 | Linux | `apps/linux` | TBD | no | — | Scaffold only |

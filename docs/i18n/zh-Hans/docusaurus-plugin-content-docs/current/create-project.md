@@ -187,7 +187,7 @@ mars clean
 | ---- | ------ | ---------- |
 | 后台管理系统 —— Web Admin + API（`apps/web-admin`、`apps/api`） | Ready | [环境准备](./guide-admin-env.md) |
 | 桌面端（`apps/desktop`） | Ready | [环境准备](./guide-desktop-env.md) |
-| Android（`apps/android`） | Scaffold only | [环境准备](./guide-android-env.md) |
+| Android（`apps/android`） | Ready | [环境准备](./guide-android-env.md) |
 | Web、iOS、Windows、Linux、macOS | Scaffold only | 见[平台矩阵](./platforms.md#the-platform-matrix) |
 
 每个平台目录还带有各自的 `AGENTS.md`，包含构建命令、编码规范和注意事项，

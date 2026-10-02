@@ -35,6 +35,7 @@ You do not need to diagnose anything. Find your symptom, say the sentence:
 
 | What you see | Say this |
 | ------------ | -------- |
-| Build fails with "insufficient memory" but you know it is not memory | "This is the version pin issue described in the top-level AGENTS.md. Read that file and stop changing the pinned versions" |
-| Build fails on a different style file each time | "Check the required build setting in the top-level AGENTS.md — do not change the version pins" |
+| The build fails with a compile error | "Read `apps/android/AGENTS.md`, fix the error it names, then build again" |
+| Gradle cannot find the JDK or the Android SDK | "Run `mars init` for this project again, then open a new terminal and retry" |
+| The release APK cannot go to the Play Store | "Set up a proper release signing key and sign the APK with it" |
 | The agent has been silent for a long time | "Are you waiting on something that never finishes? Start it the way that lets you keep talking to me, and tell me when it is up" |
